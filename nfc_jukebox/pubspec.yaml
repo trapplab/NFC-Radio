@@ -38,6 +38,9 @@ dependencies:
   audioplayers: ^6.5.1
   provider: ^6.0.5
   wakelock_plus: ^1.1.2
+  uuid: ^3.0.7
+  file_picker: ^8.0.0
+  path: ^1.9.0
 
 dev_dependencies:
   flutter_test:
