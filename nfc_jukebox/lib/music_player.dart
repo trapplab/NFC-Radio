@@ -46,6 +46,10 @@ class MusicPlayer with ChangeNotifier {
     }
   }
 
+  bool isSongPlaying(String songFilePath) {
+    return _isPlaying && _currentMusicFilePath == songFilePath;
+  }
+
   @override
   void dispose() {
     _audioPlayer.dispose();

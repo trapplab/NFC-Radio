@@ -121,6 +121,23 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                           style: TextStyle(fontSize: 10, color: Colors.green[700]),
                         ),
                       ],
+                      const SizedBox(height: 8),
+                      IconButton(
+                        icon: Icon(
+                          musicPlayer.isSongPlaying(song.filePath)
+                              ? Icons.pause
+                              : Icons.play_arrow,
+                          size: 24,
+                          color: Colors.blue,
+                        ),
+                        onPressed: () async {
+                          if (musicPlayer.isSongPlaying(song.filePath)) {
+                            await musicPlayer.pauseMusic();
+                          } else {
+                            await musicPlayer.playMusic(song.filePath);
+                          }
+                        },
+                      ),
                     ],
                   ),
                 )).toList(),
