@@ -6,18 +6,18 @@
     "configurations": [
     
         {
-            "name": "nfc_jukebox",
+            "name": "nfc_radio",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "nfc_jukebox (profile mode)",
+            "name": "nfc_radio (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "nfc_jukebox (release mode)",
+            "name": "nfc_radio (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"

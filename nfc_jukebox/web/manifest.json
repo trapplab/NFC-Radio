@@ -1,6 +1,6 @@
 {
-    "name": "nfc_jukebox",
-    "short_name": "nfc_jukebox",
+    "name": "nfc_radio",
+    "short_name": "nfc_radio",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

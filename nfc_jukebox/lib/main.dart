@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'NFC Jukebox',
+      title: 'NFC Radio',
       theme: ThemeData(
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
@@ -73,7 +73,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('NFC Jukebox'),
+        title: const Text('NFC Radio'),
       ),
       body: Center(
         child: Column(

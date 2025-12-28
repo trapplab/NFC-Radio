@@ -25,8 +25,20 @@ class NFCService with ChangeNotifier {
 
     try {
       await NfcManager.instance.startSession(
+        pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso15693},
         onDiscovered: (NfcTag tag) async {
-          _currentNfcUuid = tag.data['nfcid']?.toString();
+          // Access tag data using dynamic to bypass protected member restriction
+          try {
+            dynamic tagData = tag.data;
+            if (tagData is Map && tagData.containsKey('nfcid')) {
+              _currentNfcUuid = tagData['nfcid'].toString();
+            } else {
+              _currentNfcUuid = null;
+            }
+          } catch (e) {
+            _currentNfcUuid = null;
+            debugPrint('Error accessing NFC tag data: $e');
+          }
           debugPrint('NFC UUID: $_currentNfcUuid');
           notifyListeners();
           await NfcManager.instance.stopSession();

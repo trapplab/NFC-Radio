@@ -21,58 +21,58 @@ packages:
     dependency: "direct main"
     description:
       name: audioplayers
-      sha256: "61583554386721772f9309f509e17712865b38565a903c761f96b1115a979282"
+      sha256: "5441fa0ceb8807a5ad701199806510e56afde2b4913d9d17c2f19f2902cf0ae4"
       url: "https://pub.dev"
     source: hosted
-    version: "4.1.0"
+    version: "6.5.1"
   audioplayers_android:
     dependency: transitive
     description:
       name: audioplayers_android
-      sha256: dbdc9b7f2aa2440314c638aa55aadd45c7705e8340d5eddf2e3fb8da32d4ae2c
+      sha256: "60a6728277228413a85755bd3ffd6fab98f6555608923813ce383b190a360605"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.2"
+    version: "5.2.1"
   audioplayers_darwin:
     dependency: transitive
     description:
       name: audioplayers_darwin
-      sha256: "6aea96df1d12f7ad5a71d88c6d1b22a216211a9564219920124c16768e456e9d"
+      sha256: "0811d6924904ca13f9ef90d19081e4a87f7297ddc19fc3d31f60af1aaafee333"
       url: "https://pub.dev"
     source: hosted
-    version: "4.1.0"
+    version: "6.3.0"
   audioplayers_linux:
     dependency: transitive
     description:
       name: audioplayers_linux
-      sha256: "396b62ac62c92dd26c3bc5106583747f57a8b325ebd2b41e5576f840cfc61338"
+      sha256: f75bce1ce864170ef5e6a2c6a61cd3339e1a17ce11e99a25bae4474ea491d001
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.0"
+    version: "4.2.1"
   audioplayers_platform_interface:
     dependency: transitive
     description:
       name: audioplayers_platform_interface
-      sha256: f7daaed4659143094151ecf6bacd927d29ab8acffba98c110c59f0b81ae51143
+      sha256: "0e2f6a919ab56d0fec272e801abc07b26ae7f31980f912f24af4748763e5a656"
       url: "https://pub.dev"
     source: hosted
-    version: "5.0.1"
+    version: "7.1.1"
   audioplayers_web:
     dependency: transitive
     description:
       name: audioplayers_web
-      sha256: ec84fd46eed1577148ed4113f5998a36a18da4fce7170c37ce3e21b631393339
+      sha256: "1c0f17cec68455556775f1e50ca85c40c05c714a99c5eb1d2d57cc17ba5522d7"
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.0"
+    version: "5.1.1"
   audioplayers_windows:
     dependency: transitive
     description:
       name: audioplayers_windows
-      sha256: "1d3aaac98a192b8488167711ba1e67d8b96333e8d0572ede4e2912e5bbce69a3"
+      sha256: "4048797865105b26d47628e6abb49231ea5de84884160229251f37dfcbe52fd7"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.2"
+    version: "4.2.1"
   boolean_selector:
     dependency: transitive
     description:
@@ -192,14 +192,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
-  js:
-    dependency: transitive
-    description:
-      name: js
-      sha256: f2c445dce49627136094980615a031419f7f3eb393237e4ecd97ac15dea343f3
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.6.7"
   leak_tracker:
     dependency: transitive
     description:
@@ -256,6 +248,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.17.0"
+  ndef_record:
+    dependency: transitive
+    description:
+      name: ndef_record
+      sha256: "86e888a2b5f8fcf042a384a3a361f546413efd1d328e643b477d5c5808a9c8bb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.0"
   nested:
     dependency: transitive
     description:
@@ -268,10 +268,10 @@ packages:
     dependency: "direct main"
     description:
       name: nfc_manager
-      sha256: f5be75e90f8f2bff3ee49fbd7ef65bdd4a86ee679c2412e71ab2846a8cff8c59
+      sha256: "24c78b0e5702da53e7f8794d073624c0bee7cd99924f257cbd11f5d1c5866879"
       url: "https://pub.dev"
     source: hosted
-    version: "3.5.0"
+    version: "4.1.1"
   package_info_plus:
     dependency: transitive
     description:
