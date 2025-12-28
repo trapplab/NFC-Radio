@@ -13,6 +13,9 @@ set(APPLICATION_ID "com.example.nfc_jukebox")
 # versions of CMake.
 cmake_policy(SET CMP0063 NEW)
 
+# Set the installation prefix to a user-writable directory.
+set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local/nfc_jukebox")
+
 # Load bundled libraries from the lib/ directory relative to the binary.
 set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
 
