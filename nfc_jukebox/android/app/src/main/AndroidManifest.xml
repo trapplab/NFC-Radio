@@ -1,4 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- NFC permission -->
+    <uses-permission android:name="android.permission.NFC" />
+    
+    <!-- For Android 13+ NFC nearby devices permission -->
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation" />
+    
+    <!-- Feature declaration for NFC -->
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
+    
     <application
         android:label="nfc_radio"
         android:name="${applicationName}"

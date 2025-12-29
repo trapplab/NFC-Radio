@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 
 class NFCMusicMapping {
   final String nfcUuid;
-  final String musicFilePath;
+  final String songId;
 
   NFCMusicMapping({
     required this.nfcUuid,
-    required this.musicFilePath,
+    required this.songId,
   });
 
   // Convert the mapping to a JSON map
   Map<String, dynamic> toJson() => {
     'nfcUuid': nfcUuid,
-    'musicFilePath': musicFilePath,
+    'songId': songId,
   };
 
   // Create a mapping from a JSON map
   factory NFCMusicMapping.fromJson(Map<String, dynamic> json) => NFCMusicMapping(
     nfcUuid: json['nfcUuid'],
-    musicFilePath: json['musicFilePath'],
+    songId: json['songId'],
   );
 }
 
@@ -37,11 +37,11 @@ class NFCMusicMappingProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  String? getMusicFilePath(String nfcUuid) {
+  String? getSongId(String nfcUuid) {
     final mapping = _mappings.firstWhere(
       (mapping) => mapping.nfcUuid == nfcUuid,
-      orElse: () => NFCMusicMapping(nfcUuid: '', musicFilePath: ''),
+      orElse: () => NFCMusicMapping(nfcUuid: '', songId: ''),
     );
-    return mapping.musicFilePath.isNotEmpty ? mapping.musicFilePath : null;
+    return mapping.songId.isNotEmpty ? mapping.songId : null;
   }
 }

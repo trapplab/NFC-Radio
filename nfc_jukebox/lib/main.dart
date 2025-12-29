@@ -176,27 +176,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   if (!nfcService.isNfcAvailable) ...[
                     const Text('NFC is not available on this device.'),
                   ] else ...[
-                    ElevatedButton(
-                      onPressed: () async {
-                        await nfcService.startNfcSession();
-                        if (nfcService.currentNfcUuid != null) {
-                          // Check if this NFC tag is already connected to a song
-                          final connectedSong = songProvider.songs.firstWhere(
-                            (song) => song.connectedNfcUuid == nfcService.currentNfcUuid,
-                            orElse: () => Song(id: '', title: '', filePath: '', connectedNfcUuid: null),
-                          );
-                          
-                          if (connectedSong.id.isNotEmpty) {
-                            // Play the connected song
-                            await musicPlayer.playMusic(connectedSong.filePath);
-                          } else {
-                            // Show dialog to connect this NFC tag to a song
-                            _showConnectNfcDialog(context, nfcService.currentNfcUuid!, songProvider);
-                          }
-                        }
-                      },
-                      child: const Text('Scan NFC Tag'),
-                    ),
+                    const Text('Ready to scan NFC tags'),
                     const SizedBox(height: 20),
                     if (musicPlayer.isPlaying) ...[
                       Text('Now Playing: ${musicPlayer.currentMusicFilePath}'),
@@ -232,117 +212,147 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   void _showAddSongDialog(BuildContext context, SongProvider songProvider) {
     final TextEditingController titleController = TextEditingController();
     final TextEditingController filePathController = TextEditingController();
+    String? nfcUuid;
+    final nfcService = Provider.of<NFCService>(context, listen: false);
+    final mappingProvider = Provider.of<NFCMusicMappingProvider>(context, listen: false);
+
+    // Listen for NFC tag changes
+    void updateNfcUuid() {
+      if (nfcService.currentNfcUuid != null) {
+        nfcUuid = nfcService.currentNfcUuid;
+      }
+    }
+    nfcService.addListener(updateNfcUuid);
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add New Song'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(labelText: 'Song Title'),
-            ),
-            const SizedBox(height: 16),
-            Row(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          // Listen to NFC service changes
+          final nfcService = Provider.of<NFCService>(context);
+          
+          // Update local nfcUuid when service notifies of changes
+          if (nfcService.currentNfcUuid != null) {
+            nfcUuid = nfcService.currentNfcUuid;
+          }
+
+          return AlertDialog(
+            title: const Text('Add New Song'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: filePathController,
-                    decoration: const InputDecoration(labelText: 'File Path'),
-                    readOnly: true,
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: 'Song Title'),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: filePathController,
+                        decoration: const InputDecoration(labelText: 'File Path'),
+                        readOnly: true,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.attach_file),
+                      onPressed: () async {
+                        FilePickerResult? result = await FilePicker.platform.pickFiles(
+                          type: FileType.audio,
+                          allowMultiple: false,
+                        );
+                        
+                        if (result != null && result.files.isNotEmpty) {
+                          final file = result.files.first;
+                          if (file.path != null) {
+                            filePathController.text = file.path!;
+                          }
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (nfcService.isNfcAvailable) ...[
+                  const Text('Scan NFC Tag (Automatic)'),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: nfcUuid != null
+                      ? Text(
+                          'NFC UUID: $nfcUuid',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        )
+                      : nfcService.isScanning
+                        ? const Text(
+                            'Scanning for NFC tags...',
+                            style: TextStyle(color: Colors.blue),
+                          )
+                        : const Text(
+                            'Waiting for NFC tag...',
+                            style: TextStyle(color: Colors.grey),
+                          ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.attach_file),
-                  onPressed: () async {
-                    FilePickerResult? result = await FilePicker.platform.pickFiles(
-                      type: FileType.audio,
-                      allowMultiple: false,
-                    );
-                    
-                    if (result != null && result.files.single.path != null) {
-                      filePathController.text = result.files.single.path!;
-                    }
-                  },
-                ),
+                ],
               ],
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (filePathController.text.isNotEmpty) {
-                // Use provided title or auto-generate from filename
-                String finalTitle = titleController.text.isNotEmpty
-                  ? titleController.text
-                  : basenameWithoutExtension(filePathController.text);
-                
-                songProvider.addSong(
-                  Song(
-                    id: const Uuid().v4(),
-                    title: finalTitle,
-                    filePath: filePathController.text,
-                  ),
-                );
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  if (filePathController.text.isNotEmpty) {
+                    // Use provided title or auto-generate from filename
+                    String finalTitle = titleController.text.isNotEmpty
+                      ? titleController.text
+                      : basenameWithoutExtension(filePathController.text);
+                    
+                    final song = Song(
+                      id: const Uuid().v4(),
+                      title: finalTitle,
+                      filePath: filePathController.text,
+                    );
+                    
+                    songProvider.addSong(song);
+                    
+                    // If an NFC tag was scanned, create a mapping
+                    if (nfcUuid != null) {
+                      mappingProvider.addMapping(
+                        NFCMusicMapping(
+                          nfcUuid: nfcUuid!,
+                          songId: song.id,
+                        ),
+                      );
+                    }
+                    
+                    Navigator.pop(context);
+                  }
+                },
+                child: const Text('Add'),
+              ),
+            ],
+          );
+        },
       ),
-    );
+    ).then((_) {
+      // Clean up listener and stop NFC session when dialog is closed
+      nfcService.removeListener(updateNfcUuid);
+      nfcService.stopNfcSession();
+    });
+
+    // Start NFC scanning automatically when dialog opens
+    if (nfcService.isNfcAvailable) {
+      nfcService.startNfcSession();
+    }
   }
 
-  void _showConnectNfcDialog(BuildContext context, String nfcUuid, SongProvider songProvider) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Connect NFC Tag to Song'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Select a song to connect to this NFC tag:'),
-            const SizedBox(height: 16),
-            ...songProvider.songs.map((song) => ListTile(
-              title: Text(song.title),
-              subtitle: Text(song.filePath),
-              trailing: song.connectedNfcUuid != null
-                  ? const Icon(Icons.link, color: Colors.green)
-                  : null,
-              onTap: () {
-                // Disconnect from previous song if any
-                if (song.connectedNfcUuid != null) {
-                  songProvider.disconnectSongFromNfc(song.id);
-                }
-                songProvider.connectSongToNfc(song.id, nfcUuid);
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Connected ${song.title} to NFC tag')),
-                );
-              },
-            )),
-            if (songProvider.songs.isEmpty) ...[
-              const Text('No songs available. Add a song first.'),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class ManageMappingsPage extends StatefulWidget {
@@ -354,18 +364,19 @@ class ManageMappingsPage extends StatefulWidget {
 
 class _ManageMappingsPageState extends State<ManageMappingsPage> {
   final TextEditingController _nfcUuidController = TextEditingController();
-  final TextEditingController _musicFilePathController = TextEditingController();
+  final TextEditingController _songIdController = TextEditingController();
 
   @override
   void dispose() {
     _nfcUuidController.dispose();
-    _musicFilePathController.dispose();
+    _songIdController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final mappingProvider = Provider.of<NFCMusicMappingProvider>(context);
+    final songProvider = Provider.of<SongProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -379,21 +390,28 @@ class _ManageMappingsPageState extends State<ManageMappingsPage> {
               controller: _nfcUuidController,
               decoration: const InputDecoration(labelText: 'NFC UUID'),
             ),
-            TextField(
-              controller: _musicFilePathController,
-              decoration: const InputDecoration(labelText: 'Music File Path'),
+            DropdownButtonFormField<String>(
+              initialValue: _songIdController.text.isNotEmpty ? _songIdController.text : null,
+              items: songProvider.songs.map((song) => DropdownMenuItem<String>(
+                value: song.id,
+                child: Text('${song.title} (${song.id})'),
+              )).toList(),
+              onChanged: (value) {
+                _songIdController.text = value ?? '';
+              },
+              decoration: const InputDecoration(labelText: 'Song'),
             ),
             ElevatedButton(
               onPressed: () {
-                if (_nfcUuidController.text.isNotEmpty && _musicFilePathController.text.isNotEmpty) {
+                if (_nfcUuidController.text.isNotEmpty && _songIdController.text.isNotEmpty) {
                   mappingProvider.addMapping(
                     NFCMusicMapping(
                       nfcUuid: _nfcUuidController.text,
-                      musicFilePath: _musicFilePathController.text,
+                      songId: _songIdController.text,
                     ),
                   );
                   _nfcUuidController.clear();
-                  _musicFilePathController.clear();
+                  _songIdController.clear();
                 }
               },
               child: const Text('Add Mapping'),
@@ -404,9 +422,13 @@ class _ManageMappingsPageState extends State<ManageMappingsPage> {
                 itemCount: mappingProvider.mappings.length,
                 itemBuilder: (context, index) {
                   final mapping = mappingProvider.mappings[index];
+                  final song = songProvider.songs.firstWhere(
+                    (song) => song.id == mapping.songId,
+                    orElse: () => Song(id: '', title: '', filePath: '', connectedNfcUuid: null),
+                  );
                   return ListTile(
                     title: Text(mapping.nfcUuid),
-                    subtitle: Text(mapping.musicFilePath),
+                    subtitle: Text(song.title.isNotEmpty ? song.title : 'Unknown Song'),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete),
                       onPressed: () {
