@@ -1,19 +1,406 @@
 import 'dart:typed_data';
+import 'dart:async';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'nfc_music_mapping.dart';
+import 'song.dart';
+import 'music_player.dart';
 
 class NFCService with ChangeNotifier {
   bool _isNfcAvailable = false;
   String? _currentNfcUuid;
   bool _isScanning = false;
+  bool _autoPauseEnabled = true; // Auto-pause scanning after tag detection
+  int _autoResumeDelaySeconds = 2; // Seconds to wait before resuming scan
+  String? _lastScannedUuid;
+  DateTime? _lastScannedTimestamp;
+  Timer? _debounceTimer;
+  Timer? _autoResumeTimer;
+  NFCMusicMappingProvider? _mappingProvider;
+  SongProvider? _songProvider;
+  MusicPlayer? _musicPlayer;
 
   bool get isNfcAvailable => _isNfcAvailable;
   String? get currentNfcUuid => _currentNfcUuid;
   bool get isScanning => _isScanning;
+  bool get autoPauseEnabled => _autoPauseEnabled;
+  int get autoResumeDelaySeconds => _autoResumeDelaySeconds;
+
+  // Set providers for music integration
+  void setProviders({
+    required NFCMusicMappingProvider mappingProvider,
+    required SongProvider songProvider,
+    required MusicPlayer musicPlayer,
+  }) {
+    debugPrint('=== SETTING PROVIDERS ===');
+    debugPrint('Setting MusicPlayer: ${musicPlayer != null}');
+    debugPrint('Setting SongProvider: ${songProvider != null} (${songProvider.songs.length} songs)');
+    debugPrint('Setting MappingProvider: ${mappingProvider != null} (${mappingProvider.mappings.length} mappings)');
+    
+    _mappingProvider = mappingProvider;
+    _songProvider = songProvider;
+    _musicPlayer = musicPlayer;
+    
+    // Verify the assignment worked
+    debugPrint('=== PROVIDER ASSIGNMENT VERIFICATION ===');
+    debugPrint('_musicPlayer after assignment: ${_musicPlayer != null}');
+    debugPrint('_songProvider after assignment: ${_songProvider != null}');
+    debugPrint('_mappingProvider after assignment: ${_mappingProvider != null}');
+    debugPrint('Are all providers initialized: ${_areProvidersInitialized()}');
+    debugPrint('=== PROVIDERS SET COMPLETE ===');
+  }
+
+  // Enable/disable auto-pause after tag detection
+  void setAutoPause(bool enabled) {
+    _autoPauseEnabled = enabled;
+    notifyListeners();
+  }
+
+  // Set auto-resume delay in seconds
+  void setAutoResumeDelay(int seconds) {
+    _autoResumeDelaySeconds = seconds.clamp(1, 30);
+    notifyListeners();
+  }
 
   NFCService() {
     _checkNfcAvailability();
+  }
+
+  // Find song by NFC UUID
+  Song? _findSongByUuid(String uuid) {
+    if (_songProvider == null) {
+      debugPrint('SongProvider is null');
+      return null;
+    }
+    
+    debugPrint('Searching for UUID: $uuid');
+    debugPrint('Available songs: ${_songProvider!.songs.length}');
+    
+    // First check if song is directly connected to this UUID
+    for (Song song in _songProvider!.songs) {
+      debugPrint('Checking song: ${song.title}, connectedNfcUuid: ${song.connectedNfcUuid}');
+      if (song.connectedNfcUuid != null && song.connectedNfcUuid == uuid) {
+        debugPrint('Found song by direct connection: ${song.title}');
+        return song;
+      }
+    }
+    
+    // If not found directly, check mappings
+    if (_mappingProvider != null) {
+      debugPrint('Checking mappings...');
+      final songId = _mappingProvider!.getSongId(uuid);
+      debugPrint('SongId from mapping: $songId');
+      if (songId != null) {
+        final foundSong = _songProvider!.songs.firstWhere(
+          (song) => song.id == songId,
+          orElse: () => Song(id: '', title: '', filePath: '', connectedNfcUuid: null),
+        );
+        if (foundSong.filePath.isNotEmpty) {
+          debugPrint('Found song by mapping: ${foundSong.title}');
+          return foundSong;
+        }
+      }
+    }
+    
+    debugPrint('No song found for UUID: $uuid');
+    return null;
+  }
+
+  // Handle NFC tag discovery with music integration
+  void _onNfcDiscovered(NfcTag tag) async {
+    try {
+      final uuid = _extractNfcIdentifier(tag);
+      if (uuid == null) return;
+
+      final now = DateTime.now();
+      _currentNfcUuid = uuid;
+      debugPrint('📡 NFC UUID detected: $uuid');
+
+      // Cooldown logic: allow same UUID if enough time has passed (e.g., 2 seconds)
+      bool isNewUuid = uuid != _lastScannedUuid;
+      bool isCooldownOver = _lastScannedTimestamp == null ||
+                           now.difference(_lastScannedTimestamp!).inSeconds >= 2;
+
+      if (isNewUuid || isCooldownOver) {
+        debugPrint('🔄 Processing tag: ${isNewUuid ? "New UUID" : "Cooldown over"}');
+        _lastScannedUuid = uuid;
+        _lastScannedTimestamp = now;
+        
+        // Clear any existing timer
+        _debounceTimer?.cancel();
+        
+        // Process immediately for better responsiveness
+        debugPrint('⚡ Executing NFC processing for: $uuid');
+        _processNfcTag(uuid);
+      } else {
+        debugPrint('🔁 Same UUID and cooldown active, skipping processing');
+      }
+
+      notifyListeners();
+    } catch (e, s) {
+      debugPrint('❌ Error processing NFC tag: $e');
+      debugPrint('❌ Stack trace: $s');
+    }
+  }
+
+  // Process NFC tag for music playback with retry mechanism
+  void _processNfcTag(String uuid) async {
+    debugPrint('🔄 ===== NFC TAG PROCESSING STARTED =====');
+    debugPrint('🔄 Processing NFC tag: $uuid');
+    debugPrint('🔄 Timestamp: ${DateTime.now()}');
+    
+    // Step 0: Check if providers are initialized (early exit if not ready)
+    if (!_areProvidersInitialized()) {
+      debugPrint('⚠️ Providers not initialized yet - postponing NFC processing');
+      debugPrint('⚠️ This is normal during app startup, will retry automatically');
+      
+      // Schedule a retry after a short delay
+      Timer(const Duration(milliseconds: 500), () {
+        debugPrint('🔄 Retrying NFC processing for: $uuid');
+        _processNfcTag(uuid);
+      });
+      return;
+    }
+    
+    // Step 1: Validate providers with retry mechanism
+    int validationAttempts = 0;
+    while (validationAttempts < 3) {
+      validationAttempts++;
+      debugPrint('🔍 Provider validation attempt $validationAttempts/3...');
+      
+      if (_validateProviders()) {
+        debugPrint('✅ Provider validation successful on attempt $validationAttempts');
+        break;
+      } else {
+        debugPrint('❌ Provider validation failed on attempt $validationAttempts');
+        if (validationAttempts < 3) {
+          debugPrint('⏳ Retrying provider validation in 100ms...');
+          await Future.delayed(const Duration(milliseconds: 100));
+        }
+      }
+    }
+    
+    if (!_validateProviders()) {
+      debugPrint('❌ Provider validation failed after 3 attempts - aborting NFC processing');
+      debugPrint('❌ This suggests a critical initialization issue');
+      debugPrint('❌ Please check app initialization and provider setup');
+      return;
+    }
+
+    // Step 2: Find the song
+    final song = _findSongByUuid(uuid);
+    if (song == null || song.filePath.isEmpty) {
+      debugPrint('❌ No song found for UUID: $uuid');
+      debugPrint('❌ Available songs: ${_songProvider!.songs.length}');
+      for (int i = 0; i < _songProvider!.songs.length; i++) {
+        final s = _songProvider!.songs[i];
+        debugPrint('❌ Song $i: ${s.title} (UUID: ${s.connectedNfcUuid})');
+      }
+      
+      // Still pause scanning for unknown tags to save battery
+      if (_autoPauseEnabled && _isScanning) {
+        debugPrint('⏸️ Auto-pausing scanning after unknown tag detection');
+        await stopNfcSession();
+        _scheduleAutoResume();
+      }
+      return;
+    }
+
+    debugPrint('✅ Found song: ${song.title} at ${song.filePath}');
+    debugPrint('🔍 Current music player state: ${_musicPlayer!.currentState}');
+    debugPrint('🔍 Current music path: ${_musicPlayer!.currentMusicFilePath}');
+    debugPrint('🔍 Is playing: ${_musicPlayer!.isPlaying}');
+    debugPrint('🔍 Is paused: ${_musicPlayer!.isPaused}');
+
+    // Step 3: Determine action based on current state
+    final bool isCurrentlyPlayingThisSong = _musicPlayer!.isSongPlaying(song.filePath);
+    final bool isCurrentlyPausedOnThisSong = _musicPlayer!.isSongPaused(song.filePath);
+    final bool isCurrentlyStoppedOnThisSong = _musicPlayer!.isSongStopped(song.filePath);
+    
+    debugPrint('🎵 Analysis:');
+    debugPrint('🎵 - Currently playing this song: $isCurrentlyPlayingThisSong');
+    debugPrint('🎵 - Currently paused on this song: $isCurrentlyPausedOnThisSong');
+    debugPrint('🎵 - Currently stopped on this song: $isCurrentlyStoppedOnThisSong');
+    
+    // Step 4: Execute action with retry mechanism
+    try {
+      if (isCurrentlyPlayingThisSong) {
+        debugPrint('⏸️ Action: PAUSE current song');
+        await _executeWithRetry('pause', () => _musicPlayer!.pauseMusic(), 2);
+      } else if (isCurrentlyPausedOnThisSong) {
+        debugPrint('▶️ Action: RESUME paused song');
+        await _executeWithRetry('resume', () => _musicPlayer!.resumeMusic(), 2);
+      } else {
+        debugPrint('🎵 Action: START NEW SONG');
+        await _executeWithRetry('play', () => _musicPlayer!.playMusic(song.filePath), 3);
+      }
+    } catch (e, s) {
+      debugPrint('❌ CRITICAL ERROR in music execution: $e');
+      debugPrint('❌ Stack trace: $s');
+      
+      // Show error to user through a callback or notification
+      _showErrorToUser('Failed to control music playback: $e');
+    }
+
+    // Step 5: Post-action status
+    debugPrint('📊 Final state after action:');
+    debugPrint('📊 - Player state: ${_musicPlayer!.currentState}');
+    debugPrint('📊 - Current path: ${_musicPlayer!.currentMusicFilePath}');
+    debugPrint('📊 - Is playing: ${_musicPlayer!.isPlaying}');
+
+    // Step 6: Handle auto-pause
+    // We pause scanning briefly to prevent multiple triggers from the same physical tap
+    if (_autoPauseEnabled && _isScanning) {
+      debugPrint('⏸️ Auto-pausing scanning to prevent double-trigger');
+      await stopNfcSession();
+      _scheduleAutoResume();
+    }
+
+    debugPrint('✅ ===== NFC TAG PROCESSING COMPLETED =====');
+    notifyListeners();
+  }
+
+  // Check if all providers are initialized (quick check without detailed validation)
+  bool _areProvidersInitialized() {
+    return _musicPlayer != null && _songProvider != null && _mappingProvider != null;
+  }
+
+  // Validate that all required providers are available
+  bool _validateProviders() {
+    debugPrint('🔍 Validating providers...');
+    
+    if (_musicPlayer == null) {
+      debugPrint('❌ MusicPlayer is null');
+      return false;
+    }
+    debugPrint('✅ MusicPlayer: OK');
+    
+    if (_songProvider == null) {
+      debugPrint('❌ SongProvider is null');
+      return false;
+    }
+    debugPrint('✅ SongProvider: OK (${_songProvider!.songs.length} songs)');
+    
+    if (_mappingProvider == null) {
+      debugPrint('❌ NFCMusicMappingProvider is null');
+      return false;
+    }
+    debugPrint('✅ NFCMusicMappingProvider: OK (${_mappingProvider!.mappings.length} mappings)');
+    
+    debugPrint('✅ All providers validated successfully');
+    return true;
+  }
+
+  // Execute function with retry mechanism
+  Future<void> _executeWithRetry(String operationName, Future<void> Function() operation, int maxRetries) async {
+    int attempt = 0;
+    Exception? lastError;
+    
+    while (attempt < maxRetries) {
+      attempt++;
+      debugPrint('🔄 $operationName attempt $attempt/$maxRetries');
+      
+      try {
+        await operation();
+        debugPrint('✅ $operationName succeeded on attempt $attempt');
+        return; // Success, exit retry loop
+      } catch (e) {
+        lastError = e as Exception;
+        debugPrint('❌ $operationName failed on attempt $attempt: $e');
+        
+        if (attempt < maxRetries) {
+          final delay = Duration(milliseconds: 200 * attempt); // Exponential backoff
+          debugPrint('⏳ Retrying in ${delay.inMilliseconds}ms...');
+          await Future.delayed(delay);
+        }
+      }
+    }
+    
+    // All retries failed
+    debugPrint('❌ $operationName failed after $maxRetries attempts');
+    debugPrint('❌ Last error: $lastError');
+    throw lastError ?? Exception('$operationName failed after $maxRetries attempts');
+  }
+
+  // Show error to user (implement based on your UI architecture)
+  void _showErrorToUser(String errorMessage) {
+    debugPrint('🚨 USER ERROR NOTIFICATION: $errorMessage');
+    // TODO: Implement actual user notification (SnackBar, AlertDialog, etc.)
+    // This could be done through a callback or by using a global error handler
+  }
+
+  // Schedule automatic resumption of scanning
+  void _scheduleAutoResume() {
+    if (_autoResumeTimer != null) {
+      _autoResumeTimer!.cancel();
+    }
+    
+    if (_autoResumeDelaySeconds > 0) {
+      debugPrint('Scheduling auto-resume in $_autoResumeDelaySeconds seconds');
+      _autoResumeTimer = Timer(Duration(seconds: _autoResumeDelaySeconds), () {
+        if (!_isScanning && _isNfcAvailable) {
+          debugPrint('Auto-resuming NFC scanning...');
+          startNfcSession();
+        }
+      });
+    }
+  }
+
+  // Clear the last scanned UUID (useful for testing)
+  void clearLastScannedUuid() {
+    _lastScannedUuid = null;
+    notifyListeners();
+  }
+
+  // Get detailed debug information about current state
+  Map<String, dynamic> getDebugInfo() {
+    final song = _currentNfcUuid != null ? _findSongByUuid(_currentNfcUuid!) : null;
+    return {
+      'isNfcAvailable': _isNfcAvailable,
+      'isScanning': _isScanning,
+      'currentNfcUuid': _currentNfcUuid,
+      'lastScannedUuid': _lastScannedUuid,
+      'autoPauseEnabled': _autoPauseEnabled,
+      'autoResumeDelaySeconds': _autoResumeDelaySeconds,
+      'musicPlayerState': _musicPlayer?.currentState.toString(),
+      'currentMusicPath': _musicPlayer?.currentMusicFilePath,
+      'mappedSong': song != null ? {
+        'title': song.title,
+        'filePath': song.filePath,
+        'connectedNfcUuid': song.connectedNfcUuid,
+      } : null,
+      'totalSongs': _songProvider?.songs.length ?? 0,
+      'totalMappings': _mappingProvider?.mappings.length ?? 0,
+    };
+  }
+
+  // Test method to simulate NFC detection for debugging
+  void testNfcProcessing(String uuid) {
+    debugPrint('🧪 ===== TEST NFC PROCESSING =====');
+    debugPrint('🧪 Testing UUID: $uuid');
+    final debugInfo = getDebugInfo();
+    debugPrint('🧪 Current state: $debugInfo');
+    
+    // Simulate the exact flow as _onNfcDiscovered
+    debugPrint('🧪 Simulating NFC detection...');
+    _currentNfcUuid = uuid;
+    debugPrint('🧪 Current UUID set to: $_currentNfcUuid');
+    
+    debugPrint('🧪 Calling _processNfcTag directly...');
+    _processNfcTag(uuid);
+    
+    debugPrint('🧪 ===== END TEST =====');
+  }
+
+  // Force immediate NFC processing for testing
+  void forceProcessCurrentUuid() {
+    if (_currentNfcUuid != null) {
+      debugPrint('🔄 FORCING immediate processing of current UUID: $_currentNfcUuid');
+      _processNfcTag(_currentNfcUuid!);
+    } else {
+      debugPrint('❌ No current UUID to process');
+    }
   }
 
   Future<void> _checkNfcAvailability() async {
@@ -87,14 +474,15 @@ class NFCService with ChangeNotifier {
     return null;
   }
 
-
-
-
   Future<void> startNfcSession() async {
     if (!_isNfcAvailable) {
       debugPrint('NFC is not available on this device.');
       return;
     }
+
+    // Cancel any pending auto-resume timer
+    _autoResumeTimer?.cancel();
+    _autoResumeTimer = null;
 
     // Request permission before starting session
     await _requestNfcPermission();
@@ -105,21 +493,9 @@ class NFCService with ChangeNotifier {
     try {
       await NfcManager.instance.startSession(
         pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso15693},
-        onDiscovered: (NfcTag tag) async {
-          try {
-            _currentNfcUuid = _extractNfcIdentifier(tag);
-            debugPrint('NFC UUID: $_currentNfcUuid');
-          } catch (e, s) {
-            _currentNfcUuid = null;
-            debugPrint('Error accessing NFC tag data: $e');
-            debugPrint('Stack trace: $s');
-          } finally {
-            _isScanning = false;
-            notifyListeners();
-            await NfcManager.instance.stopSession();
-          }
-        },
+        onDiscovered: _onNfcDiscovered,
       );
+      debugPrint('NFC session started - continuous scanning active');
     } catch (e) {
       debugPrint('Error starting NFC session: $e');
       _isScanning = false;
@@ -129,7 +505,17 @@ class NFCService with ChangeNotifier {
 
   Future<void> stopNfcSession() async {
     _isScanning = false;
+    _debounceTimer?.cancel();
+    _debounceTimer = null;
     notifyListeners();
     await NfcManager.instance.stopSession();
+    debugPrint('NFC session stopped');
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    _autoResumeTimer?.cancel();
+    super.dispose();
   }
 }

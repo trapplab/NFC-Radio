@@ -45,6 +45,14 @@ class SongProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void updateSong(Song updatedSong) {
+    final songIndex = _songs.indexWhere((song) => song.id == updatedSong.id);
+    if (songIndex != -1) {
+      _songs[songIndex] = updatedSong;
+      notifyListeners();
+    }
+  }
+
   void connectSongToNfc(String songId, String nfcUuid) {
     final songIndex = _songs.indexWhere((song) => song.id == songId);
     if (songIndex != -1) {

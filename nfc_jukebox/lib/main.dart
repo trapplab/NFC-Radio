@@ -16,9 +16,19 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => NFCMusicMappingProvider()),
-        ChangeNotifierProvider(create: (_) => NFCService()),
-        ChangeNotifierProvider(create: (_) => MusicPlayer()),
         ChangeNotifierProvider(create: (_) => SongProvider()),
+        ChangeNotifierProvider(create: (_) => MusicPlayer()),
+        ChangeNotifierProxyProvider3<NFCMusicMappingProvider, SongProvider, MusicPlayer, NFCService>(
+          create: (_) => NFCService(),
+          update: (_, mapping, song, player, nfc) {
+            nfc!.setProviders(
+              mappingProvider: mapping,
+              songProvider: song,
+              musicPlayer: player,
+            );
+            return nfc;
+          },
+        ),
       ],
       child: const MyApp(),
     ),
@@ -33,7 +43,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'NFC Radio',
       theme: ThemeData(
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
       home: const NFCJukeboxHomePage(),
@@ -53,6 +63,12 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    
+    debugPrint('🚀 ===== APP INITIALIZATION STARTED =====');
+    debugPrint('🚀 Timestamp: ${DateTime.now()}');
+    
+    // Providers are now set up via ProxyProvider in main()
+    debugPrint('🚀 ===== APP INITIALIZATION COMPLETED =====');
   }
 
   @override
@@ -79,6 +95,23 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('NFC Radio'),
+        actions: [
+          // Debug info button
+          IconButton(
+            icon: const Icon(Icons.bug_report),
+            onPressed: () => _showDebugDialog(context),
+            tooltip: 'Debug Info',
+          ),
+          // Auto-pause toggle
+          Switch(
+            value: nfcService.autoPauseEnabled,
+            onChanged: (value) {
+              nfcService.setAutoPause(value);
+            },
+          ),
+          const Text('Auto-Pause'),
+          const SizedBox(width: 16),
+        ],
       ),
       body: Column(
         children: [
@@ -122,21 +155,66 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                         ),
                       ],
                       const SizedBox(height: 8),
-                      IconButton(
-                        icon: Icon(
-                          musicPlayer.isSongPlaying(song.filePath)
-                              ? Icons.pause
-                              : Icons.play_arrow,
-                          size: 24,
-                          color: Colors.blue,
-                        ),
-                        onPressed: () async {
-                          if (musicPlayer.isSongPlaying(song.filePath)) {
-                            await musicPlayer.pauseMusic();
-                          } else {
-                            await musicPlayer.playMusic(song.filePath);
-                          }
-                        },
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              musicPlayer.isSongPlaying(song.filePath)
+                                  ? Icons.pause
+                                  : musicPlayer.isSongPaused(song.filePath)
+                                      ? Icons.play_arrow
+                                      : musicPlayer.isSongStopped(song.filePath)
+                                          ? Icons.play_arrow
+                                          : Icons.play_arrow,
+                              size: 20,
+                              color: musicPlayer.isSongPlaying(song.filePath) 
+                                  ? Colors.red 
+                                  : musicPlayer.isSongPaused(song.filePath)
+                                      ? Colors.orange
+                                      : Colors.blue,
+                            ),
+                            onPressed: () async {
+                              if (musicPlayer.isSongPlaying(song.filePath) || musicPlayer.isSongPaused(song.filePath)) {
+                                await musicPlayer.togglePlayPause();
+                              } else {
+                                await musicPlayer.playMusic(song.filePath);
+                              }
+                            },
+                          ),
+                          PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_vert, size: 16),
+                            onSelected: (value) {
+                              if (value == 'edit') {
+                                _showEditSongDialog(context, song, songProvider);
+                              } else if (value == 'delete') {
+                                _showDeleteSongDialog(context, song, songProvider);
+                              }
+                            },
+                            itemBuilder: (BuildContext context) => [
+                              const PopupMenuItem<String>(
+                                value: 'edit',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.edit, size: 16),
+                                    SizedBox(width: 8),
+                                    Text('Edit'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem<String>(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.delete, size: 16),
+                                    SizedBox(width: 8),
+                                    Text('Delete'),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -177,16 +255,157 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     const Text('NFC is not available on this device.'),
                   ] else ...[
                     const Text('Ready to scan NFC tags'),
-                    const SizedBox(height: 20),
-                    if (musicPlayer.isPlaying) ...[
-                      Text('Now Playing: ${musicPlayer.currentMusicFilePath}'),
-                      ElevatedButton(
-                        onPressed: musicPlayer.pauseMusic,
-                        child: const Text('Pause'),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: nfcService.isScanning ? Colors.green : Colors.grey),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      ElevatedButton(
-                        onPressed: musicPlayer.stopMusic,
-                        child: const Text('Stop'),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                nfcService.isScanning ? Icons.radio : Icons.radio_button_off,
+                                color: nfcService.isScanning ? Colors.green : Colors.grey,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                nfcService.isScanning 
+                                  ? 'Scanning for NFC tags...' 
+                                  : 'Scanning paused (auto-resume in ${nfcService.autoResumeDelaySeconds}s)',
+                                style: TextStyle(
+                                  color: nfcService.isScanning ? Colors.green : Colors.orange,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (nfcService.currentNfcUuid != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Last detected: ${nfcService.currentNfcUuid}',
+                              style: const TextStyle(fontSize: 12),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                          const SizedBox(height: 8),
+                          // Auto-pause status indicator
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: nfcService.autoPauseEnabled ? Colors.green[100] : Colors.grey[200],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  nfcService.autoPauseEnabled ? Icons.timer : Icons.timer_off,
+                                  size: 16,
+                                  color: nfcService.autoPauseEnabled ? Colors.green : Colors.grey,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  nfcService.autoPauseEnabled 
+                                    ? 'Auto-pause enabled (${nfcService.autoResumeDelaySeconds}s delay)'
+                                    : 'Auto-pause disabled',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: nfcService.autoPauseEnabled ? Colors.green[700] : Colors.grey[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(
+                          onPressed: nfcService.isScanning ? null : () {
+                            nfcService.startNfcSession();
+                          },
+                          child: const Text('Start Scanning'),
+                        ),
+                        const SizedBox(width: 16),
+                        ElevatedButton(
+                          onPressed: nfcService.isScanning ? () {
+                            nfcService.stopNfcSession();
+                          } : null,
+                          child: const Text('Stop Scanning'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // Auto-resume delay slider
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[300]!),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text('Auto-resume delay', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('${nfcService.autoResumeDelaySeconds}s'),
+                              SizedBox(
+                                width: 200,
+                                child: Slider(
+                                  value: nfcService.autoResumeDelaySeconds.toDouble(),
+                                  min: 1,
+                                  max: 10,
+                                  divisions: 9,
+                                  onChanged: (value) {
+                                    nfcService.setAutoResumeDelay(value.toInt());
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (musicPlayer.isPlaying || musicPlayer.isPaused) ...[
+                      Text('Now Playing: ${musicPlayer.currentMusicFilePath?.split('/').last ?? 'Unknown'}'),
+                      if (musicPlayer.totalDuration > Duration.zero) ...[
+                        Text('Position: ${musicPlayer.getCurrentPositionString()} / ${musicPlayer.getTotalDurationString()}'),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: 200,
+                          child: Slider(
+                            value: musicPlayer.savedPosition.inSeconds.toDouble(),
+                            min: 0,
+                            max: musicPlayer.totalDuration.inSeconds.toDouble(),
+                            onChanged: (value) {
+                              musicPlayer.seekTo(Duration(seconds: value.toInt()));
+                            },
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ElevatedButton(
+                            onPressed: musicPlayer.togglePlayPause,
+                            child: Text(musicPlayer.isPlaying ? 'Pause' : 'Play'),
+                          ),
+                          const SizedBox(width: 16),
+                          ElevatedButton(
+                            onPressed: musicPlayer.stopMusic,
+                            child: const Text('Stop'),
+                          ),
+                        ],
                       ),
                     ],
                   ],
@@ -196,44 +415,46 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ManageMappingsPage()),
-          );
-        },
-        tooltip: 'Manage Mappings',
-        child: const Icon(Icons.settings),
-      ),
+
     );
   }
 
   void _showAddSongDialog(BuildContext context, SongProvider songProvider) {
     final TextEditingController titleController = TextEditingController();
     final TextEditingController filePathController = TextEditingController();
-    String? nfcUuid;
+    String? dialogNfcUuid;
     final nfcService = Provider.of<NFCService>(context, listen: false);
     final mappingProvider = Provider.of<NFCMusicMappingProvider>(context, listen: false);
 
-    // Listen for NFC tag changes
-    void updateNfcUuid() {
-      if (nfcService.currentNfcUuid != null) {
-        nfcUuid = nfcService.currentNfcUuid;
-      }
-    }
-    nfcService.addListener(updateNfcUuid);
+    // Create a stateful wrapper to track dialog state
+    final dialogState = _DialogState();
+    
+    // Store the listener function so we can remove it later
+    late void Function() updateNfcUuid;
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          // Listen to NFC service changes
-          final nfcService = Provider.of<NFCService>(context);
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) {
+          // Define the listener function
+          updateNfcUuid = () {
+            if (!dialogState.isOpen) {
+              nfcService.removeListener(updateNfcUuid);
+              return;
+            }
+            if (nfcService.currentNfcUuid != null) {
+              setState(() {
+                dialogNfcUuid = nfcService.currentNfcUuid;
+              });
+            }
+          };
           
-          // Update local nfcUuid when service notifies of changes
-          if (nfcService.currentNfcUuid != null) {
-            nfcUuid = nfcService.currentNfcUuid;
+          // Add listener when building
+          nfcService.addListener(updateNfcUuid);
+
+          // Initialize dialogNfcUuid from current NFC state
+          if (dialogNfcUuid == null && nfcService.currentNfcUuid != null) {
+            dialogNfcUuid = nfcService.currentNfcUuid;
           }
 
           return AlertDialog(
@@ -283,9 +504,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                       border: Border.all(color: Colors.grey),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: nfcUuid != null
+                    child: dialogNfcUuid != null
                       ? Text(
-                          'NFC UUID: $nfcUuid',
+                          'NFC UUID: $dialogNfcUuid',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         )
                       : nfcService.isScanning
@@ -303,7 +524,11 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  dialogState.isOpen = false;
+                  nfcService.removeListener(updateNfcUuid);
+                  Navigator.pop(dialogContext);
+                },
                 child: const Text('Cancel'),
               ),
               TextButton(
@@ -313,26 +538,28 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     String finalTitle = titleController.text.isNotEmpty
                       ? titleController.text
                       : basenameWithoutExtension(filePathController.text);
-                    
+
                     final song = Song(
                       id: const Uuid().v4(),
                       title: finalTitle,
                       filePath: filePathController.text,
                     );
-                    
+
                     songProvider.addSong(song);
-                    
+
                     // If an NFC tag was scanned, create a mapping
-                    if (nfcUuid != null) {
+                    if (dialogNfcUuid != null) {
                       mappingProvider.addMapping(
                         NFCMusicMapping(
-                          nfcUuid: nfcUuid!,
+                          nfcUuid: dialogNfcUuid!,
                           songId: song.id,
                         ),
                       );
                     }
-                    
-                    Navigator.pop(context);
+
+                    dialogState.isOpen = false;
+                    nfcService.removeListener(updateNfcUuid);
+                    Navigator.pop(dialogContext);
                   }
                 },
                 child: const Text('Add'),
@@ -341,107 +568,336 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           );
         },
       ),
-    ).then((_) {
-      // Clean up listener and stop NFC session when dialog is closed
-      nfcService.removeListener(updateNfcUuid);
-      nfcService.stopNfcSession();
-    });
+    );
 
-    // Start NFC scanning automatically when dialog opens
-    if (nfcService.isNfcAvailable) {
+    // Start NFC scanning automatically when dialog opens (if not already scanning)
+    if (nfcService.isNfcAvailable && !nfcService.isScanning) {
       nfcService.startNfcSession();
     }
   }
 
-}
+  void _showEditSongDialog(BuildContext context, Song song, SongProvider songProvider) {
+    final TextEditingController titleController = TextEditingController(text: song.title);
+    final TextEditingController filePathController = TextEditingController(text: song.filePath);
+    String? dialogNfcUuid = song.connectedNfcUuid;
+    final nfcService = Provider.of<NFCService>(context, listen: false);
+    final mappingProvider = Provider.of<NFCMusicMappingProvider>(context, listen: false);
 
-class ManageMappingsPage extends StatefulWidget {
-  const ManageMappingsPage({super.key});
+    // Create a stateful wrapper to track dialog state
+    final dialogState = _DialogState();
+    
+    // Store the listener function so we can remove it later
+    late void Function() updateNfcUuid;
 
-  @override
-  State<ManageMappingsPage> createState() => _ManageMappingsPageState();
-}
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) {
+          // Define the listener function
+          updateNfcUuid = () {
+            if (!dialogState.isOpen) {
+              nfcService.removeListener(updateNfcUuid);
+              return;
+            }
+            if (nfcService.currentNfcUuid != null) {
+              setState(() {
+                dialogNfcUuid = nfcService.currentNfcUuid;
+              });
+            }
+          };
+          
+          // Add listener when building
+          nfcService.addListener(updateNfcUuid);
 
-class _ManageMappingsPageState extends State<ManageMappingsPage> {
-  final TextEditingController _nfcUuidController = TextEditingController();
-  final TextEditingController _songIdController = TextEditingController();
+          // Initialize dialogNfcUuid from current NFC state
+          if (dialogNfcUuid == null && nfcService.currentNfcUuid != null) {
+            dialogNfcUuid = nfcService.currentNfcUuid;
+          }
 
-  @override
-  void dispose() {
-    _nfcUuidController.dispose();
-    _songIdController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final mappingProvider = Provider.of<NFCMusicMappingProvider>(context);
-    final songProvider = Provider.of<SongProvider>(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manage Mappings'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nfcUuidController,
-              decoration: const InputDecoration(labelText: 'NFC UUID'),
-            ),
-            DropdownButtonFormField<String>(
-              initialValue: _songIdController.text.isNotEmpty ? _songIdController.text : null,
-              items: songProvider.songs.map((song) => DropdownMenuItem<String>(
-                value: song.id,
-                child: Text('${song.title} (${song.id})'),
-              )).toList(),
-              onChanged: (value) {
-                _songIdController.text = value ?? '';
-              },
-              decoration: const InputDecoration(labelText: 'Song'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (_nfcUuidController.text.isNotEmpty && _songIdController.text.isNotEmpty) {
-                  mappingProvider.addMapping(
-                    NFCMusicMapping(
-                      nfcUuid: _nfcUuidController.text,
-                      songId: _songIdController.text,
+          return AlertDialog(
+            title: const Text('Edit Song'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: 'Song Title'),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: filePathController,
+                        decoration: const InputDecoration(labelText: 'File Path'),
+                        readOnly: true,
+                      ),
                     ),
-                  );
-                  _nfcUuidController.clear();
-                  _songIdController.clear();
-                }
-              },
-              child: const Text('Add Mapping'),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
-                itemCount: mappingProvider.mappings.length,
-                itemBuilder: (context, index) {
-                  final mapping = mappingProvider.mappings[index];
-                  final song = songProvider.songs.firstWhere(
-                    (song) => song.id == mapping.songId,
-                    orElse: () => Song(id: '', title: '', filePath: '', connectedNfcUuid: null),
-                  );
-                  return ListTile(
-                    title: Text(mapping.nfcUuid),
-                    subtitle: Text(song.title.isNotEmpty ? song.title : 'Unknown Song'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () {
-                        mappingProvider.removeMapping(mapping.nfcUuid);
+                    IconButton(
+                      icon: const Icon(Icons.attach_file),
+                      onPressed: () async {
+                        FilePickerResult? result = await FilePicker.platform.pickFiles(
+                          type: FileType.audio,
+                          allowMultiple: false,
+                        );
+                        
+                        if (result != null && result.files.isNotEmpty) {
+                          final file = result.files.first;
+                          if (file.path != null) {
+                            filePathController.text = file.path!;
+                          }
+                        }
                       },
                     ),
-                  );
-                },
-              ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (nfcService.isNfcAvailable) ...[
+                  const Text('Scan NFC Tag (Optional)'),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: dialogNfcUuid != null
+                      ? Text(
+                          'NFC UUID: $dialogNfcUuid',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        )
+                      : nfcService.isScanning
+                        ? const Text(
+                            'Scanning for NFC tags...',
+                            style: TextStyle(color: Colors.blue),
+                          )
+                        : const Text(
+                            'Waiting for NFC tag...',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (dialogNfcUuid != null && dialogNfcUuid != song.connectedNfcUuid) ...[
+                    Text(
+                      'This will ${song.connectedNfcUuid != null ? 'replace the existing' : 'create a new'} NFC connection',
+                      style: TextStyle(
+                        color: Colors.orange[700],
+                        fontSize: 12,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ],
+              ],
             ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  dialogState.isOpen = false;
+                  nfcService.removeListener(updateNfcUuid);
+                  Navigator.pop(dialogContext);
+                },
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  if (titleController.text.isNotEmpty && filePathController.text.isNotEmpty) {
+                    // Update song details
+                    final updatedSong = Song(
+                      id: song.id,
+                      title: titleController.text,
+                      filePath: filePathController.text,
+                      connectedNfcUuid: dialogNfcUuid,
+                    );
+                    
+                    songProvider.updateSong(updatedSong);
+
+                    // Update NFC mapping if needed
+                    if (dialogNfcUuid != song.connectedNfcUuid) {
+                      // Remove old mapping if it existed
+                      if (song.connectedNfcUuid != null) {
+                        mappingProvider.removeMapping(song.connectedNfcUuid!);
+                      }
+                      
+                      // Add new mapping if NFC UUID is set
+                      if (dialogNfcUuid != null) {
+                        mappingProvider.addMapping(
+                          NFCMusicMapping(
+                            nfcUuid: dialogNfcUuid!,
+                            songId: song.id,
+                          ),
+                        );
+                      }
+                    }
+
+                    dialogState.isOpen = false;
+                    nfcService.removeListener(updateNfcUuid);
+                    Navigator.pop(dialogContext);
+                  }
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    // Start NFC scanning automatically when dialog opens (if not already scanning)
+    if (nfcService.isNfcAvailable && !nfcService.isScanning) {
+      nfcService.startNfcSession();
+    }
+  }
+
+  void _showDeleteSongDialog(BuildContext context, Song song, SongProvider songProvider) {
+    final mappingProvider = Provider.of<NFCMusicMappingProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Song'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Are you sure you want to delete this song?'),
+            const SizedBox(height: 8),
+            Text('Title: ${song.title}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            if (song.connectedNfcUuid != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'This will also remove the NFC mapping for: ${song.connectedNfcUuid}',
+                style: TextStyle(color: Colors.red[700]),
+              ),
+            ],
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              // Remove NFC mapping if it exists
+              if (song.connectedNfcUuid != null) {
+                mappingProvider.removeMapping(song.connectedNfcUuid!);
+              }
+              
+              // Delete the song
+              songProvider.removeSong(song.id);
+              Navigator.pop(context);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }
+
+  void _showDebugDialog(BuildContext context) {
+    final nfcService = Provider.of<NFCService>(context, listen: false);
+    final musicPlayer = Provider.of<MusicPlayer>(context, listen: false);
+    final songProvider = Provider.of<SongProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('🔍 Debug Information'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('NFC Service Status:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('• NFC Available: ${nfcService.isNfcAvailable}'),
+              Text('• NFC Scanning: ${nfcService.isScanning}'),
+              Text('• Current UUID: ${nfcService.currentNfcUuid ?? "None"}'),
+              Text('• Auto-Pause: ${nfcService.autoPauseEnabled}'),
+              const SizedBox(height: 16),
+              
+              const Text('Music Player Status:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('• Current State: ${musicPlayer.currentState}'),
+              Text('• Is Playing: ${musicPlayer.isPlaying}'),
+              Text('• Is Paused: ${musicPlayer.isPaused}'),
+              Text('• Current File: ${musicPlayer.currentMusicFilePath ?? "None"}'),
+              Text('• Position: ${musicPlayer.savedPosition}'),
+              const SizedBox(height: 16),
+              
+              const Text('Songs & Mappings:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('• Total Songs: ${songProvider.songs.length}'),
+              for (int i = 0; i < songProvider.songs.length; i++)
+                Text('• Song $i: ${songProvider.songs[i].title} (UUID: ${songProvider.songs[i].connectedNfcUuid ?? "None"})'),
+              const SizedBox(height: 16),
+              
+              const Text('Actions:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      final debugInfo = nfcService.getDebugInfo();
+                      debugPrint('📊 NFC Debug Info: $debugInfo');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Debug info logged to console')),
+                      );
+                    },
+                    child: const Text('Log Debug Info'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      musicPlayer.simulateStateTest();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('State test logged to console')),
+                      );
+                    },
+                    child: const Text('Test Player State'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      try {
+                        if (nfcService.isScanning) {
+                          await nfcService.stopNfcSession();
+                        } else {
+                          await nfcService.startNfcSession();
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(nfcService.isScanning ? 'NFC scanning started' : 'NFC scanning stopped')),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('NFC operation failed: $e')),
+                        );
+                      }
+                    },
+                    child: Text(nfcService.isScanning ? 'Stop NFC' : 'Start NFC'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      nfcService.forceProcessCurrentUuid();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Force processed current UUID')),
+                      );
+                    },
+                    child: const Text('Force Process UUID'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+}
+
+class _DialogState {
+  bool isOpen = true;
 }
