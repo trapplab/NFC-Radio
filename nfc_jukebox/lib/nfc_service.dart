@@ -11,6 +11,7 @@ class NFCService with ChangeNotifier {
   bool _isNfcAvailable = false;
   String? _currentNfcUuid;
   bool _isScanning = false;
+  bool _isProcessingTag = false;
   bool _autoPauseEnabled = true; // Auto-pause scanning after tag detection
   int _autoResumeDelaySeconds = 2; // Seconds to wait before resuming scan
   String? _lastScannedUuid;
@@ -109,30 +110,56 @@ class NFCService with ChangeNotifier {
 
   // Handle NFC tag discovery with music integration
   void _onNfcDiscovered(NfcTag tag) async {
+    if (!_isScanning || _isProcessingTag) {
+      debugPrint('⏳ Skipping scan: isScanning=$_isScanning, isProcessingTag=$_isProcessingTag');
+      return;
+    }
+
     try {
       final uuid = _extractNfcIdentifier(tag);
       if (uuid == null) return;
 
       final now = DateTime.now();
+      
+      // Global cooldown to prevent rapid-fire scans of any tag (1000ms)
+      if (_lastScannedTimestamp != null &&
+          now.difference(_lastScannedTimestamp!).inMilliseconds < 1000) {
+        debugPrint('⏳ Global cooldown active, ignoring scan');
+        return;
+      }
+
       _currentNfcUuid = uuid;
       debugPrint('📡 NFC UUID detected: $uuid');
 
-      // Cooldown logic: allow same UUID if enough time has passed (e.g., 2 seconds)
+      // Cooldown logic for the same UUID (3 seconds)
       bool isNewUuid = uuid != _lastScannedUuid;
       bool isCooldownOver = _lastScannedTimestamp == null ||
-                           now.difference(_lastScannedTimestamp!).inSeconds >= 2;
+                           now.difference(_lastScannedTimestamp!).inSeconds >= 3;
 
       if (isNewUuid || isCooldownOver) {
         debugPrint('🔄 Processing tag: ${isNewUuid ? "New UUID" : "Cooldown over"}');
         _lastScannedUuid = uuid;
         _lastScannedTimestamp = now;
+        _isProcessingTag = true;
+        
+        // DO NOT stop the session here. Keeping the session active is CRITICAL
+        // to prevent the Android system from showing the "Which app" menu.
+        // As long as the session is active, the app maintains foreground priority.
         
         // Clear any existing timer
         _debounceTimer?.cancel();
         
-        // Process immediately for better responsiveness
+        // Process the tag
         debugPrint('⚡ Executing NFC processing for: $uuid');
-        _processNfcTag(uuid);
+        try {
+          await _processNfcTag(uuid);
+        } finally {
+          // Add a small delay before allowing next scan to ensure physical removal
+          // and prevent immediate re-triggering
+          await Future.delayed(const Duration(milliseconds: 500));
+          _isProcessingTag = false;
+          debugPrint('✅ Tag processing flag cleared');
+        }
       } else {
         debugPrint('🔁 Same UUID and cooldown active, skipping processing');
       }
@@ -145,7 +172,7 @@ class NFCService with ChangeNotifier {
   }
 
   // Process NFC tag for music playback with retry mechanism
-  void _processNfcTag(String uuid) async {
+  Future<void> _processNfcTag(String uuid) async {
     debugPrint('🔄 ===== NFC TAG PROCESSING STARTED =====');
     debugPrint('🔄 Processing NFC tag: $uuid');
     debugPrint('🔄 Timestamp: ${DateTime.now()}');
@@ -198,12 +225,7 @@ class NFCService with ChangeNotifier {
         debugPrint('❌ Song $i: ${s.title} (UUID: ${s.connectedNfcUuid})');
       }
       
-      // Still pause scanning for unknown tags to save battery
-      if (_autoPauseEnabled && _isScanning) {
-        debugPrint('⏸️ Auto-pausing scanning after unknown tag detection');
-        await stopNfcSession();
-        _scheduleAutoResume();
-      }
+      // We keep scanning active to maintain foreground priority and suppress system menu
       return;
     }
 
@@ -249,13 +271,7 @@ class NFCService with ChangeNotifier {
     debugPrint('📊 - Current path: ${_musicPlayer!.currentMusicFilePath}');
     debugPrint('📊 - Is playing: ${_musicPlayer!.isPlaying}');
 
-    // Step 6: Handle auto-pause
-    // We pause scanning briefly to prevent multiple triggers from the same physical tap
-    if (_autoPauseEnabled && _isScanning) {
-      debugPrint('⏸️ Auto-pausing scanning to prevent double-trigger');
-      await stopNfcSession();
-      _scheduleAutoResume();
-    }
+    // Step 6: Handle auto-pause (now handled at the start of _onNfcDiscovered for better responsiveness)
 
     debugPrint('✅ ===== NFC TAG PROCESSING COMPLETED =====');
     notifyListeners();
@@ -492,7 +508,11 @@ class NFCService with ChangeNotifier {
 
     try {
       await NfcManager.instance.startSession(
-        pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso15693},
+        pollingOptions: {
+          NfcPollingOption.iso14443,
+          NfcPollingOption.iso15693,
+          NfcPollingOption.iso18092, // Added for broader tag support
+        },
         onDiscovered: _onNfcDiscovered,
       );
       debugPrint('NFC session started - continuous scanning active');
