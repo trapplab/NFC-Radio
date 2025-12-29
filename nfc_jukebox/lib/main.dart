@@ -140,7 +140,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                       ),
                     ],
                   ),
-                )).toList(),
+                )),
                 // Add new song button
                 Container(
                   width: 120,
@@ -328,7 +328,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   SnackBar(content: Text('Connected ${song.title} to NFC tag')),
                 );
               },
-            )).toList(),
+            )),
             if (songProvider.songs.isEmpty) ...[
               const Text('No songs available. Add a song first.'),
             ],
