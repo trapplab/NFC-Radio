@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -72,6 +73,8 @@ class NFCJukeboxHomePage extends StatefulWidget {
 }
 
 class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBindingObserver {
+  StreamSubscription<String>? _nfcMessageSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -93,6 +96,21 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   void didChangeDependencies() {
     super.didChangeDependencies();
     
+    // Listen to NFC service messages
+    _nfcMessageSubscription?.cancel();
+    final nfcService = Provider.of<NFCService>(context, listen: false);
+    _nfcMessageSubscription = nfcService.messages.listen((message) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    });
+
     // Initialize providers after first frame to ensure context is available
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
@@ -150,6 +168,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _nfcMessageSubscription?.cancel();
     super.dispose();
   }
 
@@ -513,9 +532,10 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                             final newTitle = p.basenameWithoutExtension(file.path!);
                             
                             // Check if title should be updated
-                            if (titleController.text.isNotEmpty && 
+                            if (titleController.text.isNotEmpty &&
                                 titleController.text != newTitle) {
                               // Show confirmation dialog
+                              if (!dialogContext.mounted) return;
                               final shouldUpdateTitle = await showDialog<bool>(
                                 context: dialogContext,
                                 builder: (BuildContext context) {
@@ -636,6 +656,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                       
                       if (existingSong != null) {
                         // Show confirmation dialog for NFC conflict
+                        if (!dialogContext.mounted) return;
                         final shouldReplaceConnection = await showDialog<bool>(
                           context: dialogContext,
                           builder: (BuildContext context) {
@@ -710,7 +731,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
 
                     dialogState.isOpen = false;
                     nfcService.removeListener(updateNfcUuid);
-                    Navigator.pop(dialogContext);
+                    if (dialogContext.mounted) {
+                      Navigator.pop(dialogContext);
+                    }
                   }
                 },
                 child: const Text('Add'),
@@ -802,9 +825,10 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                             final newTitle = p.basenameWithoutExtension(file.path!);
                             
                             // Check if title should be updated
-                            if (titleController.text.isNotEmpty && 
+                            if (titleController.text.isNotEmpty &&
                                 titleController.text != newTitle) {
                               // Show confirmation dialog
+                              if (!dialogContext.mounted) return;
                               final shouldUpdateTitle = await showDialog<bool>(
                                 context: dialogContext,
                                 builder: (BuildContext context) {
@@ -902,6 +926,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                                     
                                     if (existingSong != null && existingSong.filePath.isNotEmpty) {
                                       // Show confirmation dialog
+                                      if (!dialogContext.mounted) return;
                                       shouldUseNewNfc = await showDialog<bool>(
                                         context: dialogContext,
                                         builder: (BuildContext context) {
@@ -1135,30 +1160,40 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   ),
                   ElevatedButton(
                     onPressed: () async {
+                      final messenger = ScaffoldMessenger.of(context);
                       try {
                         await storageService.forceReinitialize();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Storage reinitialized'), backgroundColor: Colors.green),
-                        );
+                        if (mounted) {
+                          messenger.showSnackBar(
+                            const SnackBar(content: Text('Storage reinitialized'), backgroundColor: Colors.green),
+                          );
+                        }
                       } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Reinitialization failed: $e'), backgroundColor: Colors.red),
-                        );
+                        if (mounted) {
+                          messenger.showSnackBar(
+                            SnackBar(content: Text('Reinitialization failed: $e'), backgroundColor: Colors.red),
+                          );
+                        }
                       }
                     },
                     child: const Text('Force Reinitialize'),
                   ),
                   ElevatedButton(
                     onPressed: () async {
+                      final messenger = ScaffoldMessenger.of(context);
                       try {
                         await storageService.clearAllData();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('All storage data cleared'), backgroundColor: Colors.orange),
-                        );
+                        if (mounted) {
+                          messenger.showSnackBar(
+                            const SnackBar(content: Text('All storage data cleared'), backgroundColor: Colors.orange),
+                          );
+                        }
                       } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Clear failed: $e'), backgroundColor: Colors.red),
-                        );
+                        if (mounted) {
+                          messenger.showSnackBar(
+                            SnackBar(content: Text('Clear failed: $e'), backgroundColor: Colors.red),
+                          );
+                        }
                       }
                     },
                     child: const Text('Clear All Data'),
@@ -1238,19 +1273,24 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   ),
                   ElevatedButton(
                     onPressed: () async {
+                      final messenger = ScaffoldMessenger.of(context);
                       try {
                         if (nfcService.isScanning) {
                           await nfcService.stopNfcSession();
                         } else {
                           await nfcService.startNfcSession();
                         }
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(nfcService.isScanning ? 'NFC scanning started' : 'NFC scanning stopped')),
-                        );
+                        if (mounted) {
+                          messenger.showSnackBar(
+                            SnackBar(content: Text(nfcService.isScanning ? 'NFC scanning started' : 'NFC scanning stopped')),
+                          );
+                        }
                       } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('NFC operation failed: $e')),
-                        );
+                        if (mounted) {
+                          messenger.showSnackBar(
+                            SnackBar(content: Text('NFC operation failed: $e')),
+                          );
+                        }
                       }
                     },
                     child: Text(nfcService.isScanning ? 'Stop NFC' : 'Start NFC'),

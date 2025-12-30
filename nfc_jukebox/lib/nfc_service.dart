@@ -15,6 +15,7 @@ class NFCService with ChangeNotifier {
   String? _lastScannedUuid;
   DateTime? _lastScannedTimestamp;
   Timer? _debounceTimer;
+  final _messageController = StreamController<String>.broadcast();
   bool _isInEditMode = false; // Flag to pause player triggering during edit operations
   NFCMusicMappingProvider? _mappingProvider;
   SongProvider? _songProvider;
@@ -24,6 +25,7 @@ class NFCService with ChangeNotifier {
   String? get currentNfcUuid => _currentNfcUuid;
   bool get isScanning => _isScanning;
   bool get isInEditMode => _isInEditMode;
+  Stream<String> get messages => _messageController.stream;
 
   // Set edit mode to pause player triggering during edit operations
   void setEditMode(bool enabled) {
@@ -40,9 +42,9 @@ class NFCService with ChangeNotifier {
     required MusicPlayer musicPlayer,
   }) {
     debugPrint('=== SETTING PROVIDERS ===');
-    debugPrint('Setting MusicPlayer: ${musicPlayer != null}');
-    debugPrint('Setting SongProvider: ${songProvider != null} (${songProvider.songs.length} songs)');
-    debugPrint('Setting MappingProvider: ${mappingProvider != null} (${mappingProvider.mappings.length} mappings)');
+    debugPrint('Setting MusicPlayer: ${musicPlayer.runtimeType}');
+    debugPrint('Setting SongProvider: ${songProvider.runtimeType} (${songProvider.songs.length} songs)');
+    debugPrint('Setting MappingProvider: ${mappingProvider.runtimeType} (${mappingProvider.mappings.length} mappings)');
     
     _mappingProvider = mappingProvider;
     _songProvider = songProvider;
@@ -111,6 +113,8 @@ class NFCService with ChangeNotifier {
 
   // Handle NFC tag discovery with music integration
   void _onNfcDiscovered(NfcTag tag) async {
+    debugPrint('📡 NFC Tag Discovered! isScanning=$_isScanning, isProcessingTag=$_isProcessingTag');
+    
     if (!_isScanning || _isProcessingTag) {
       debugPrint('⏳ Skipping scan: isScanning=$_isScanning, isProcessingTag=$_isProcessingTag');
       return;
@@ -118,7 +122,10 @@ class NFCService with ChangeNotifier {
 
     try {
       final uuid = _extractNfcIdentifier(tag);
-      if (uuid == null) return;
+      if (uuid == null) {
+        debugPrint('⚠️ Could not extract UUID from tag');
+        return;
+      }
 
       final now = DateTime.now();
       
@@ -135,6 +142,9 @@ class NFCService with ChangeNotifier {
       _lastScannedUuid = uuid;
       _lastScannedTimestamp = now;
       _isProcessingTag = true;
+      
+      // Notify listeners immediately so the UI shows the detected UUID
+      notifyListeners();
       
       // DO NOT stop the session here. Keeping the session active is CRITICAL
       // to prevent the Android system from showing the "Which app" menu.
@@ -153,12 +163,13 @@ class NFCService with ChangeNotifier {
         await Future.delayed(const Duration(milliseconds: 500));
         _isProcessingTag = false;
         debugPrint('✅ Tag processing flag cleared');
+        notifyListeners(); // Notify again after clearing processing flag
       }
-
-      notifyListeners();
     } catch (e, s) {
       debugPrint('❌ Error processing NFC tag: $e');
       debugPrint('❌ Stack trace: $s');
+      _isProcessingTag = false;
+      notifyListeners();
     }
   }
 
@@ -250,12 +261,15 @@ class NFCService with ChangeNotifier {
       if (isCurrentlyPlayingThisSong) {
         debugPrint('⏸️ Action: PAUSE current song');
         await _executeWithRetry('pause', () => _musicPlayer!.pauseMusic(), 2);
+        _notifyUser('Paused: ${song.title}');
       } else if (isCurrentlyPausedOnThisSong) {
         debugPrint('▶️ Action: RESUME paused song');
         await _executeWithRetry('resume', () => _musicPlayer!.resumeMusic(), 2);
+        _notifyUser('Resumed: ${song.title}');
       } else {
         debugPrint('🎵 Action: START NEW SONG');
         await _executeWithRetry('play', () => _musicPlayer!.playMusic(song.filePath), 3);
+        _notifyUser('Playing: ${song.title}');
       }
     } catch (e, s) {
       debugPrint('❌ CRITICAL ERROR in music execution: $e');
@@ -339,11 +353,16 @@ class NFCService with ChangeNotifier {
     throw lastError ?? Exception('$operationName failed after $maxRetries attempts');
   }
 
-  // Show error to user (implement based on your UI architecture)
+  // Show error to user
   void _showErrorToUser(String errorMessage) {
     debugPrint('🚨 USER ERROR NOTIFICATION: $errorMessage');
-    // TODO: Implement actual user notification (SnackBar, AlertDialog, etc.)
-    // This could be done through a callback or by using a global error handler
+    _messageController.add('⚠️ $errorMessage');
+  }
+
+  // Notify user of general events
+  void _notifyUser(String message) {
+    debugPrint('📢 USER NOTIFICATION: $message');
+    _messageController.add(message);
   }
 
 
@@ -404,7 +423,7 @@ class NFCService with ChangeNotifier {
   }
 
   Future<void> _checkNfcAvailability() async {
-    _isNfcAvailable = await NfcManager.instance.isAvailable();
+    _isNfcAvailable = await NfcManager.instance.checkAvailability() == NfcAvailability.enabled;
     
     // Request permission on Android 13+ (API 33+)
     if (_isNfcAvailable) {
@@ -431,45 +450,90 @@ class NFCService with ChangeNotifier {
 
   String? _extractNfcIdentifier(NfcTag tag) {
     try {
-      final tagData = tag.data as dynamic;
-      debugPrint('Tag type: ${tagData.runtimeType}');
+      // ignore: invalid_use_of_protected_member
+      final tagData = tag.data;
+      debugPrint('Tag data type: ${tagData.runtimeType}');
       
-      // Method 1: Try direct tag ID (most common)
-      try {
-        final id = tagData.id;
-        if (id is Uint8List) {
-          final uid = id.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
-          debugPrint('ID found: $uid');
-          return uid;
+      // 1. Try direct Map access if it's a Map
+      if (tagData is Map) {
+        // Check common keys for UID
+        for (final key in ['id', 'identifier', 'tagId']) {
+          final value = tagData[key];
+          if (value is Uint8List) {
+            return value.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
+          }
         }
-      } catch (e) {}
-      
-      // Method 2: Try tag.identifier
-      try {
-        final id = tagData.identifier;
-        if (id is Uint8List) {
-          final uid = id.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
-          debugPrint('Identifier found: $uid');
-          return uid;
+        
+        // Check tech-specific keys
+        for (final tech in ['nfca', 'mifare', 'iso7816', 'isodep', 'nfcv', 'nfcf']) {
+          if (tagData[tech] != null && tagData[tech] is Map) {
+            final techData = tagData[tech] as Map;
+            for (final key in ['identifier', 'id']) {
+              final value = techData[key];
+              if (value is Uint8List) {
+                return value.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
+              }
+            }
+          }
         }
-      } catch (e) {}
-      
-      // Method 3: Try accessing via Map.from
-      try {
-        final map = Map<String, dynamic>.from(tagData as Map);
-        debugPrint('Map keys: ${map.keys}');
-        if (map['nfca'] != null) {
-          final nfca = map['nfca'] as Map<String, dynamic>;
-          final uidBytes = nfca['identifier'] as Uint8List;
-          final uid = uidBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
-          return uid;
-        }
-      } catch (e) {
-        debugPrint('Map conversion failed: $e');
       }
       
-    } catch (e, s) {
-      debugPrint('Error: $e');
+      // 2. Try dynamic property access (for TagPigeon or other objects)
+      final dynamic dTagData = tagData;
+      
+      // Try to find identifier in common Pigeon properties
+      for (final prop in ['identifier', 'id', 'tagId']) {
+        try {
+          final value = dTagData.toJson()[prop];
+          if (value is Uint8List) return value.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
+        } catch (_) {}
+        try {
+          final value = dTagData.toMap()[prop];
+          if (value is Uint8List) return value.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
+        } catch (_) {}
+        try {
+          final value = dTagData.identifier;
+          if (value is Uint8List) return value.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
+        } catch (_) {}
+        try {
+          final value = dTagData.id;
+          if (value is Uint8List) return value.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
+        } catch (_) {}
+      }
+
+      // Try tech-specific properties on the object
+      for (final tech in ['nfca', 'mifare', 'iso7816', 'isodep', 'nfcv', 'nfcf']) {
+        try {
+          final techObj = dTagData.toJson()[tech];
+          if (techObj != null) {
+            final id = techObj['identifier'] ?? techObj['id'];
+            if (id is Uint8List) return id.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
+          }
+        } catch (_) {}
+      }
+
+      // 3. Last resort: search the entire map recursively for anything that looks like a UID
+      if (tagData is Map) {
+        return _findUidInMap(tagData);
+      }
+      
+    } catch (e) {
+      debugPrint('Error extracting NFC identifier: $e');
+    }
+    return null;
+  }
+
+  String? _findUidInMap(Map map) {
+    for (final entry in map.entries) {
+      if (entry.value is Uint8List) {
+        final list = entry.value as Uint8List;
+        if (list.length >= 4 && list.length <= 10) { // Typical NFC UID lengths
+          return list.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
+        }
+      } else if (entry.value is Map) {
+        final result = _findUidInMap(entry.value as Map);
+        if (result != null) return result;
+      }
     }
     return null;
   }
@@ -515,6 +579,7 @@ class NFCService with ChangeNotifier {
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _messageController.close();
     super.dispose();
   }
 }
