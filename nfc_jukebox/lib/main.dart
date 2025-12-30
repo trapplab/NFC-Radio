@@ -188,187 +188,51 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             ),
         ],
       ),
-      body: Column(
-        children: [
-          // Horizontal ListView for songs
-          Container(
-            height: 150,
-            margin: const EdgeInsets.symmetric(vertical: 16),
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                ...songProvider.songs.map((song) => Container(
-                  width: 120,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.blueGrey[100],
-                    borderRadius: BorderRadius.circular(8),
-                    border: song.connectedNfcUuid != null
-                        ? Border.all(color: Colors.green, width: 2)
-                        : null,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        song.connectedNfcUuid != null ? Icons.music_note : Icons.music_off,
-                        size: 40,
-                        color: song.connectedNfcUuid != null ? Colors.green : Colors.grey,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        song.title,
-                        style: const TextStyle(fontSize: 12),
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (song.connectedNfcUuid != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          'Connected',
-                          style: TextStyle(fontSize: 10, color: Colors.green[700]),
-                        ),
-                      ],
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              musicPlayer.isSongPlaying(song.filePath)
-                                  ? Icons.pause
-                                  : musicPlayer.isSongPaused(song.filePath)
-                                      ? Icons.play_arrow
-                                      : musicPlayer.isSongStopped(song.filePath)
-                                          ? Icons.play_arrow
-                                          : Icons.play_arrow,
-                              size: 20,
-                              color: musicPlayer.isSongPlaying(song.filePath) 
-                                  ? Colors.red 
-                                  : musicPlayer.isSongPaused(song.filePath)
-                                      ? Colors.orange
-                                      : Colors.blue,
-                            ),
-                            onPressed: () async {
-                              if (musicPlayer.isSongPlaying(song.filePath) || musicPlayer.isSongPaused(song.filePath)) {
-                                await musicPlayer.togglePlayPause();
-                              } else {
-                                await musicPlayer.playMusic(song.filePath);
-                              }
-                            },
-                          ),
-                          PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert, size: 16),
-                            onSelected: (value) {
-                              if (value == 'edit') {
-                                _showEditSongDialog(context, song, songProvider);
-                              } else if (value == 'delete') {
-                                _showDeleteSongDialog(context, song, songProvider);
-                              }
-                            },
-                            itemBuilder: (BuildContext context) => [
-                              const PopupMenuItem<String>(
-                                value: 'edit',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.edit, size: 16),
-                                    SizedBox(width: 8),
-                                    Text('Edit'),
-                                  ],
-                                ),
-                              ),
-                              const PopupMenuItem<String>(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.delete, size: 16),
-                                    SizedBox(width: 8),
-                                    Text('Delete'),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                )),
-                // Add new song button
-                Container(
-                  width: 120,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey, width: 1),
-                  ),
-                  child: InkWell(
-                    onTap: () => _showAddSongDialog(context, songProvider),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add, size: 40, color: Colors.grey),
-                        SizedBox(height: 8),
-                        Text(
-                          'Add Song',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Center(
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // NFC Status Section
+            Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: nfcService.isScanning ? Colors.green : Colors.grey),
+                borderRadius: BorderRadius.circular(8),
+              ),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (!nfcService.isNfcAvailable) ...[
                     const Text('NFC is not available on this device.'),
                   ] else ...[
-                    const Text('Ready to scan NFC tags'),
+                    const Text('Ready to scan NFC tags', style: TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: nfcService.isScanning ? Colors.green : Colors.grey),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                nfcService.isScanning ? Icons.radio : Icons.radio_button_off,
-                                color: nfcService.isScanning ? Colors.green : Colors.grey,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                nfcService.isScanning 
-                                  ? 'Scanning for NFC tags...' 
-                                  : 'Scanning paused',
-                                style: TextStyle(
-                                  color: nfcService.isScanning ? Colors.green : Colors.orange,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          nfcService.isScanning ? Icons.radio : Icons.radio_button_off,
+                          color: nfcService.isScanning ? Colors.green : Colors.grey,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          nfcService.isScanning 
+                            ? 'Scanning for NFC tags...' 
+                            : 'Scanning paused',
+                          style: TextStyle(
+                            color: nfcService.isScanning ? Colors.green : Colors.orange,
+                            fontWeight: FontWeight.bold,
                           ),
-                          if (nfcService.currentNfcUuid != null) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              'Last detected: ${nfcService.currentNfcUuid}',
-                              style: const TextStyle(fontSize: 12),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
+                    if (nfcService.currentNfcUuid != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Last detected: ${nfcService.currentNfcUuid}',
+                        style: const TextStyle(fontSize: 12),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -388,48 +252,193 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    if (musicPlayer.isPlaying || musicPlayer.isPaused) ...[
-                      Text('Now Playing: ${musicPlayer.currentMusicFilePath?.split('/').last ?? 'Unknown'}'),
-                      if (musicPlayer.totalDuration > Duration.zero) ...[
-                        Text('Position: ${musicPlayer.getCurrentPositionString()} / ${musicPlayer.getTotalDurationString()}'),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          width: 200,
-                          child: Slider(
-                            value: musicPlayer.savedPosition.inSeconds.toDouble(),
-                            min: 0,
-                            max: musicPlayer.totalDuration.inSeconds.toDouble(),
-                            onChanged: (value) {
-                              musicPlayer.seekTo(Duration(seconds: value.toInt()));
-                            },
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          ElevatedButton(
-                            onPressed: musicPlayer.togglePlayPause,
-                            child: Text(musicPlayer.isPlaying ? 'Pause' : 'Play'),
-                          ),
-                          const SizedBox(width: 16),
-                          ElevatedButton(
-                            onPressed: musicPlayer.stopMusic,
-                            child: const Text('Stop'),
-                          ),
-                        ],
-                      ),
-                    ],
                   ],
                 ],
               ),
             ),
-          ),
-        ],
+            
+            // Horizontal ListView for songs
+            Container(
+              height: 150,
+              margin: const EdgeInsets.symmetric(vertical: 16),
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  ...songProvider.songs.map((song) => Container(
+                    width: 120,
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.blueGrey[100],
+                      borderRadius: BorderRadius.circular(8),
+                      border: song.connectedNfcUuid != null
+                          ? Border.all(color: Colors.green, width: 2)
+                          : null,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          song.connectedNfcUuid != null ? Icons.music_note : Icons.music_off,
+                          size: 40,
+                          color: song.connectedNfcUuid != null ? Colors.green : Colors.grey,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          song.title,
+                          style: const TextStyle(fontSize: 12),
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (song.connectedNfcUuid != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Connected',
+                            style: TextStyle(fontSize: 10, color: Colors.green[700]),
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                musicPlayer.isSongPlaying(song.filePath)
+                                    ? Icons.pause
+                                    : musicPlayer.isSongPaused(song.filePath)
+                                        ? Icons.play_arrow
+                                        : musicPlayer.isSongStopped(song.filePath)
+                                            ? Icons.play_arrow
+                                            : Icons.play_arrow,
+                                size: 20,
+                                color: musicPlayer.isSongPlaying(song.filePath) 
+                                    ? Colors.red 
+                                    : musicPlayer.isSongPaused(song.filePath)
+                                        ? Colors.orange
+                                        : Colors.blue,
+                              ),
+                              onPressed: () async {
+                                if (musicPlayer.isSongPlaying(song.filePath) || musicPlayer.isSongPaused(song.filePath)) {
+                                  await musicPlayer.togglePlayPause();
+                                } else {
+                                  await musicPlayer.playMusic(song.filePath);
+                                }
+                              },
+                            ),
+                            PopupMenuButton<String>(
+                              icon: const Icon(Icons.more_vert, size: 16),
+                              onSelected: (value) {
+                                if (value == 'edit') {
+                                  _showEditSongDialog(context, song, songProvider);
+                                } else if (value == 'delete') {
+                                  _showDeleteSongDialog(context, song, songProvider);
+                                }
+                              },
+                              itemBuilder: (BuildContext context) => [
+                                const PopupMenuItem<String>(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit, size: 16),
+                                      SizedBox(width: 8),
+                                      Text('Edit'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem<String>(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete, size: 16),
+                                      SizedBox(width: 8),
+                                      Text('Delete'),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  )),
+                  // Add new song button
+                  Container(
+                    width: 120,
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey, width: 1),
+                    ),
+                    child: InkWell(
+                      onTap: () => _showAddSongDialog(context, songProvider),
+                      child: const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add, size: 40, color: Colors.grey),
+                          SizedBox(height: 8),
+                          Text(
+                            'Add Song',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Music Player Section
+            if (musicPlayer.isPlaying || musicPlayer.isPaused) ...[
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.blue[300]!),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    Text('Now Playing: ${musicPlayer.currentMusicFilePath?.split('/').last ?? 'Unknown'}'),
+                    if (musicPlayer.totalDuration > Duration.zero) ...[
+                      Text('Position: ${musicPlayer.getCurrentPositionString()} / ${musicPlayer.getTotalDurationString()}'),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: 200,
+                        child: Slider(
+                          value: musicPlayer.savedPosition.inSeconds.toDouble(),
+                          min: 0,
+                          max: musicPlayer.totalDuration.inSeconds.toDouble(),
+                          onChanged: (value) {
+                            musicPlayer.seekTo(Duration(seconds: value.toInt()));
+                          },
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(
+                          onPressed: musicPlayer.togglePlayPause,
+                          child: Text(musicPlayer.isPlaying ? 'Pause' : 'Play'),
+                        ),
+                        const SizedBox(width: 16),
+                        ElevatedButton(
+                          onPressed: musicPlayer.stopMusic,
+                          child: const Text('Stop'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ],
+        ),
       ),
-
     );
   }
 
