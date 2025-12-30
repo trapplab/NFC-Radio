@@ -8,23 +8,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:nfc_jukebox/main.dart';
+import 'package:nfc_radio/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+  testWidgets('NFC Jukebox app smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const NFCJukeboxApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify that our NFC jukebox app starts properly.
+    expect(find.text('NFC Radio'), findsOneWidget);
+    
+    // Check if the main content appears (could be different in test environment)
+    expect(find.byType(Scaffold), findsOneWidget);
+    expect(find.byType(AppBar), findsOneWidget);
+    expect(find.text('NFC Radio'), findsOneWidget);
+    
+    // Additional checks for core app elements
+    expect(find.byType(ListView), findsOneWidget);
+    expect(find.text('Add Song'), findsOneWidget);
   });
 }

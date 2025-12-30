@@ -1,16 +1,7 @@
-# nfc_jukebox
+# NFC Radio
 
-A new Flutter project.
+This flutter project is a music player app (mainly for mobile due to the need of NFC) that can be controlled by any NFC tag. There is no information saved on the tag itself, but the tag's ID is used to identify the tag. The app will then use the ID to determine which radio file to play.
 
-## Getting Started
+I wanted to have a simple to use radio which can be used to hear their favorite songs or stories without the need of using a screen. NFC tags can be placed in toys or pictures which can act as a CMI (Child-Machine-Interface) 😉
 
-This project is a starting point for a Flutter application.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
