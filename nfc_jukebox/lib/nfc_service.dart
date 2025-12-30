@@ -46,6 +46,12 @@ class NFCService with ChangeNotifier {
     debugPrint('_mappingProvider after assignment: ${_mappingProvider != null}');
     debugPrint('Are all providers initialized: ${_areProvidersInitialized()}');
     debugPrint('=== PROVIDERS SET COMPLETE ===');
+    
+    // Auto-start NFC scanning if NFC is available and not already scanning
+    if (_isNfcAvailable && !_isScanning) {
+      debugPrint('🚀 Auto-starting NFC scanning after providers are set');
+      startNfcSession();
+    }
   }
 
 

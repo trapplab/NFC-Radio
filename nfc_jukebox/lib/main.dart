@@ -191,8 +191,8 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // NFC Status Section
-            Container(
+            // NFC Status Section (debug only)
+            if (kDebugMode) Container(
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
