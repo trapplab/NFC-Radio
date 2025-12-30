@@ -8,7 +8,6 @@ import 'nfc_music_mapping.dart';
 class StorageService {
   static const String _songsBoxName = 'songs';
   static const String _mappingsBoxName = 'mappings';
-  static const String _initializedKey = 'storage_initialized';
   
   static StorageService? _instance;
   static StorageService get instance => _instance ??= StorageService._();

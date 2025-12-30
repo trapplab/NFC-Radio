@@ -466,8 +466,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               return;
             }
             if (nfcService.currentNfcUuid != null) {
+              // Trigger UI update to show 'New NFC' button, don't auto-assign
               setState(() {
-                dialogNfcUuid = nfcService.currentNfcUuid;
+                // Just trigger a rebuild to show the "New NFC" button
               });
             }
           };
@@ -475,10 +476,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           // Add listener when building
           nfcService.addListener(updateNfcUuid);
 
-          // Initialize dialogNfcUuid from current NFC state
-          if (dialogNfcUuid == null && nfcService.currentNfcUuid != null) {
-            dialogNfcUuid = nfcService.currentNfcUuid;
-          }
+          // Initialize dialogNfcUuid from current NFC state - but don't auto-assign
+          // Only set if there was already an NFC assigned to this song
+          // New NFC detection will show a 'New NFC' button instead
 
           return AlertDialog(
             title: const Text('Add New Song'),
@@ -552,28 +552,46 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 ),
                 const SizedBox(height: 16),
                 if (nfcService.isNfcAvailable) ...[
-                  const Text('Scan NFC Tag (Automatic)'),
+                  const Text('NFC Configuration'),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
+                      border: Border.all(color: dialogNfcUuid != null ? Colors.green : Colors.grey),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: dialogNfcUuid != null
                       ? Text(
-                          'NFC UUID: $dialogNfcUuid',
+                          'Assigned NFC: ${dialogNfcUuid!.substring(0, 8)}...',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         )
-                      : nfcService.isScanning
-                        ? const Text(
-                            'Scanning for NFC tags...',
-                            style: TextStyle(color: Colors.blue),
+                      : nfcService.currentNfcUuid != null
+                        ? Column(
+                            children: [
+                              Text(
+                                'New NFC detected: ${nfcService.currentNfcUuid!.substring(0, 8)}...',
+                                style: const TextStyle(color: Colors.blue),
+                              ),
+                              const SizedBox(height: 8),
+                              ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    dialogNfcUuid = nfcService.currentNfcUuid;
+                                  });
+                                },
+                                child: const Text('Use This NFC'),
+                              ),
+                            ],
                           )
-                        : const Text(
-                            'Waiting for NFC tag...',
-                            style: TextStyle(color: Colors.grey),
-                          ),
+                        : nfcService.isScanning
+                          ? const Text(
+                              'Scanning for NFC tags...',
+                              style: TextStyle(color: Colors.blue),
+                            )
+                          : const Text(
+                              'Waiting for NFC tag...',
+                              style: TextStyle(color: Colors.grey),
+                            ),
                   ),
                 ],
               ],
@@ -588,7 +606,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 child: const Text('Cancel'),
               ),
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   if (filePathController.text.isNotEmpty) {
                     // Use provided title or auto-generate from filename
                     String finalTitle = titleController.text.isNotEmpty
@@ -603,14 +621,91 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
 
                     songProvider.addSong(song);
 
-                    // If an NFC tag was scanned, create a mapping
+                    // If an NFC tag was scanned, create a mapping (with conflict check)
                     if (dialogNfcUuid != null) {
-                      mappingProvider.addMapping(
-                        NFCMusicMapping(
-                          nfcUuid: dialogNfcUuid!,
-                          songId: song.id,
-                        ),
-                      );
+                      // Check if this NFC UUID is already connected to another song
+                      Song? existingSong;
+                      try {
+                        existingSong = songProvider.songs.firstWhere(
+                          (s) => s.connectedNfcUuid == dialogNfcUuid,
+                        );
+                      } catch (e) {
+                        // No existing song found with this NFC
+                        existingSong = null;
+                      }
+                      
+                      if (existingSong != null) {
+                        // Show confirmation dialog for NFC conflict
+                        final shouldReplaceConnection = await showDialog<bool>(
+                          context: dialogContext,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: const Text('NFC Tag Already Connected'),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('This NFC tag is already connected to:'),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '"${existingSong!.title}"',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text('Do you want to:'),
+                                  const SizedBox(height: 4),
+                                  const Text('• Replace the connection (old song will lose NFC)'),
+                                  const Text('• Keep the existing connection'),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(false),
+                                  child: const Text('Keep Existing'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(true),
+                                  child: const Text('Replace Connection'),
+                                ),
+                              ],
+                            );
+                          },
+                        ) ?? false;
+                        
+                        if (shouldReplaceConnection) {
+                          // Remove NFC connection from ALL songs that have this NFC UUID
+                          final songsWithThisNfc = songProvider.songs
+                              .where((s) => s.connectedNfcUuid == dialogNfcUuid)
+                              .toList();
+                          
+                          for (final songWithNfc in songsWithThisNfc) {
+                            final updatedSong = Song(
+                              id: songWithNfc.id,
+                              title: songWithNfc.title,
+                              filePath: songWithNfc.filePath,
+                              connectedNfcUuid: null, // Remove NFC connection
+                            );
+                            songProvider.updateSong(updatedSong);
+                          }
+                          
+                          // Add new mapping for the current song
+                          mappingProvider.addMapping(
+                            NFCMusicMapping(
+                              nfcUuid: dialogNfcUuid!,
+                              songId: song.id,
+                            ),
+                          );
+                        }
+                        // If user chose "Keep Existing", don't create any mapping
+                      } else {
+                        // No conflict - add mapping normally
+                        mappingProvider.addMapping(
+                          NFCMusicMapping(
+                            nfcUuid: dialogNfcUuid!,
+                            songId: song.id,
+                          ),
+                        );
+                      }
                     }
 
                     dialogState.isOpen = false;
@@ -642,6 +737,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     // Create a stateful wrapper to track dialog state
     final dialogState = _DialogState();
     
+    // Enable edit mode to pause player triggering during editing
+    nfcService.setEditMode(true);
+    
     // Store the listener function so we can remove it later
     late void Function() updateNfcUuid;
 
@@ -653,11 +751,13 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           updateNfcUuid = () {
             if (!dialogState.isOpen) {
               nfcService.removeListener(updateNfcUuid);
+              nfcService.setEditMode(false); // Ensure edit mode is disabled
               return;
             }
             if (nfcService.currentNfcUuid != null) {
+              // Trigger UI update to show 'New NFC' button, don't auto-assign
               setState(() {
-                dialogNfcUuid = nfcService.currentNfcUuid;
+                // Just trigger a rebuild to show the "New NFC" button
               });
             }
           };
@@ -665,10 +765,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           // Add listener when building
           nfcService.addListener(updateNfcUuid);
 
-          // Initialize dialogNfcUuid from current NFC state
-          if (dialogNfcUuid == null && nfcService.currentNfcUuid != null) {
-            dialogNfcUuid = nfcService.currentNfcUuid;
-          }
+          // Initialize dialogNfcUuid from current NFC state - but don't auto-assign
+          // Only set if there was already an NFC assigned to this song
+          // New NFC detection will show a 'New NFC' button instead
 
           return AlertDialog(
             title: const Text('Edit Song'),
@@ -742,40 +841,152 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 ),
                 const SizedBox(height: 16),
                 if (nfcService.isNfcAvailable) ...[
-                  const Text('Scan NFC Tag (Optional)'),
+                  const Text('NFC Configuration'),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
+                      border: Border.all(color: dialogNfcUuid != null ? Colors.green : Colors.grey),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: dialogNfcUuid != null
-                      ? Text(
-                          'NFC UUID: $dialogNfcUuid',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        )
-                      : nfcService.isScanning
-                        ? const Text(
-                            'Scanning for NFC tags...',
-                            style: TextStyle(color: Colors.blue),
-                          )
-                        : const Text(
-                            'Waiting for NFC tag...',
-                            style: TextStyle(color: Colors.grey),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Show currently assigned NFC (if any)
+                        if (dialogNfcUuid != null) ...[
+                          Text(
+                            'Assigned NFC: ${dialogNfcUuid!.substring(0, 8)}...',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (dialogNfcUuid != null && dialogNfcUuid != song.connectedNfcUuid) ...[
-                    Text(
-                      'This will ${song.connectedNfcUuid != null ? 'replace the existing' : 'create a new'} NFC connection',
-                      style: TextStyle(
-                        color: Colors.orange[700],
-                        fontSize: 12,
-                      ),
-                      textAlign: TextAlign.center,
+                          const SizedBox(height: 8),
+                        ],
+                        
+                        // Show new NFC detection (only if different from assigned)
+                        if (nfcService.currentNfcUuid != null && 
+                            nfcService.currentNfcUuid != dialogNfcUuid) ...[
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: Colors.blue[300]!),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'New NFC detected: ${nfcService.currentNfcUuid!.substring(0, 8)}...',
+                                  style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 8),
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    // Check if this NFC UUID is already connected to another song
+                                    final currentNfcUuid = nfcService.currentNfcUuid;
+                                    if (currentNfcUuid == null) {
+                                      // No NFC UUID available, cannot proceed
+                                      return;
+                                    }
+                                    
+                                    Song? existingSong = songProvider.songs.firstWhere(
+                                      (s) => s.connectedNfcUuid == currentNfcUuid && s.id != song.id,
+                                      orElse: () => Song(id: '', title: '', filePath: '', connectedNfcUuid: null),
+                                    );
+                                    
+                                    // Check if we found a valid existing song (not the empty orElse default)
+                                    if (existingSong.filePath.isEmpty) {
+                                      existingSong = null;
+                                    }
+                                    
+                                    bool shouldUseNewNfc = true;
+                                    
+                                    if (existingSong != null && existingSong.filePath.isNotEmpty) {
+                                      // Show confirmation dialog
+                                      shouldUseNewNfc = await showDialog<bool>(
+                                        context: dialogContext,
+                                        builder: (BuildContext context) {
+                                          return AlertDialog(
+                                            title: const Text('NFC Tag Already Connected'),
+                                            content: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text('This NFC tag is already connected to:'),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  '"${existingSong!.title}"',
+                                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                const Text('Do you want to:'),
+                                                const SizedBox(height: 4),
+                                                const Text('• Replace the connection (old song will lose this NFC connection)'),
+                                                const Text('• Keep the existing connection'),
+                                              ],
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.of(context).pop(false),
+                                                child: const Text('Keep Existing'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () => Navigator.of(context).pop(true),
+                                                child: const Text('Replace Connection'),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      ) ?? false;
+                                    }
+                                    
+                                    if (shouldUseNewNfc) {
+                                      final currentNfcUuid = nfcService.currentNfcUuid;
+                                      if (currentNfcUuid != null) {
+                                        // Remove NFC connection from ALL songs that have this NFC UUID
+                                        final songsWithThisNfc = songProvider.songs
+                                            .where((s) => s.connectedNfcUuid == currentNfcUuid && s.id != song.id)
+                                            .toList();
+                                        
+                                        for (final songWithNfc in songsWithThisNfc) {
+                                          final updatedSong = Song(
+                                            id: songWithNfc.id,
+                                            title: songWithNfc.title,
+                                            filePath: songWithNfc.filePath,
+                                            connectedNfcUuid: null, // Remove NFC connection
+                                          );
+                                          songProvider.updateSong(updatedSong);
+                                        }
+                                      }
+                                      
+                                      setState(() {
+                                        dialogNfcUuid = nfcService.currentNfcUuid;
+                                      });
+                                    }
+                                  },
+                                  child: const Text('Use This NFC'),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        
+                        // Show scanning status
+                        if (nfcService.currentNfcUuid == null || nfcService.currentNfcUuid == dialogNfcUuid)
+                          dialogNfcUuid != null
+                            ? const Text('NFC is assigned and ready')
+                            : nfcService.isScanning
+                              ? const Text(
+                                  'Scanning for NFC tags...',
+                                  style: TextStyle(color: Colors.blue),
+                                )
+                              : const Text(
+                                  'Waiting for NFC tag...',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                      ],
                     ),
-                  ],
+                  ),
                 ],
               ],
             ),
@@ -784,6 +995,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 onPressed: () {
                   dialogState.isOpen = false;
                   nfcService.removeListener(updateNfcUuid);
+                  nfcService.setEditMode(false); // Disable edit mode
                   Navigator.pop(dialogContext);
                 },
                 child: const Text('Cancel'),
@@ -821,6 +1033,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
 
                     dialogState.isOpen = false;
                     nfcService.removeListener(updateNfcUuid);
+                    nfcService.setEditMode(false); // Disable edit mode
                     Navigator.pop(dialogContext);
                   }
                 },

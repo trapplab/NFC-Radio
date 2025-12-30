@@ -15,6 +15,7 @@ class NFCService with ChangeNotifier {
   String? _lastScannedUuid;
   DateTime? _lastScannedTimestamp;
   Timer? _debounceTimer;
+  bool _isInEditMode = false; // Flag to pause player triggering during edit operations
   NFCMusicMappingProvider? _mappingProvider;
   SongProvider? _songProvider;
   MusicPlayer? _musicPlayer;
@@ -22,6 +23,14 @@ class NFCService with ChangeNotifier {
   bool get isNfcAvailable => _isNfcAvailable;
   String? get currentNfcUuid => _currentNfcUuid;
   bool get isScanning => _isScanning;
+  bool get isInEditMode => _isInEditMode;
+
+  // Set edit mode to pause player triggering during edit operations
+  void setEditMode(bool enabled) {
+    _isInEditMode = enabled;
+    debugPrint('🔧 Edit mode ${enabled ? 'enabled' : 'disabled'} - player triggering ${enabled ? 'paused' : 'active'}');
+    // Don't call notifyListeners() here to avoid potential circular dependencies
+  }
 
 
   // Set providers for music integration
@@ -208,6 +217,15 @@ class NFCService with ChangeNotifier {
       }
       
       // We keep scanning active to maintain foreground priority and suppress system menu
+      return;
+    }
+
+    // Step 2.5: Check if we're in edit mode (skip music triggering)
+    if (_isInEditMode) {
+      debugPrint('🔧 Edit mode active - skipping music triggering for tag: $uuid');
+      debugPrint('🔧 Tag detected but not playing - use this UUID to assign to song');
+      // Still notify listeners to update UI with the detected UUID
+      notifyListeners();
       return;
     }
 
