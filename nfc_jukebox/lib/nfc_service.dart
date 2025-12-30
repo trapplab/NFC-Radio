@@ -12,12 +12,9 @@ class NFCService with ChangeNotifier {
   String? _currentNfcUuid;
   bool _isScanning = false;
   bool _isProcessingTag = false;
-  bool _autoPauseEnabled = true; // Auto-pause scanning after tag detection
-  int _autoResumeDelaySeconds = 2; // Seconds to wait before resuming scan
   String? _lastScannedUuid;
   DateTime? _lastScannedTimestamp;
   Timer? _debounceTimer;
-  Timer? _autoResumeTimer;
   NFCMusicMappingProvider? _mappingProvider;
   SongProvider? _songProvider;
   MusicPlayer? _musicPlayer;
@@ -25,8 +22,7 @@ class NFCService with ChangeNotifier {
   bool get isNfcAvailable => _isNfcAvailable;
   String? get currentNfcUuid => _currentNfcUuid;
   bool get isScanning => _isScanning;
-  bool get autoPauseEnabled => _autoPauseEnabled;
-  int get autoResumeDelaySeconds => _autoResumeDelaySeconds;
+
 
   // Set providers for music integration
   void setProviders({
@@ -52,17 +48,7 @@ class NFCService with ChangeNotifier {
     debugPrint('=== PROVIDERS SET COMPLETE ===');
   }
 
-  // Enable/disable auto-pause after tag detection
-  void setAutoPause(bool enabled) {
-    _autoPauseEnabled = enabled;
-    notifyListeners();
-  }
 
-  // Set auto-resume delay in seconds
-  void setAutoResumeDelay(int seconds) {
-    _autoResumeDelaySeconds = seconds.clamp(1, 30);
-    notifyListeners();
-  }
 
   NFCService() {
     _checkNfcAvailability();
@@ -130,38 +116,28 @@ class NFCService with ChangeNotifier {
 
       _currentNfcUuid = uuid;
       debugPrint('📡 NFC UUID detected: $uuid');
-
-      // Cooldown logic for the same UUID (3 seconds)
-      bool isNewUuid = uuid != _lastScannedUuid;
-      bool isCooldownOver = _lastScannedTimestamp == null ||
-                           now.difference(_lastScannedTimestamp!).inSeconds >= 3;
-
-      if (isNewUuid || isCooldownOver) {
-        debugPrint('🔄 Processing tag: ${isNewUuid ? "New UUID" : "Cooldown over"}');
-        _lastScannedUuid = uuid;
-        _lastScannedTimestamp = now;
-        _isProcessingTag = true;
-        
-        // DO NOT stop the session here. Keeping the session active is CRITICAL
-        // to prevent the Android system from showing the "Which app" menu.
-        // As long as the session is active, the app maintains foreground priority.
-        
-        // Clear any existing timer
-        _debounceTimer?.cancel();
-        
-        // Process the tag
-        debugPrint('⚡ Executing NFC processing for: $uuid');
-        try {
-          await _processNfcTag(uuid);
-        } finally {
-          // Add a small delay before allowing next scan to ensure physical removal
-          // and prevent immediate re-triggering
-          await Future.delayed(const Duration(milliseconds: 500));
-          _isProcessingTag = false;
-          debugPrint('✅ Tag processing flag cleared');
-        }
-      } else {
-        debugPrint('🔁 Same UUID and cooldown active, skipping processing');
+      
+      _lastScannedUuid = uuid;
+      _lastScannedTimestamp = now;
+      _isProcessingTag = true;
+      
+      // DO NOT stop the session here. Keeping the session active is CRITICAL
+      // to prevent the Android system from showing the "Which app" menu.
+      // As long as the session is active, the app maintains foreground priority.
+      
+      // Clear any existing timer
+      _debounceTimer?.cancel();
+      
+      // Process the tag
+      debugPrint('⚡ Executing NFC processing for: $uuid');
+      try {
+        await _processNfcTag(uuid);
+      } finally {
+        // Add a small delay before allowing next scan to ensure physical removal
+        // and prevent immediate re-triggering
+        await Future.delayed(const Duration(milliseconds: 500));
+        _isProcessingTag = false;
+        debugPrint('✅ Tag processing flag cleared');
       }
 
       notifyListeners();
@@ -346,22 +322,7 @@ class NFCService with ChangeNotifier {
     // This could be done through a callback or by using a global error handler
   }
 
-  // Schedule automatic resumption of scanning
-  void _scheduleAutoResume() {
-    if (_autoResumeTimer != null) {
-      _autoResumeTimer!.cancel();
-    }
-    
-    if (_autoResumeDelaySeconds > 0) {
-      debugPrint('Scheduling auto-resume in $_autoResumeDelaySeconds seconds');
-      _autoResumeTimer = Timer(Duration(seconds: _autoResumeDelaySeconds), () {
-        if (!_isScanning && _isNfcAvailable) {
-          debugPrint('Auto-resuming NFC scanning...');
-          startNfcSession();
-        }
-      });
-    }
-  }
+
 
   // Clear the last scanned UUID (useful for testing)
   void clearLastScannedUuid() {
@@ -377,8 +338,7 @@ class NFCService with ChangeNotifier {
       'isScanning': _isScanning,
       'currentNfcUuid': _currentNfcUuid,
       'lastScannedUuid': _lastScannedUuid,
-      'autoPauseEnabled': _autoPauseEnabled,
-      'autoResumeDelaySeconds': _autoResumeDelaySeconds,
+
       'musicPlayerState': _musicPlayer?.currentState.toString(),
       'currentMusicPath': _musicPlayer?.currentMusicFilePath,
       'mappedSong': song != null ? {
@@ -496,10 +456,6 @@ class NFCService with ChangeNotifier {
       return;
     }
 
-    // Cancel any pending auto-resume timer
-    _autoResumeTimer?.cancel();
-    _autoResumeTimer = null;
-
     // Request permission before starting session
     await _requestNfcPermission();
 
@@ -535,7 +491,6 @@ class NFCService with ChangeNotifier {
   @override
   void dispose() {
     _debounceTimer?.cancel();
-    _autoResumeTimer?.cancel();
     super.dispose();
   }
 }

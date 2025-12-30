@@ -186,15 +186,6 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               onPressed: () => _showStorageDebugDialog(context),
               tooltip: 'Storage Debug',
             ),
-          // Auto-pause toggle
-          Switch(
-            value: nfcService.autoPauseEnabled,
-            onChanged: (value) {
-              nfcService.setAutoPause(value);
-            },
-          ),
-          const Text('Auto-Pause'),
-          const SizedBox(width: 16),
         ],
       ),
       body: Column(
@@ -359,7 +350,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                               Text(
                                 nfcService.isScanning 
                                   ? 'Scanning for NFC tags...' 
-                                  : 'Scanning paused (auto-resume in ${nfcService.autoResumeDelaySeconds}s)',
+                                  : 'Scanning paused',
                                 style: TextStyle(
                                   color: nfcService.isScanning ? Colors.green : Colors.orange,
                                   fontWeight: FontWeight.bold,
@@ -375,35 +366,6 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                               textAlign: TextAlign.center,
                             ),
                           ],
-                          const SizedBox(height: 8),
-                          // Auto-pause status indicator
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: nfcService.autoPauseEnabled ? Colors.green[100] : Colors.grey[200],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  nfcService.autoPauseEnabled ? Icons.timer : Icons.timer_off,
-                                  size: 16,
-                                  color: nfcService.autoPauseEnabled ? Colors.green : Colors.grey,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  nfcService.autoPauseEnabled 
-                                    ? 'Auto-pause enabled (${nfcService.autoResumeDelaySeconds}s delay)'
-                                    : 'Auto-pause disabled',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: nfcService.autoPauseEnabled ? Colors.green[700] : Colors.grey[700],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                         ],
                       ),
                     ),
@@ -425,38 +387,6 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                           child: const Text('Stop Scanning'),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 16),
-                    // Auto-resume delay slider
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        children: [
-                          const Text('Auto-resume delay', style: TextStyle(fontWeight: FontWeight.bold)),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text('${nfcService.autoResumeDelaySeconds}s'),
-                              SizedBox(
-                                width: 200,
-                                child: Slider(
-                                  value: nfcService.autoResumeDelaySeconds.toDouble(),
-                                  min: 1,
-                                  max: 10,
-                                  divisions: 9,
-                                  onChanged: (value) {
-                                    nfcService.setAutoResumeDelay(value.toInt());
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
                     ),
                     const SizedBox(height: 16),
                     if (musicPlayer.isPlaying || musicPlayer.isPaused) ...[
@@ -978,7 +908,6 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               Text('• NFC Available: ${nfcService.isNfcAvailable}'),
               Text('• NFC Scanning: ${nfcService.isScanning}'),
               Text('• Current UUID: ${nfcService.currentNfcUuid ?? "None"}'),
-              Text('• Auto-Pause: ${nfcService.autoPauseEnabled}'),
               const SizedBox(height: 16),
               
               const Text('Music Player Status:', style: TextStyle(fontWeight: FontWeight.bold)),
