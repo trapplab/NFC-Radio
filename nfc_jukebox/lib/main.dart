@@ -510,6 +510,39 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                         if (result != null && result.files.isNotEmpty) {
                           final file = result.files.first;
                           if (file.path != null) {
+                            final newTitle = p.basenameWithoutExtension(file.path!);
+                            
+                            // Check if title should be updated
+                            if (titleController.text.isNotEmpty && 
+                                titleController.text != newTitle) {
+                              // Show confirmation dialog
+                              final shouldUpdateTitle = await showDialog<bool>(
+                                context: dialogContext,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: const Text('Update Title?'),
+                                    content: Text(
+                                      'Do you want to update the title to "$newTitle"?',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(context).pop(false),
+                                        child: const Text('Keep Original'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.of(context).pop(true),
+                                        child: const Text('Update Title'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                              
+                              if (shouldUpdateTitle == true) {
+                                titleController.text = newTitle;
+                              }
+                            }
+                            
                             filePathController.text = file.path!;
                           }
                         }
@@ -667,6 +700,39 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                         if (result != null && result.files.isNotEmpty) {
                           final file = result.files.first;
                           if (file.path != null) {
+                            final newTitle = p.basenameWithoutExtension(file.path!);
+                            
+                            // Check if title should be updated
+                            if (titleController.text.isNotEmpty && 
+                                titleController.text != newTitle) {
+                              // Show confirmation dialog
+                              final shouldUpdateTitle = await showDialog<bool>(
+                                context: dialogContext,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: const Text('Update Title?'),
+                                    content: Text(
+                                      'Do you want to update the title to "$newTitle"?',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(context).pop(false),
+                                        child: const Text('Keep Original'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.of(context).pop(true),
+                                        child: const Text('Update Title'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                              
+                              if (shouldUpdateTitle == true) {
+                                titleController.text = newTitle;
+                              }
+                            }
+                            
                             filePathController.text = file.path!;
                           }
                         }
