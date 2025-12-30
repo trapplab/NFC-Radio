@@ -12,6 +12,8 @@ import 'nfc_service.dart';
 import 'music_player.dart';
 import 'song.dart';
 import 'storage_service.dart';
+import 'dimmed_mode_service.dart';
+import 'dimmed_mode_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +43,7 @@ class NFCJukeboxApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => NFCMusicMappingProvider()),
         ChangeNotifierProvider(create: (_) => SongProvider()),
         ChangeNotifierProvider(create: (_) => MusicPlayer()),
+        ChangeNotifierProvider(create: (_) => DimmedModeService()),
         ChangeNotifierProxyProvider3<NFCMusicMappingProvider, SongProvider, MusicPlayer, NFCService>(
           create: (_) => NFCService(),
           update: (_, mapping, song, player, nfc) {
@@ -59,7 +62,7 @@ class NFCJukeboxApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           useMaterial3: true,
         ),
-        home: const NFCJukeboxHomePage(),
+        home: DimmedModeWrapper(child: const NFCJukeboxHomePage()),
       ),
     );
   }
