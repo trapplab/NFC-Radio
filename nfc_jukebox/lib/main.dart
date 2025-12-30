@@ -1,19 +1,41 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:uuid/uuid.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path/path.dart';
+import 'package:path/path.dart' as p;
 import 'nfc_music_mapping.dart';
 import 'nfc_service.dart';
 import 'music_player.dart';
 import 'song.dart';
+import 'storage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await WakelockPlus.enable();
-  runApp(
-    MultiProvider(
+  
+  // Initialize storage service first
+  try {
+    debugPrint('🚀 Initializing StorageService...');
+    await StorageService.instance.initialize();
+    debugPrint('✅ StorageService initialized successfully');
+  } catch (e, stackTrace) {
+    debugPrint('❌ Failed to initialize StorageService: $e');
+    debugPrint('❌ Stack trace: $stackTrace');
+    // Continue without storage - app will work in memory-only mode
+  }
+  
+  runApp(const NFCJukeboxApp());
+}
+
+class NFCJukeboxApp extends StatelessWidget {
+  const NFCJukeboxApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => NFCMusicMappingProvider()),
         ChangeNotifierProvider(create: (_) => SongProvider()),
@@ -30,23 +52,14 @@ void main() async {
           },
         ),
       ],
-      child: const MyApp(),
-    ),
-  );
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'NFC Radio',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+      child: MaterialApp(
+        title: 'NFC Radio',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          useMaterial3: true,
+        ),
+        home: const NFCJukeboxHomePage(),
       ),
-      home: const NFCJukeboxHomePage(),
     );
   }
 }
@@ -67,8 +80,71 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     debugPrint('🚀 ===== APP INITIALIZATION STARTED =====');
     debugPrint('🚀 Timestamp: ${DateTime.now()}');
     
-    // Providers are now set up via ProxyProvider in main()
     debugPrint('🚀 ===== APP INITIALIZATION COMPLETED =====');
+  }
+
+  /// Check if we're running in a test environment
+  bool _isTestEnvironment() {
+    return Platform.environment.containsKey('FLUTTER_TEST') || 
+           Platform.environment.containsKey('DART_VM_OPTIONS');
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Initialize providers after first frame to ensure context is available
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      
+      try {
+        final songProvider = Provider.of<SongProvider>(context, listen: false);
+        final mappingProvider = Provider.of<NFCMusicMappingProvider>(context, listen: false);
+        
+        if (!songProvider.isInitialized) {
+          debugPrint('🔄 Initializing providers with persisted data...');
+          
+          // Initialize providers in parallel
+          await Future.wait([
+            songProvider.initialize(),
+            mappingProvider.initialize(),
+          ]);
+          
+          debugPrint('✅ All providers initialized successfully');
+          debugPrint('📊 Songs loaded: ${songProvider.songs.length}');
+          debugPrint('📊 Mappings loaded: ${mappingProvider.mappings.length}');
+          
+          // Show success message if we loaded existing data
+          if (mounted && (songProvider.songs.isNotEmpty || mappingProvider.mappings.isNotEmpty)) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('🎵 Loaded your saved songs and NFC mappings!'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      } catch (e, stackTrace) {
+        debugPrint('❌ Failed to initialize providers: $e');
+        debugPrint('❌ Stack trace: $stackTrace');
+        
+        // Show error message to user (only in non-test environments)
+        if (mounted && !_isTestEnvironment()) {
+          try {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('⚠️ Failed to load saved data. App will work with empty data.'),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 5),
+              ),
+            );
+          } catch (contextError) {
+            debugPrint('⚠️ Could not show error message: $contextError');
+          }
+        }
+      }
+    });
   }
 
   @override
@@ -96,12 +172,20 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('NFC Radio'),
         actions: [
-          // Debug info button
-          IconButton(
-            icon: const Icon(Icons.bug_report),
-            onPressed: () => _showDebugDialog(context),
-            tooltip: 'Debug Info',
-          ),
+          // Debug info button (debug only)
+          if (kDebugMode)
+            IconButton(
+              icon: const Icon(Icons.bug_report),
+              onPressed: () => _showDebugDialog(context),
+              tooltip: 'Debug Info',
+            ),
+          // Storage debug button (debug only)
+          if (kDebugMode)
+            IconButton(
+              icon: const Icon(Icons.storage),
+              onPressed: () => _showStorageDebugDialog(context),
+              tooltip: 'Storage Debug',
+            ),
           // Auto-pause toggle
           Switch(
             value: nfcService.autoPauseEnabled,
@@ -537,7 +621,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     // Use provided title or auto-generate from filename
                     String finalTitle = titleController.text.isNotEmpty
                       ? titleController.text
-                      : basenameWithoutExtension(filePathController.text);
+                      : p.basenameWithoutExtension(filePathController.text);
 
                     final song = Song(
                       id: const Uuid().v4(),
@@ -788,6 +872,88 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               Navigator.pop(context);
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showStorageDebugDialog(BuildContext context) {
+    final storageService = StorageService.instance;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('🗄️ Storage Debug'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Storage Service Status:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('• Initialized: ${storageService.isInitialized}'),
+              Text('• Platform: ${Platform.operatingSystem}'),
+              const SizedBox(height: 16),
+              
+              const Text('Storage Statistics:', style: TextStyle(fontWeight: FontWeight.bold)),
+              ...storageService.getStorageStats().entries.map(
+                (entry) => Text('• ${entry.key}: ${entry.value}')
+              ),
+              const SizedBox(height: 16),
+              
+              const Text('Actions:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      storageService.debugStorageStatus();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Storage debug info logged to console')),
+                      );
+                    },
+                    child: const Text('Log Debug Info'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      try {
+                        await storageService.forceReinitialize();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Storage reinitialized'), backgroundColor: Colors.green),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Reinitialization failed: $e'), backgroundColor: Colors.red),
+                        );
+                      }
+                    },
+                    child: const Text('Force Reinitialize'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      try {
+                        await storageService.clearAllData();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('All storage data cleared'), backgroundColor: Colors.orange),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Clear failed: $e'), backgroundColor: Colors.red),
+                        );
+                      }
+                    },
+                    child: const Text('Clear All Data'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
           ),
         ],
       ),
