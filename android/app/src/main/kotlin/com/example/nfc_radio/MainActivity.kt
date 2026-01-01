@@ -1,4 +1,4 @@
-package com.example.nfc_radio
+package com.trapplab.nfc_radio
 
 import io.flutter.embedding.android.FlutterActivity
 
