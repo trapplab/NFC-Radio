@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'nfc_music_mapping.dart';
 import 'song.dart';
+import 'folder.dart';
 import 'music_player.dart';
 
 class NFCService with ChangeNotifier {
@@ -19,6 +20,7 @@ class NFCService with ChangeNotifier {
   bool _isInEditMode = false; // Flag to pause player triggering during edit operations
   NFCMusicMappingProvider? _mappingProvider;
   SongProvider? _songProvider;
+  FolderProvider? _folderProvider;
   MusicPlayer? _musicPlayer;
 
   bool get isNfcAvailable => _isNfcAvailable;
@@ -39,25 +41,29 @@ class NFCService with ChangeNotifier {
   void setProviders({
     required NFCMusicMappingProvider mappingProvider,
     required SongProvider songProvider,
+    required FolderProvider folderProvider,
     required MusicPlayer musicPlayer,
   }) {
     debugPrint('=== SETTING PROVIDERS ===');
     debugPrint('Setting MusicPlayer: ${musicPlayer.runtimeType}');
     debugPrint('Setting SongProvider: ${songProvider.runtimeType} (${songProvider.songs.length} songs)');
+    debugPrint('Setting FolderProvider: ${folderProvider.runtimeType} (${folderProvider.folders.length} folders)');
     debugPrint('Setting MappingProvider: ${mappingProvider.runtimeType} (${mappingProvider.mappings.length} mappings)');
-    
+
     _mappingProvider = mappingProvider;
     _songProvider = songProvider;
+    _folderProvider = folderProvider;
     _musicPlayer = musicPlayer;
-    
+
     // Verify the assignment worked
     debugPrint('=== PROVIDER ASSIGNMENT VERIFICATION ===');
     debugPrint('_musicPlayer after assignment: ${_musicPlayer != null}');
     debugPrint('_songProvider after assignment: ${_songProvider != null}');
+    debugPrint('_folderProvider after assignment: ${_folderProvider != null}');
     debugPrint('_mappingProvider after assignment: ${_mappingProvider != null}');
     debugPrint('Are all providers initialized: ${_areProvidersInitialized()}');
     debugPrint('=== PROVIDERS SET COMPLETE ===');
-    
+
     // Auto-start NFC scanning if NFC is available and not already scanning
     if (_isNfcAvailable && !_isScanning) {
       debugPrint('🚀 Auto-starting NFC scanning after providers are set');
@@ -293,31 +299,37 @@ class NFCService with ChangeNotifier {
 
   // Check if all providers are initialized (quick check without detailed validation)
   bool _areProvidersInitialized() {
-    return _musicPlayer != null && _songProvider != null && _mappingProvider != null;
+    return _musicPlayer != null && _songProvider != null && _folderProvider != null && _mappingProvider != null;
   }
 
   // Validate that all required providers are available
   bool _validateProviders() {
     debugPrint('🔍 Validating providers...');
-    
+
     if (_musicPlayer == null) {
       debugPrint('❌ MusicPlayer is null');
       return false;
     }
     debugPrint('✅ MusicPlayer: OK');
-    
+
     if (_songProvider == null) {
       debugPrint('❌ SongProvider is null');
       return false;
     }
     debugPrint('✅ SongProvider: OK (${_songProvider!.songs.length} songs)');
-    
+
+    if (_folderProvider == null) {
+      debugPrint('❌ FolderProvider is null');
+      return false;
+    }
+    debugPrint('✅ FolderProvider: OK (${_folderProvider!.folders.length} folders)');
+
     if (_mappingProvider == null) {
       debugPrint('❌ NFCMusicMappingProvider is null');
       return false;
     }
     debugPrint('✅ NFCMusicMappingProvider: OK (${_mappingProvider!.mappings.length} mappings)');
-    
+
     debugPrint('✅ All providers validated successfully');
     return true;
   }
@@ -390,6 +402,7 @@ class NFCService with ChangeNotifier {
         'connectedNfcUuid': song.connectedNfcUuid,
       } : null,
       'totalSongs': _songProvider?.songs.length ?? 0,
+      'totalFolders': _folderProvider?.folders.length ?? 0,
       'totalMappings': _mappingProvider?.mappings.length ?? 0,
     };
   }
