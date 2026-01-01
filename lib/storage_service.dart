@@ -196,7 +196,8 @@ class StorageService {
     _checkInitialization();
     
     try {
-      await _mappingsBox!.put(mapping.nfcUuid, mapping);
+      // Use songId as key to allow multiple songs to use the same NFC UUID
+      await _mappingsBox!.put(mapping.songId, mapping);
       debugPrint('💾 Saved mapping: ${mapping.nfcUuid} -> ${mapping.songId}');
     } catch (e) {
       debugPrint('❌ Failed to save mapping: $e');
@@ -251,14 +252,14 @@ class StorageService {
   }
   
   /// Delete a mapping from storage
-  Future<void> deleteMapping(String nfcUuid) async {
+  Future<void> deleteMapping(String songId) async {
     _checkInitialization();
     
     try {
-      await _mappingsBox!.delete(nfcUuid);
-      debugPrint('🗑️ Deleted mapping for NFC: $nfcUuid');
+      await _mappingsBox!.delete(songId);
+      debugPrint('🗑️ Deleted mapping for song: $songId');
     } catch (e) {
-      debugPrint('❌ Failed to delete mapping for $nfcUuid: $e');
+      debugPrint('❌ Failed to delete mapping for song $songId: $e');
       rethrow;
     }
   }

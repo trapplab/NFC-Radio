@@ -460,6 +460,24 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     final mappingProvider = Provider.of<NFCMusicMappingProvider>(context, listen: false);
     final folderProvider = Provider.of<FolderProvider>(context, listen: false);
 
+    // Identify the current folder
+    String? currentFolderId = folderId;
+    if (currentFolderId == null && song != null) {
+      try {
+        currentFolderId = folderProvider.folders.firstWhere((f) => f.songIds.contains(song.id)).id;
+      } catch (_) {}
+    }
+    if (currentFolderId == null) {
+      // Fallback to expanded folder or first folder
+      try {
+        currentFolderId = folderProvider.folders.firstWhere((f) => f.isExpanded).id;
+      } catch (_) {
+        if (folderProvider.folders.isNotEmpty) {
+          currentFolderId = folderProvider.folders.first.id;
+        }
+      }
+    }
+
     // Create a stateful wrapper to track dialog state
     final dialogState = _DialogState();
     
@@ -590,9 +608,15 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                                       
                                       Song? existingSong;
                                       try {
-                                        existingSong = songProvider.songs.firstWhere(
-                                          (s) => s.connectedNfcUuid == currentNfcUuid && (song == null || s.id != song.id),
-                                        );
+                                        // Only check for existing connection within the same folder
+                                        if (currentFolderId != null) {
+                                          final currentFolder = folderProvider.folders.firstWhere((f) => f.id == currentFolderId);
+                                          existingSong = songProvider.songs.firstWhere(
+                                            (s) => s.connectedNfcUuid == currentNfcUuid &&
+                                                   currentFolder.songIds.contains(s.id) &&
+                                                   (song == null || s.id != song.id),
+                                          );
+                                        }
                                       } catch (_) {
                                         existingSong = null;
                                       }
@@ -626,16 +650,22 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                                       }
                                       
                                       if (shouldUseNewNfc) {
-                                        final songsWithThisNfc = songProvider.songs
-                                            .where((s) => s.connectedNfcUuid == currentNfcUuid && (song == null || s.id != song.id))
-                                            .toList();
-                                        for (final s in songsWithThisNfc) {
-                                          songProvider.updateSong(Song(
-                                            id: s.id,
-                                            title: s.title,
-                                            filePath: s.filePath,
-                                            connectedNfcUuid: null,
-                                          ));
+                                        // Only remove mapping from songs in the same folder
+                                        if (currentFolderId != null) {
+                                          final currentFolder = folderProvider.folders.firstWhere((f) => f.id == currentFolderId);
+                                          final songsWithThisNfcInFolder = songProvider.songs
+                                              .where((s) => s.connectedNfcUuid == currentNfcUuid &&
+                                                            currentFolder.songIds.contains(s.id) &&
+                                                            (song == null || s.id != song.id))
+                                              .toList();
+                                          for (final s in songsWithThisNfcInFolder) {
+                                            songProvider.updateSong(Song(
+                                              id: s.id,
+                                              title: s.title,
+                                              filePath: s.filePath,
+                                              connectedNfcUuid: null,
+                                            ));
+                                          }
                                         }
                                         setState(() {
                                           dialogNfcUuid = currentNfcUuid;
@@ -699,8 +729,8 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     }
 
                     if (dialogNfcUuid != song?.connectedNfcUuid) {
-                      if (song?.connectedNfcUuid != null) {
-                        mappingProvider.removeMapping(song!.connectedNfcUuid!);
+                      if (song != null) {
+                        mappingProvider.removeMapping(song.id);
                       }
                       if (dialogNfcUuid != null) {
                         mappingProvider.addMapping(NFCMusicMapping(
@@ -1101,9 +1131,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           TextButton(
             onPressed: () {
               // Remove NFC mapping if it exists
-              if (song.connectedNfcUuid != null) {
-                mappingProvider.removeMapping(song.connectedNfcUuid!);
-              }
+              mappingProvider.removeMapping(song.id);
               
               // Delete the song
               songProvider.removeSong(song.id);

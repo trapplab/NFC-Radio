@@ -79,41 +79,47 @@ class NFCService with ChangeNotifier {
 
   // Find song by NFC UUID
   Song? _findSongByUuid(String uuid) {
-    if (_songProvider == null) {
-      debugPrint('SongProvider is null');
+    if (_songProvider == null || _folderProvider == null) {
+      debugPrint('SongProvider or FolderProvider is null');
       return null;
     }
     
     debugPrint('Searching for UUID: $uuid');
-    debugPrint('Available songs: ${_songProvider!.songs.length}');
     
-    // First check if song is directly connected to this UUID
-    for (Song song in _songProvider!.songs) {
-      debugPrint('Checking song: ${song.title}, connectedNfcUuid: ${song.connectedNfcUuid}');
-      if (song.connectedNfcUuid != null && song.connectedNfcUuid == uuid) {
-        debugPrint('Found song by direct connection: ${song.title}');
-        return song;
+    // 1. Identify the "open folder"
+    Folder? openFolder;
+    try {
+      // The open folder is the one that is expanded
+      openFolder = _folderProvider!.folders.firstWhere((f) => f.isExpanded);
+      debugPrint('Open folder identified by expansion: ${openFolder.name}');
+    } catch (_) {
+      // If no folder is expanded, use the first folder as fallback
+      if (_folderProvider!.folders.isNotEmpty) {
+        openFolder = _folderProvider!.folders.first;
+        debugPrint('No folder expanded, using first folder as fallback: ${openFolder.name}');
       }
     }
-    
-    // If not found directly, check mappings
-    if (_mappingProvider != null) {
-      debugPrint('Checking mappings...');
-      final songId = _mappingProvider!.getSongId(uuid);
-      debugPrint('SongId from mapping: $songId');
-      if (songId != null) {
-        final foundSong = _songProvider!.songs.firstWhere(
-          (song) => song.id == songId,
-          orElse: () => Song(id: '', title: '', filePath: '', connectedNfcUuid: null),
-        );
-        if (foundSong.filePath.isNotEmpty) {
-          debugPrint('Found song by mapping: ${foundSong.title}');
-          return foundSong;
+
+    if (openFolder == null) {
+      debugPrint('No folders available to search in');
+      return null;
+    }
+
+    // 2. Search for the song with this UUID within the open folder
+    debugPrint('Searching in folder: ${openFolder.name} (${openFolder.songIds.length} songs)');
+    for (String songId in openFolder.songIds) {
+      try {
+        final song = _songProvider!.songs.firstWhere((s) => s.id == songId);
+        if (song.connectedNfcUuid == uuid) {
+          debugPrint('Found song in open folder: ${song.title}');
+          return song;
         }
+      } catch (_) {
+        // Song ID in folder but not in SongProvider? Should not happen but handle gracefully
       }
     }
     
-    debugPrint('No song found for UUID: $uuid');
+    debugPrint('No song found for UUID: $uuid in folder: ${openFolder.name}');
     return null;
   }
 
