@@ -45,6 +45,9 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
 
+  # Splash screen: to update run `dart run flutter_native_splash:create`
+  flutter_native_splash: ^2.4.7
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -64,6 +67,11 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   image_path: "assets/icon/nrf_radio_icon.png"  
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: "assets/icon/nrf_radio_icon.png"
+  android: true
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
