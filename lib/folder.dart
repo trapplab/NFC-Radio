@@ -82,6 +82,29 @@ class FolderProvider with ChangeNotifier {
       }
 
       _isInitialized = true;
+      
+      // Ensure EXACTLY one folder is expanded by default (radio button behavior)
+      if (_folders.isNotEmpty) {
+        // First, collapse all folders to ensure a clean state
+        for (int i = 0; i < _folders.length; i++) {
+          _folders[i] = Folder(
+            id: _folders[i].id,
+            name: _folders[i].name,
+            songIds: _folders[i].songIds,
+            isExpanded: false,
+          );
+        }
+        
+        // Then expand only the first one
+        _folders[0] = Folder(
+          id: _folders[0].id,
+          name: _folders[0].name,
+          songIds: _folders[0].songIds,
+          isExpanded: true,
+        );
+        debugPrint('📁 Defaulted first folder to expanded and collapsed all others');
+      }
+
       debugPrint('✅ FolderProvider initialized with ${_folders.length} folders');
       debugPrint('📁 ===== FOLDERPROVIDER INITIALIZATION COMPLETED =====');
       notifyListeners();
@@ -95,15 +118,38 @@ class FolderProvider with ChangeNotifier {
   }
 
   void addFolder(Folder folder) {
+    // If this is the first folder, make it expanded by default
+    if (_folders.isEmpty) {
+      folder = Folder(
+        id: folder.id,
+        name: folder.name,
+        songIds: folder.songIds,
+        isExpanded: true,
+      );
+    }
     _folders.add(folder);
     _saveFolderToStorage(folder);
     notifyListeners();
   }
 
   void removeFolder(String folderId) {
-    _folders.removeWhere((folder) => folder.id == folderId);
-    _deleteFolderFromStorage(folderId);
-    notifyListeners();
+    final index = _folders.indexWhere((f) => f.id == folderId);
+    if (index != -1) {
+      final wasExpanded = _folders[index].isExpanded;
+      _folders.removeAt(index);
+      _deleteFolderFromStorage(folderId);
+      
+      // If we removed the expanded folder, expand the first available one
+      if (wasExpanded && _folders.isNotEmpty) {
+        _folders[0] = Folder(
+          id: _folders[0].id,
+          name: _folders[0].name,
+          songIds: _folders[0].songIds,
+          isExpanded: true,
+        );
+      }
+      notifyListeners();
+    }
   }
 
   void updateFolder(Folder updatedFolder) {
@@ -162,12 +208,12 @@ class FolderProvider with ChangeNotifier {
         }
       }
 
-      // Toggle the selected folder
+      // Set the selected folder to expanded (radio button behavior - cannot be closed by clicking)
       final updatedFolder = Folder(
         id: _folders[folderIndex].id,
         name: _folders[folderIndex].name,
         songIds: _folders[folderIndex].songIds,
-        isExpanded: !_folders[folderIndex].isExpanded,
+        isExpanded: true,
       );
       _folders[folderIndex] = updatedFolder;
       
