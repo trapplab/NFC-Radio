@@ -252,7 +252,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               margin: const EdgeInsets.only(right: 8),
               decoration: BoxDecoration(
-                color: AppConfig.isGitHubRelease ? Colors.white.withOpacity(0.2) : Colors.transparent,
+                color: AppConfig.isGitHubRelease ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(

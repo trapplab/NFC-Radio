@@ -49,6 +49,8 @@ dependencies:
 
   # Splash screen: to update run `dart run flutter_native_splash:create`
   flutter_native_splash: ^2.4.7
+  package_info_plus: ^9.0.0
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:
