@@ -13,7 +13,7 @@
 
 # Cangelog
 
-## [Unreleased]
+## [0.2.0]
 ### Added
 - Added this changelog
 - Added support to organize audio files in folders
