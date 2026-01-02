@@ -7,6 +7,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:uuid/uuid.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'nfc_music_mapping.dart';
 import 'nfc_service.dart';
 import 'music_player.dart';
@@ -15,6 +16,8 @@ import 'folder.dart';
 import 'storage_service.dart';
 import 'dimmed_mode_service.dart';
 import 'dimmed_mode_wrapper.dart';
+import 'update_service.dart';
+import 'config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,16 +72,59 @@ class NFCJukeboxHomePage extends StatefulWidget {
 
 class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBindingObserver {
   StreamSubscription<String>? _nfcMessageSubscription;
+  String _appVersion = '';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     
+    // Get app version
+    _getAppVersion();
+
+    // Automatic update check on startup
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkForUpdates(manual: false);
+    });
+    
     debugPrint('🚀 ===== APP INITIALIZATION STARTED =====');
     debugPrint('🚀 Timestamp: ${DateTime.now()}');
     
     debugPrint('🚀 ===== APP INITIALIZATION COMPLETED =====');
+  }
+  
+  Future<void> _getAppVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      setState(() {
+        _appVersion = packageInfo.version;
+      });
+    } catch (e) {
+      debugPrint('Error getting app version: $e');
+      setState(() {
+        _appVersion = 'Unknown';
+      });
+    }
+  }
+  
+  Future<void> _checkForUpdates({bool manual = true}) async {
+    if (!AppConfig.isGitHubRelease) {
+      return;
+    }
+    
+    try {
+      await UpdateService.checkGithubUpdate(context, 'trapplab', 'NFC-Radio', manual: manual);
+    } catch (e) {
+      debugPrint('⚠️ Update check failed: $e');
+      if (manual && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Update check failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   /// Check if we're running in a test environment
@@ -149,6 +195,8 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 duration: Duration(seconds: 3),
               ),
             );
+          } else if (mounted) {
+            debugPrint('ℹ️ No existing data found. A default folder should have been created.');
           }
         }
       } catch (e, stackTrace) {
@@ -199,6 +247,26 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('NFC Radio'),
         actions: [
+          // App version display (visible in all flavors, clickable for GitHub flavor)
+          GestureDetector(
+            onTap: AppConfig.isGitHubRelease ? _checkForUpdates : null,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: AppConfig.isGitHubRelease ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                _appVersion.isNotEmpty ? 'v$_appVersion' : 'Loading...',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppConfig.isGitHubRelease ? Colors.white : Theme.of(context).colorScheme.onPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
           // Debug info button (debug only)
           if (kDebugMode)
             IconButton(
@@ -215,169 +283,191 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // NFC Status Section (debug only)
-            if (kDebugMode) Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(color: nfcService.isScanning ? Colors.green : Colors.grey),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                children: [
-                  if (!nfcService.isNfcAvailable) ...[
-                    const Text('NFC is not available on this device.'),
-                  ] else ...[
-                    const Text('Ready to scan NFC tags', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          nfcService.isScanning ? Icons.radio : Icons.radio_button_off,
-                          color: nfcService.isScanning ? Colors.green : Colors.grey,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          nfcService.isScanning 
-                            ? 'Scanning for NFC tags...' 
-                            : 'Scanning paused',
-                          style: TextStyle(
-                            color: nfcService.isScanning ? Colors.green : Colors.orange,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (nfcService.currentNfcUuid != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        'Last detected: ${nfcService.currentNfcUuid}',
-                        style: const TextStyle(fontSize: 12),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton(
-                          onPressed: nfcService.isScanning ? null : () {
-                            nfcService.startNfcSession();
-                          },
-                          child: const Text('Start Scanning'),
-                        ),
-                        const SizedBox(width: 16),
-                        ElevatedButton(
-                          onPressed: nfcService.isScanning ? () {
-                            nfcService.stopNfcSession();
-                          } : null,
-                          child: const Text('Stop Scanning'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            
-            // Vertical ListView for folders
-            Consumer<FolderProvider>(
-              builder: (context, folderProvider, child) {
-                return Column(
-                  children: [
-                    // Folders list
-                    if (folderProvider.folders.isEmpty) ...[
-                      const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text(
-                          'No folders yet. Create a folder to organize your songs!',
-                          style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
-                        ),
-                      ),
-                    ] else ...[
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: folderProvider.folders.length + 1, // +1 for the add button
-                        itemBuilder: (context, index) {
-                          if (index < folderProvider.folders.length) {
-                            final folder = folderProvider.folders[index];
-                            return _buildFolderWidget(context, folder, folderProvider, songProvider, musicPlayer);
-                          } else {
-                            // Last item is the "Add New Folder" button
-                            return Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              child: ElevatedButton.icon(
-                                onPressed: () => _showAddFolderDialog(context, folderProvider),
-                                icon: const Icon(Icons.create_new_folder),
-                                label: const Text('Add New Folder'),
-                                style: ElevatedButton.styleFrom(
-                                  minimumSize: const Size(double.infinity, 50),
-                                ),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 150),
+            child: Column(
+              children: [
+                // NFC Status Section (debug only)
+                if (kDebugMode) Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: nfcService.isScanning ? Colors.green : Colors.grey),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      if (!nfcService.isNfcAvailable) ...[
+                        const Text('NFC is not available on this device.'),
+                      ] else ...[
+                        const Text('Ready to scan NFC tags', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              nfcService.isScanning ? Icons.radio : Icons.radio_button_off,
+                              color: nfcService.isScanning ? Colors.green : Colors.grey,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              nfcService.isScanning 
+                                ? 'Scanning for NFC tags...' 
+                                : 'Scanning paused',
+                              style: TextStyle(
+                                color: nfcService.isScanning ? Colors.green : Colors.orange,
+                                fontWeight: FontWeight.bold,
                               ),
-                            );
-                          }
-                        },
-                      ),
+                            ),
+                          ],
+                        ),
+                        if (nfcService.currentNfcUuid != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Last detected: ${nfcService.currentNfcUuid}',
+                            style: const TextStyle(fontSize: 12),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ElevatedButton(
+                              onPressed: nfcService.isScanning ? null : () {
+                                nfcService.startNfcSession();
+                              },
+                              child: const Text('Start Scanning'),
+                            ),
+                            const SizedBox(width: 16),
+                            ElevatedButton(
+                              onPressed: nfcService.isScanning ? () {
+                                nfcService.stopNfcSession();
+                              } : null,
+                              child: const Text('Stop Scanning'),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
-                  ],
-                );
-              },
+                  ),
+                ),
+                
+                // Vertical ListView for folders
+                Consumer<FolderProvider>(
+                  builder: (context, folderProvider, child) {
+                    return Column(
+                      children: [
+                        // Folders list
+                        if (folderProvider.folders.isEmpty) ...[
+                          const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Text(
+                              'No folders yet. Create a folder to organize your songs!',
+                              style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                            ),
+                          ),
+                        ] else ...[
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: folderProvider.folders.length + 1, // +1 for the add button
+                            itemBuilder: (context, index) {
+                              if (index < folderProvider.folders.length) {
+                                final folder = folderProvider.folders[index];
+                                return _buildFolderWidget(context, folder, folderProvider, songProvider, musicPlayer);
+                              } else {
+                                // Last item is the "Add New Folder" button
+                                return Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  child: ElevatedButton.icon(
+                                    onPressed: () => _showAddFolderDialog(context, folderProvider),
+                                    icon: const Icon(Icons.create_new_folder),
+                                    label: const Text('Add New Folder'),
+                                    style: ElevatedButton.styleFrom(
+                                      minimumSize: const Size(double.infinity, 50),
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ],
             ),
-            
-            // Music Player Section
-            if (musicPlayer.isPlaying || musicPlayer.isPaused) ...[
-              Container(
+          ),
+          // Music Player Section - Absolutely positioned at the bottom
+          if (musicPlayer.isPlaying || musicPlayer.isPaused)
+            Positioned(
+              bottom: MediaQuery.of(context).padding.bottom + 16,
+              left: 0,
+              right: 0,
+              child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.95),
                   border: Border.all(color: Colors.blue[300]!),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
                 ),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Now Playing: ${musicPlayer.currentMusicFilePath?.split('/').last ?? 'Unknown'}'),
-                    if (musicPlayer.totalDuration > Duration.zero) ...[
-                      Text('Position: ${musicPlayer.getCurrentPositionString()} / ${musicPlayer.getTotalDurationString()}'),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: 200,
-                        child: Slider(
-                          value: musicPlayer.savedPosition.inSeconds.toDouble(),
-                          min: 0,
-                          max: musicPlayer.totalDuration.inSeconds.toDouble(),
-                          onChanged: (value) {
-                            musicPlayer.seekTo(Duration(seconds: value.toInt()));
-                          },
-                        ),
+                    Text(
+                      'Now Playing: ${musicPlayer.currentMusicFilePath?.split('/').last ?? 'Unknown'}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (musicPlayer.totalDuration > Duration.zero)
+                      Text(
+                        'Position: ${musicPlayer.getCurrentPositionString()} / ${musicPlayer.getTotalDurationString()}',
+                        style: const TextStyle(fontSize: 12),
                       ),
-                    ],
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        ElevatedButton(
+                        IconButton(
                           onPressed: musicPlayer.togglePlayPause,
-                          child: Text(musicPlayer.isPlaying ? 'Pause' : 'Play'),
+                          icon: Icon(musicPlayer.isPlaying ? Icons.pause : Icons.play_arrow),
+                          tooltip: musicPlayer.isPlaying ? 'Pause' : 'Play',
                         ),
-                        const SizedBox(width: 16),
-                        ElevatedButton(
+                        IconButton(
                           onPressed: musicPlayer.stopMusic,
-                          child: const Text('Stop'),
+                          icon: const Icon(Icons.stop),
+                          tooltip: 'Stop',
                         ),
+                        if (musicPlayer.totalDuration > Duration.zero)
+                          Expanded(
+                            child: Slider(
+                              value: musicPlayer.savedPosition.inSeconds.toDouble(),
+                              min: 0,
+                              max: musicPlayer.totalDuration.inSeconds.toDouble(),
+                              onChanged: (value) {
+                                musicPlayer.seekTo(Duration(seconds: value.toInt()));
+                              },
+                            ),
+                          ),
                       ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-            ],
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -1268,6 +1358,12 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               Text('• Total Songs: ${songProvider.songs.length}'),
               for (int i = 0; i < songProvider.songs.length; i++)
                 Text('• Song $i: ${songProvider.songs[i].title} (UUID: ${songProvider.songs[i].connectedNfcUuid ?? "None"})'),
+              const SizedBox(height: 16),
+              
+              const Text('Flavor Information:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('• GitHub Release: ${AppConfig.isGitHubRelease}'),
+              Text('• F-Droid Release: ${AppConfig.isFdroidRelease}'),
+              Text('• Google Play Release: ${AppConfig.isGooglePlayRelease}'),
               const SizedBox(height: 16),
               
               const Text('Actions:', style: TextStyle(fontWeight: FontWeight.bold)),

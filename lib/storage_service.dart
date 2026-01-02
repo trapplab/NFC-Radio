@@ -30,9 +30,9 @@ class StorageService {
       debugPrint('🔧 Platform: ${Platform.operatingSystem}');
       debugPrint('🔧 Current working directory: ${Directory.current.path}');
       
-      // Initialize Hive Flutter with specific directory for Android
+      // Initialize Hive Flutter
       debugPrint('🔧 Initializing Hive Flutter...');
-      await Hive.initFlutter('nfc_jukebox_data');
+      await Hive.initFlutter();
       debugPrint('✅ Hive Flutter initialized');
       
       // Register adapters

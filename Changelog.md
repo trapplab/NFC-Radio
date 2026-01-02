@@ -13,6 +13,11 @@
 
 # Cangelog
 
+## [0.3.0]
+### Added
+- Introduced flavors to build for different plattforms
+- Added update checker for github released version.
+
 ## [0.2.0]
 ### Added
 - Added this changelog
