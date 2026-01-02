@@ -18,6 +18,7 @@ App Overview | App Detail | App Lock
 - **Simple UI**: Easy-to-use interface for playing music.
 - **Customizable**: Map NFC tags to play local audio files.
 - **Cross-Platform**: Is tested on Android devices, but might also work on iOS.
+- **Privacy Focused**: No data is collected or stored. Everything is stored locally on the device.
 
 ## Technologies Used
 
