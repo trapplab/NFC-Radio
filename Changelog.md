@@ -16,3 +16,4 @@
 ## [Unreleased]
 ### Added
 - Added this changelog
+- Added support to organize audio files in folders
