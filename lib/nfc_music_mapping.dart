@@ -80,23 +80,24 @@ class NFCMusicMappingProvider with ChangeNotifier {
   }
 
   void addMapping(NFCMusicMapping mapping) {
+    // Remove any existing mapping for this song
+    _mappings.removeWhere((m) => m.songId == mapping.songId);
     _mappings.add(mapping);
     _saveMappingToStorage(mapping);
     notifyListeners();
   }
 
-  void removeMapping(String nfcUuid) {
-    _mappings.removeWhere((mapping) => mapping.nfcUuid == nfcUuid);
-    _deleteMappingFromStorage(nfcUuid);
+  void removeMapping(String songId) {
+    _mappings.removeWhere((mapping) => mapping.songId == songId);
+    _deleteMappingFromStorage(songId);
     notifyListeners();
   }
 
-  String? getSongId(String nfcUuid) {
-    final mapping = _mappings.firstWhere(
-      (mapping) => mapping.nfcUuid == nfcUuid,
-      orElse: () => NFCMusicMapping(nfcUuid: '', songId: ''),
-    );
-    return mapping.songId.isNotEmpty ? mapping.songId : null;
+  List<String> getSongIds(String nfcUuid) {
+    return _mappings
+        .where((mapping) => mapping.nfcUuid == nfcUuid)
+        .map((mapping) => mapping.songId)
+        .toList();
   }
 
   // ========== STORAGE OPERATIONS ==========
@@ -114,11 +115,11 @@ class NFCMusicMappingProvider with ChangeNotifier {
   }
 
   /// Delete a mapping from storage (with fallback to in-memory on error)
-  Future<void> _deleteMappingFromStorage(String nfcUuid) async {
+  Future<void> _deleteMappingFromStorage(String songId) async {
     if (!_isInitialized) return; // Skip if not initialized yet
     
     try {
-      await _storageService.deleteMapping(nfcUuid);
+      await _storageService.deleteMapping(songId);
     } catch (e) {
       debugPrint('⚠️ Failed to delete mapping from storage: $e');
       // Continue without storage

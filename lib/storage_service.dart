@@ -3,11 +3,13 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/material.dart';
 import 'song.dart';
 import 'nfc_music_mapping.dart';
+import 'folder.dart';
 
 /// Service class to handle all persistence operations using Hive storage
 class StorageService {
   static const String _songsBoxName = 'songs';
   static const String _mappingsBoxName = 'mappings';
+  static const String _foldersBoxName = 'folders';
   
   static StorageService? _instance;
   static StorageService get instance => _instance ??= StorageService._();
@@ -16,6 +18,7 @@ class StorageService {
   
   Box<Song>? _songsBox;
   Box<NFCMusicMapping>? _mappingsBox;
+  Box<Folder>? _foldersBox;
   bool _isInitialized = false;
   
   /// Initialize Hive storage and register adapters
@@ -40,12 +43,19 @@ class StorageService {
       } else {
         debugPrint('ℹ️ SongAdapter already registered');
       }
-      
+
       if (!Hive.isAdapterRegistered(1)) {
         Hive.registerAdapter(NFCMusicMappingAdapter());
         debugPrint('✅ NFCMusicMappingAdapter registered');
       } else {
         debugPrint('ℹ️ NFCMusicMappingAdapter already registered');
+      }
+
+      if (!Hive.isAdapterRegistered(2)) {
+        Hive.registerAdapter(FolderAdapter());
+        debugPrint('✅ FolderAdapter registered');
+      } else {
+        debugPrint('ℹ️ FolderAdapter already registered');
       }
       
       // Open boxes with error handling
@@ -54,12 +64,18 @@ class StorageService {
       debugPrint('✅ Songs box opened successfully');
       debugPrint('📊 Songs box path: ${_songsBox?.path}');
       debugPrint('📊 Songs box length: ${_songsBox?.length ?? 0}');
-      
+
       debugPrint('🔧 Opening mappings box: $_mappingsBoxName');
       _mappingsBox = await Hive.openBox<NFCMusicMapping>(_mappingsBoxName);
       debugPrint('✅ Mappings box opened successfully');
       debugPrint('📊 Mappings box path: ${_mappingsBox?.path}');
       debugPrint('📊 Mappings box length: ${_mappingsBox?.length ?? 0}');
+
+      debugPrint('🔧 Opening folders box: $_foldersBoxName');
+      _foldersBox = await Hive.openBox<Folder>(_foldersBoxName);
+      debugPrint('✅ Folders box opened successfully');
+      debugPrint('📊 Folders box path: ${_foldersBox?.path}');
+      debugPrint('📊 Folders box length: ${_foldersBox?.length ?? 0}');
       
       _isInitialized = true;
       debugPrint('✅ ===== HIVE STORAGE INITIALIZATION COMPLETED =====');
@@ -87,7 +103,7 @@ class StorageService {
   }
   
   /// Check if storage is initialized and ready
-  bool get isInitialized => _isInitialized && _songsBox != null && _mappingsBox != null;
+  bool get isInitialized => _isInitialized && _songsBox != null && _mappingsBox != null && _foldersBox != null;
   
   /// Check if this is the first run (no existing data)
   bool get isFirstRun => !(_songsBox?.isNotEmpty ?? false) && !(_mappingsBox?.isNotEmpty ?? false);
@@ -180,7 +196,8 @@ class StorageService {
     _checkInitialization();
     
     try {
-      await _mappingsBox!.put(mapping.nfcUuid, mapping);
+      // Use songId as key to allow multiple songs to use the same NFC UUID
+      await _mappingsBox!.put(mapping.songId, mapping);
       debugPrint('💾 Saved mapping: ${mapping.nfcUuid} -> ${mapping.songId}');
     } catch (e) {
       debugPrint('❌ Failed to save mapping: $e');
@@ -235,14 +252,14 @@ class StorageService {
   }
   
   /// Delete a mapping from storage
-  Future<void> deleteMapping(String nfcUuid) async {
+  Future<void> deleteMapping(String songId) async {
     _checkInitialization();
     
     try {
-      await _mappingsBox!.delete(nfcUuid);
-      debugPrint('🗑️ Deleted mapping for NFC: $nfcUuid');
+      await _mappingsBox!.delete(songId);
+      debugPrint('🗑️ Deleted mapping for song: $songId');
     } catch (e) {
-      debugPrint('❌ Failed to delete mapping for $nfcUuid: $e');
+      debugPrint('❌ Failed to delete mapping for song $songId: $e');
       rethrow;
     }
   }
@@ -260,16 +277,98 @@ class StorageService {
     }
   }
   
+  // ========== FOLDERS OPERATIONS ==========
+
+  /// Save a folder to storage
+  Future<void> saveFolder(Folder folder) async {
+    _checkInitialization();
+
+    try {
+      await _foldersBox!.put(folder.id, folder);
+      debugPrint('💾 Saved folder: ${folder.name} (${folder.id})');
+    } catch (e) {
+      debugPrint('❌ Failed to save folder: $e');
+      rethrow;
+    }
+  }
+
+  /// Save multiple folders to storage
+  Future<void> saveFolders(List<Folder> folders) async {
+    _checkInitialization();
+
+    try {
+      final Map<String, Folder> foldersMap = {for (var folder in folders) folder.id: folder};
+      await _foldersBox!.putAll(foldersMap);
+      debugPrint('💾 Saved ${folders.length} folders to storage');
+    } catch (e) {
+      debugPrint('❌ Failed to save folders: $e');
+      rethrow;
+    }
+  }
+
+  /// Get all folders from storage
+  List<Folder> getAllFolders() {
+    _checkInitialization();
+
+    try {
+      final folders = _foldersBox!.values.toList();
+      debugPrint('📖 Loaded ${folders.length} folders from storage');
+      return folders;
+    } catch (e) {
+      debugPrint('❌ Failed to load folders: $e');
+      return [];
+    }
+  }
+
+  /// Get a folder by ID
+  Folder? getFolder(String folderId) {
+    _checkInitialization();
+
+    try {
+      return _foldersBox!.get(folderId);
+    } catch (e) {
+      debugPrint('❌ Failed to get folder $folderId: $e');
+      return null;
+    }
+  }
+
+  /// Delete a folder from storage
+  Future<void> deleteFolder(String folderId) async {
+    _checkInitialization();
+
+    try {
+      await _foldersBox!.delete(folderId);
+      debugPrint('🗑️ Deleted folder: $folderId');
+    } catch (e) {
+      debugPrint('❌ Failed to delete folder $folderId: $e');
+      rethrow;
+    }
+  }
+
+  /// Clear all folders from storage
+  Future<void> clearFolders() async {
+    _checkInitialization();
+
+    try {
+      await _foldersBox!.clear();
+      debugPrint('🧹 Cleared all folders from storage');
+    } catch (e) {
+      debugPrint('❌ Failed to clear folders: $e');
+      rethrow;
+    }
+  }
+
   // ========== UTILITY METHODS ==========
-  
+
   /// Clear all data from storage
   Future<void> clearAllData() async {
     _checkInitialization();
-    
+
     try {
       await Future.wait([
         clearSongs(),
         clearMappings(),
+        clearFolders(),
       ]);
       debugPrint('🧹 Cleared all data from storage');
     } catch (e) {
@@ -286,13 +385,15 @@ class StorageService {
         'error': 'Storage not initialized'
       };
     }
-    
+
     return {
       'initialized': _isInitialized,
       'songsCount': _songsBox?.length ?? 0,
       'mappingsCount': _mappingsBox?.length ?? 0,
+      'foldersCount': _foldersBox?.length ?? 0,
       'songsBoxPath': _songsBox?.path,
       'mappingsBoxPath': _mappingsBox?.path,
+      'foldersBoxPath': _foldersBox?.path,
       'platform': Platform.operatingSystem,
       'boxIsOpen': _songsBox?.isOpen ?? false,
       'boxIsEmpty': _songsBox?.isEmpty ?? false,
@@ -311,7 +412,7 @@ class StorageService {
       debugPrint('🔍 - Path: ${_songsBox!.path}');
       debugPrint('🔍 - Length: ${_songsBox!.length}');
       debugPrint('🔍 - Is Empty: ${_songsBox!.isEmpty}');
-      
+
       if (_songsBox!.isNotEmpty) {
         debugPrint('🔍 - Songs in box:');
         for (int i = 0; i < _songsBox!.length && i < 5; i++) {
@@ -322,7 +423,7 @@ class StorageService {
     } else {
       debugPrint('🔍 Songs Box: NULL');
     }
-    
+
     if (_mappingsBox != null) {
       debugPrint('🔍 Mappings Box:');
       debugPrint('🔍 - Is Open: ${_mappingsBox!.isOpen}');
@@ -331,6 +432,24 @@ class StorageService {
       debugPrint('🔍 - Is Empty: ${_mappingsBox!.isEmpty}');
     } else {
       debugPrint('🔍 Mappings Box: NULL');
+    }
+
+    if (_foldersBox != null) {
+      debugPrint('🔍 Folders Box:');
+      debugPrint('🔍 - Is Open: ${_foldersBox!.isOpen}');
+      debugPrint('🔍 - Path: ${_foldersBox!.path}');
+      debugPrint('🔍 - Length: ${_foldersBox!.length}');
+      debugPrint('🔍 - Is Empty: ${_foldersBox!.isEmpty}');
+
+      if (_foldersBox!.isNotEmpty) {
+        debugPrint('🔍 - Folders in box:');
+        for (int i = 0; i < _foldersBox!.length && i < 5; i++) {
+          final folder = _foldersBox!.getAt(i);
+          debugPrint('🔍   $i: ${folder?.name ?? 'null'} (${folder?.id ?? 'null'})');
+        }
+      }
+    } else {
+      debugPrint('🔍 Folders Box: NULL');
     }
     
     debugPrint('🔍 ===== END STORAGE DEBUG =====');

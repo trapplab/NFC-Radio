@@ -1,35 +1,41 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'nfc_music_mapping.dart';
+part of 'folder.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class NFCMusicMappingAdapter extends TypeAdapter<NFCMusicMapping> {
+class FolderAdapter extends TypeAdapter<Folder> {
   @override
-  final int typeId = 1;
+  final int typeId = 2;
 
   @override
-  NFCMusicMapping read(BinaryReader reader) {
+  Folder read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return NFCMusicMapping(
-      nfcUuid: fields[0] as String,
-      songId: fields[1] as String,
+    return Folder(
+      id: fields[0] as String,
+      name: fields[1] as String,
+      songIds: (fields[2] as List).cast<String>(),
+      isExpanded: fields[3] as bool,
     );
   }
 
   @override
-  void write(BinaryWriter writer, NFCMusicMapping obj) {
+  void write(BinaryWriter writer, Folder obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(4)
       ..writeByte(0)
-      ..write(obj.nfcUuid)
+      ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.songId);
+      ..write(obj.name)
+      ..writeByte(2)
+      ..write(obj.songIds)
+      ..writeByte(3)
+      ..write(obj.isExpanded);
   }
 
   @override
@@ -38,7 +44,7 @@ class NFCMusicMappingAdapter extends TypeAdapter<NFCMusicMapping> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is NFCMusicMappingAdapter &&
+      other is FolderAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
