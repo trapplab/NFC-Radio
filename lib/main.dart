@@ -7,6 +7,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:uuid/uuid.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'nfc_music_mapping.dart';
 import 'nfc_service.dart';
 import 'music_player.dart';
@@ -15,6 +16,8 @@ import 'folder.dart';
 import 'storage_service.dart';
 import 'dimmed_mode_service.dart';
 import 'dimmed_mode_wrapper.dart';
+import 'update_service.dart';
+import 'config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,16 +72,59 @@ class NFCJukeboxHomePage extends StatefulWidget {
 
 class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBindingObserver {
   StreamSubscription<String>? _nfcMessageSubscription;
+  String _appVersion = '';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     
+    // Get app version
+    _getAppVersion();
+
+    // Automatic update check on startup
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkForUpdates(manual: false);
+    });
+    
     debugPrint('🚀 ===== APP INITIALIZATION STARTED =====');
     debugPrint('🚀 Timestamp: ${DateTime.now()}');
     
     debugPrint('🚀 ===== APP INITIALIZATION COMPLETED =====');
+  }
+  
+  Future<void> _getAppVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      setState(() {
+        _appVersion = packageInfo.version;
+      });
+    } catch (e) {
+      debugPrint('Error getting app version: $e');
+      setState(() {
+        _appVersion = 'Unknown';
+      });
+    }
+  }
+  
+  Future<void> _checkForUpdates({bool manual = true}) async {
+    if (!AppConfig.isGitHubRelease) {
+      return;
+    }
+    
+    try {
+      await UpdateService.checkGithubUpdate(context, 'trapplab', 'NFC-Radio', manual: manual);
+    } catch (e) {
+      debugPrint('⚠️ Update check failed: $e');
+      if (manual && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Update check failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   /// Check if we're running in a test environment
@@ -199,6 +245,26 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('NFC Radio'),
         actions: [
+          // App version display (visible in all flavors, clickable for GitHub flavor)
+          GestureDetector(
+            onTap: AppConfig.isGitHubRelease ? _checkForUpdates : null,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: AppConfig.isGitHubRelease ? Colors.white.withOpacity(0.2) : Colors.transparent,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                _appVersion.isNotEmpty ? 'v$_appVersion' : 'Loading...',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppConfig.isGitHubRelease ? Colors.white : Theme.of(context).colorScheme.onPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
           // Debug info button (debug only)
           if (kDebugMode)
             IconButton(
@@ -1268,6 +1334,12 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               Text('• Total Songs: ${songProvider.songs.length}'),
               for (int i = 0; i < songProvider.songs.length; i++)
                 Text('• Song $i: ${songProvider.songs[i].title} (UUID: ${songProvider.songs[i].connectedNfcUuid ?? "None"})'),
+              const SizedBox(height: 16),
+              
+              const Text('Flavor Information:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('• GitHub Release: ${AppConfig.isGitHubRelease}'),
+              Text('• F-Droid Release: ${AppConfig.isFdroidRelease}'),
+              Text('• Google Play Release: ${AppConfig.isGooglePlayRelease}'),
               const SizedBox(height: 16),
               
               const Text('Actions:', style: TextStyle(fontWeight: FontWeight.bold)),

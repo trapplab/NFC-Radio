@@ -46,9 +46,28 @@ To set up the project locally, follow these steps:
    ```
 
 4. **Run the App**:
+   Running the App
    ```bash
-   flutter run
+   flutter run --dart-define=GITHUB_FLAVOR=true
+   flutter run --dart-define=FDROID_FLAVOR=true
+   flutter run --dart-define=GOOGLE_PLAY_FLAVOR=true
    ```
+
+4. **Build the App**:
+   Build a App Release with 
+   ```bash
+   flutter build apk --dart-define=GITHUB_FLAVOR=true --release
+   flutter build apk --dart-define=FDROID_FLAVOR=true --release
+   flutter build apk --dart-define=GOOGLE_PLAY_FLAVOR=true --release
+   ```
+
+## Flavors
+
+The app can be built with three flavors:
+
+- **Github**: Contains all features, checks for updates on the Github release page.
+- **F-Droid**: Contains all features, gets updates from the F-Droid store.
+- **Google Play**: Limited features, extended features can be unlocked with a purchase. Gets updates from the Google Play Store.
 
 ## Usage
 
