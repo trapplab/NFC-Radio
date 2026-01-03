@@ -9,4 +9,4 @@ Summary: This app is a music player, which can be controlled by any NFC tag.
 Description: |
   This app will allow yout to play music files on your phone using NFC tags. There is no information saved on the tag itself, but the tag's ID is used to identify the tag. The app will then use the ID to determine which audio file to play. This can be used to make a simple music player for kids, so they are not urged to use the screen. But there might be also other usecases you have in mind!
 
-CurrentVersion: 0.4.0
+CurrentVersion: 0.5.0
