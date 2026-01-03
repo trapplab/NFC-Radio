@@ -38,12 +38,12 @@ class NFCService with ChangeNotifier {
 
 
   // Set providers for music integration
-  void setProviders({
+  Future<void> setProviders({
     required NFCMusicMappingProvider mappingProvider,
     required SongProvider songProvider,
     required FolderProvider folderProvider,
     required MusicPlayer musicPlayer,
-  }) {
+  }) async {
     debugPrint('=== SETTING PROVIDERS ===');
     debugPrint('Setting MusicPlayer: ${musicPlayer.runtimeType}');
     debugPrint('Setting SongProvider: ${songProvider.runtimeType} (${songProvider.songs.length} songs)');
@@ -67,7 +67,7 @@ class NFCService with ChangeNotifier {
     // Auto-start NFC scanning if NFC is available and not already scanning
     if (_isNfcAvailable && !_isScanning) {
       debugPrint('🚀 Auto-starting NFC scanning after providers are set');
-      startNfcSession();
+      await _autoStartNfcScanning();
     }
   }
 
@@ -75,6 +75,19 @@ class NFCService with ChangeNotifier {
 
   NFCService() {
     _checkNfcAvailability();
+  }
+  
+  // Auto-start NFC scanning when NFC becomes available
+  Future<void> _autoStartNfcScanning() async {
+    if (_isNfcAvailable && !_isScanning) {
+      debugPrint('🚀 Auto-starting NFC scanning (NFC available and not scanning)');
+      try {
+        await startNfcSession();
+        debugPrint('✅ NFC scanning started successfully');
+      } catch (e) {
+        debugPrint('❌ Failed to auto-start NFC scanning: $e');
+      }
+    }
   }
 
   // Find song by NFC UUID
@@ -85,12 +98,6 @@ class NFCService with ChangeNotifier {
     }
     
     debugPrint('Searching for UUID: $uuid');
-    
-    // Check if all folders are closed first
-    if (_areAllFoldersClosed()) {
-      debugPrint('🔒 All folders are closed - cannot search for songs');
-      return null;
-    }
     
     // 1. Identify the "open folder"
     Folder? openFolder;
@@ -225,16 +232,6 @@ class NFCService with ChangeNotifier {
       return;
     }
     
-    // Step 0.5: Check if all folders are closed (prevent playback if no folders open)
-    if (_areAllFoldersClosed()) {
-      debugPrint('🔒 All folders are closed - NFC tag detected but music playback blocked');
-      debugPrint('🔒 Tag detected: $uuid - Open a folder to enable music playback');
-      _notifyUser('All folders closed - Open a folder to play music');
-      // Still notify listeners to update UI with the detected UUID
-      notifyListeners();
-      return;
-    }
-    
     // Step 1: Validate providers with retry mechanism
     int validationAttempts = 0;
     while (validationAttempts < 3) {
@@ -257,6 +254,17 @@ class NFCService with ChangeNotifier {
       debugPrint('❌ Provider validation failed after 3 attempts - aborting NFC processing');
       debugPrint('❌ This suggests a critical initialization issue');
       debugPrint('❌ Please check app initialization and provider setup');
+      return;
+    }
+    
+    // Step 1.5: Check if all folders are closed (prevent playback if no folders open)
+    // Only check this after providers are fully validated to avoid initialization issues
+    if (_areAllFoldersClosed()) {
+      debugPrint('🔒 All folders are closed - NFC tag detected but music playback blocked');
+      debugPrint('🔒 Tag detected: $uuid - Open a folder to enable music playback');
+      _notifyUser('All folders closed - Open a folder to play music');
+      // Still notify listeners to update UI with the detected UUID
+      notifyListeners();
       return;
     }
 
@@ -430,7 +438,6 @@ class NFCService with ChangeNotifier {
       'isScanning': _isScanning,
       'currentNfcUuid': _currentNfcUuid,
       'lastScannedUuid': _lastScannedUuid,
-      'areAllFoldersClosed': _areAllFoldersClosed(),
       'totalFolders': _folderProvider?.folders.length ?? 0,
       'expandedFolders': _folderProvider?.folders.where((f) => f.isExpanded).length ?? 0,
       'musicPlayerState': _musicPlayer?.currentState.toString(),
@@ -479,6 +486,8 @@ class NFCService with ChangeNotifier {
     // Request permission on Android 13+ (API 33+)
     if (_isNfcAvailable) {
       await _requestNfcPermission();
+      // Auto-start NFC scanning when NFC becomes available
+      await _autoStartNfcScanning();
     }
     
     notifyListeners();
