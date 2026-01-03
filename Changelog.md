@@ -13,6 +13,11 @@
 
 # Cangelog
 
+## [0.5.0]
+### Changed
+- Sign deployed apks with secret key.
+- Build apks only for arm64 architecture to have smaller apks.
+
 ## [0.4.0]
 ### Fixed
 - Show add button always, even if not folders are visible
