@@ -30,9 +30,9 @@ jobs:
       - name: Create key.properties
         run: |
           echo "storeFile=upload-keystore.jks" >> android/key.properties
-          echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> android/key.properties
-          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
+          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
 
       - name: Build APK
         run: flutter build apk --dart-define=GITHUB_FLAVOR=true --release --target-platform android-arm64
