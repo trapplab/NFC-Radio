@@ -360,7 +360,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   builder: (context, folderProvider, child) {
                     return Column(
                       children: [
-                        // Folders list
+                        // Folders list or empty state message
                         if (folderProvider.folders.isEmpty) ...[
                           const Padding(
                             padding: EdgeInsets.all(16),
@@ -369,6 +369,8 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                               style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
                             ),
                           ),
+                          // Add button when no folders exist
+                          _buildAddFolderButton(context, folderProvider),
                         ] else ...[
                           ListView.builder(
                             shrinkWrap: true,
@@ -380,17 +382,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                                 return _buildFolderWidget(context, folder, folderProvider, songProvider, musicPlayer);
                               } else {
                                 // Last item is the "Add New Folder" button
-                                return Container(
-                                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  child: ElevatedButton.icon(
-                                    onPressed: () => _showAddFolderDialog(context, folderProvider),
-                                    icon: const Icon(Icons.create_new_folder),
-                                    label: const Text('Add New Folder'),
-                                    style: ElevatedButton.styleFrom(
-                                      minimumSize: const Size(double.infinity, 50),
-                                    ),
-                                  ),
-                                );
+                                return _buildAddFolderButton(context, folderProvider);
                               }
                             },
                           ),
@@ -468,6 +460,20 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAddFolderButton(BuildContext context, FolderProvider folderProvider) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: ElevatedButton.icon(
+        onPressed: () => _showAddFolderDialog(context, folderProvider),
+        icon: const Icon(Icons.create_new_folder),
+        label: const Text('Add New Folder'),
+        style: ElevatedButton.styleFrom(
+          minimumSize: const Size(double.infinity, 50),
+        ),
       ),
     );
   }

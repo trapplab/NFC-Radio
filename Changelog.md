@@ -13,6 +13,12 @@
 
 # Cangelog
 
+## [0.4.0]
+### Fixed
+- Show add button always, even if not folders are visible
+- build Github apk with Github Flavor to activate update mechanism.
+- Don't play any file if no folder is opened
+
 ## [0.3.0]
 ### Added
 - Introduced flavors to build for different plattforms

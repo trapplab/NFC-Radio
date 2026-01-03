@@ -86,6 +86,12 @@ class NFCService with ChangeNotifier {
     
     debugPrint('Searching for UUID: $uuid');
     
+    // Check if all folders are closed first
+    if (_areAllFoldersClosed()) {
+      debugPrint('🔒 All folders are closed - cannot search for songs');
+      return null;
+    }
+    
     // 1. Identify the "open folder"
     Folder? openFolder;
     try {
@@ -185,6 +191,21 @@ class NFCService with ChangeNotifier {
     }
   }
 
+  // Check if all folders are closed (no folders are expanded)
+  bool _areAllFoldersClosed() {
+    if (_folderProvider == null || _folderProvider!.folders.isEmpty) {
+      return true;
+    }
+    
+    // Check if any folder is expanded
+    for (final folder in _folderProvider!.folders) {
+      if (folder.isExpanded) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   // Process NFC tag for music playback with retry mechanism
   Future<void> _processNfcTag(String uuid) async {
     debugPrint('🔄 ===== NFC TAG PROCESSING STARTED =====');
@@ -201,6 +222,16 @@ class NFCService with ChangeNotifier {
         debugPrint('🔄 Retrying NFC processing for: $uuid');
         _processNfcTag(uuid);
       });
+      return;
+    }
+    
+    // Step 0.5: Check if all folders are closed (prevent playback if no folders open)
+    if (_areAllFoldersClosed()) {
+      debugPrint('🔒 All folders are closed - NFC tag detected but music playback blocked');
+      debugPrint('🔒 Tag detected: $uuid - Open a folder to enable music playback');
+      _notifyUser('All folders closed - Open a folder to play music');
+      // Still notify listeners to update UI with the detected UUID
+      notifyListeners();
       return;
     }
     
@@ -399,7 +430,9 @@ class NFCService with ChangeNotifier {
       'isScanning': _isScanning,
       'currentNfcUuid': _currentNfcUuid,
       'lastScannedUuid': _lastScannedUuid,
-
+      'areAllFoldersClosed': _areAllFoldersClosed(),
+      'totalFolders': _folderProvider?.folders.length ?? 0,
+      'expandedFolders': _folderProvider?.folders.where((f) => f.isExpanded).length ?? 0,
       'musicPlayerState': _musicPlayer?.currentState.toString(),
       'currentMusicPath': _musicPlayer?.currentMusicFilePath,
       'mappedSong': song != null ? {
@@ -408,7 +441,6 @@ class NFCService with ChangeNotifier {
         'connectedNfcUuid': song.connectedNfcUuid,
       } : null,
       'totalSongs': _songProvider?.songs.length ?? 0,
-      'totalFolders': _folderProvider?.folders.length ?? 0,
       'totalMappings': _mappingProvider?.mappings.length ?? 0,
     };
   }
