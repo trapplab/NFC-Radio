@@ -24,7 +24,7 @@ jobs:
         run: flutter pub get
 
       - name: Build APK
-        run: flutter build apk --dart-define=GITHUB_FLAVOR=true --release
+        run: flutter build apk --dart-define=GITHUB_FLAVOR=true --release --target-platform android-arm64
 
       - name: Rename APK with tag
         if: startsWith(github.ref, 'refs/tags/')
