@@ -13,6 +13,14 @@
 
 # Cangelog
 
+## [0.6.0]
+### Changed
+- Prepare Version to publish in F-Droid Store
+
+### Added
+- Added some documentation
+
+
 ## [0.5.0]
 ### Changed
 - Sign deployed apks with secret key.
