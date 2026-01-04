@@ -1,0 +1,5 @@
+## Changed
+- Introduced reproducible builds
+
+## Added
+- Added versioning to work in fdroid toolchain

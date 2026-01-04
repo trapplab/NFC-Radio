@@ -1,0 +1,6 @@
+## Modifié
+- Introduction de builds reproductibles
+
+## Ajouté
+- Ajout de la gestion des versions pour fonctionner dans la chaîne d'outils fdroid
+

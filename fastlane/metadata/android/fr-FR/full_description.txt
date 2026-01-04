@@ -1,0 +1,1 @@
+NFC Radio est un lecteur audio simple qui vous permet de contrôler votre musique en utilisant des étiquettes NFC. Il suffit de toucher votre étiquette NFC pour lire votre fichier audio ou votre musique.

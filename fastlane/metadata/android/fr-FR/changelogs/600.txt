@@ -1,0 +1,10 @@
+## Modifié
+- Préparer la version à publier sur le magasin F-Droid
+
+## Ajouté
+- Ajout de documentation
+- Ajout d'une nouvelle fonctionnalité
+- Ajout d'une autre fonctionnalité
+- Fonctionnalité finale ajoutée
+- Ajout d'une fonctionnalité supplémentaire
+

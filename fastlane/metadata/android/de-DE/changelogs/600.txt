@@ -1,0 +1,10 @@
+## Geändert
+- Version zur Veröffentlichung im F-Droid Store vorbereiten
+
+## Hinzugefügt
+- Einige Dokumentation hinzugefügt
+- Neue Funktion hinzugefügt
+- Ein weiteres Feature hinzugefügt
+- Endgültiges Feature hinzugefügt
+- Ein weiteres Feature hinzugefügt
+
