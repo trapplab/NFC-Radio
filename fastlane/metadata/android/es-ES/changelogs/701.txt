@@ -1,0 +1,3 @@
+## Cambiado
+- Asegúrate de excluir las bibliotecas propietarias de Google Play Core en la compilación del apk para cumplir con los requisitos de F-Droid.
+

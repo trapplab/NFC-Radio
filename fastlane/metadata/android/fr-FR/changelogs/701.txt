@@ -1,0 +1,3 @@
+## Modifié
+- Veillez à exclure les bibliothèques propriétaires Google Play Core lors de la création de l'APK pour être conforme aux exigences de F-Droid.
+

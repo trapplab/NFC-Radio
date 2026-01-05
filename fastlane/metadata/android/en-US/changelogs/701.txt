@@ -1,0 +1,2 @@
+## Changed
+- Make sure to exclude propietary google play core libraries in apk build for F-Droid compliance.

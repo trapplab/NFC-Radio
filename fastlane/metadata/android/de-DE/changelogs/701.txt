@@ -1,0 +1,3 @@
+## Geändert
+Stellen Sie sicher, dass proprietäre Google Play Core-Bibliotheken beim APK-Build für die F-Droid-Konformität ausgeschlossen werden.
+

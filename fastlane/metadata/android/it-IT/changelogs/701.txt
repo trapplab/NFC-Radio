@@ -1,0 +1,3 @@
+## Modificato
+- Assicurati di escludere le librerie proprietarie di Google Play Core nella build dell'apk per conformarti a F-Droid.
+
