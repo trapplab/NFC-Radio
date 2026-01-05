@@ -1,0 +1,1 @@
+NFC Radio ist ein einfacher Audioplayer, mit dem Sie Ihre Musik mit NFC-Tags steuern können. Tippen Sie einfach auf Ihr NFC-Tag, um Ihre Audiodatei oder Musik abzuspielen.

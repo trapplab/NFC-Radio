@@ -1,0 +1,6 @@
+## Geändert
+- Reproduzierbare Builds eingeführt
+
+## Hinzugefügt
+- Versionsverwaltung hinzugefügt, um im fdroid-Buildsystem zu arbeiten
+

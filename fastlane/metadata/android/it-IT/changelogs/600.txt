@@ -1,0 +1,10 @@
+## Modificato
+- Preparare la versione da pubblicare nello store F-Droid
+
+## Aggiunto
+- Aggiunta della documentazione
+- Aggiunta una nuova funzionalità
+- Aggiunta un'altra funzionalità
+- Aggiunta funzionalità finale
+- Aggiunta un'altra funzione
+

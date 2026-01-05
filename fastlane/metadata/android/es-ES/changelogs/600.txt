@@ -1,0 +1,10 @@
+## Cambiado
+- Preparar la versión para publicar en F-Droid Store
+
+## Añadido
+- Se añadió algo de documentación
+- Se agregó una nueva función
+- Se agregó otra función
+- Se añadió la característica final
+- Se añadió una característica más
+

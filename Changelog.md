@@ -13,13 +13,19 @@
 
 # Cangelog
 
+## [0.7.0]
+### Changed
+- Introduced reproducible builds
+
+### Added
+- Added versioning to work in fdroid toolchain
+
 ## [0.6.0]
 ### Changed
 - Prepare Version to publish in F-Droid Store
 
 ### Added
 - Added some documentation
-
 
 ## [0.5.0]
 ### Changed

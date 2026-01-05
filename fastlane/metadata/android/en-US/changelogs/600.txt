@@ -1,0 +1,9 @@
+## Changed
+- Prepare Version to publish in F-Droid Store
+
+## Added
+- Added some documentation
+- Added a new feature
+- Added another feature
+- Added final feature
+- Added one more feature

@@ -1,0 +1,1 @@
+Un semplice lettore audio che consente di controllare la tua musica con tag NFC

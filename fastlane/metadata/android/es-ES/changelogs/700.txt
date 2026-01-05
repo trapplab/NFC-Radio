@@ -1,0 +1,6 @@
+## Cambiado
+- Introducido compilaciones reproducibles
+
+## Añadido
+- Se añadió control de versiones para trabajar en la cadena de herramientas de fdroid
+
