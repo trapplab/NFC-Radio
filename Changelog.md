@@ -11,7 +11,11 @@
 * __Security__ in case of vulnerabilities.
 -->
 
-# Cangelog
+# Changelog
+
+## [0.7.1]
+### Changed
+- Make sure to exclude propietary google play core libraries in apk build for F-Droid compliance.
 
 ## [0.7.0]
 ### Changed

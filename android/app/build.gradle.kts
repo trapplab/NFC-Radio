@@ -41,6 +41,14 @@ android {
         versionName = flutter.versionName
     }
 
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            // Exclude Google Play Core libraries for F-Droid compliance
+            excludes += "com/google/android/play/core/**/*.class"
+        }
+    }
+
     signingConfigs {
         create("release") {
         // Fix File constructor - use file() helper or explicit String
