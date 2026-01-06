@@ -1,31 +1,7 @@
-// android/build.gradle.kts
-
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath("com.android.tools.build:gradle:8.1.1")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.10")
-    }
-}
-
 allprojects {
     repositories {
         google()
         mavenCentral()
-    }
-}
-
-subprojects {
-    configurations.all {
-        exclude(group = "com.google.android.play", module = "core")
-        exclude(group = "com.google.android.play", module = "core-common")
-        exclude(group = "com.google.android.gms", module = "play-services-ads")
-        exclude(group = "com.google.android.gms", module = "play-services-ads-lite")
-        exclude(group = "com.google.android.gms", module = "play-services-gcm")
-        exclude(group = "com.google.android.gms", module = "play-services-basement")
     }
 }
 

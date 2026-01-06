@@ -2,16 +2,6 @@ import java.io.File
 import java.io.FileInputStream
 import java.util.Properties
 
-dependencies {
-    // Keep other dependencies normally
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.10")
-}
-
-configurations.all {
-    exclude(group = "com.google.android.play")
-    exclude(group = "com.google.android.gms")
-}
-
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -27,8 +17,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.trapplab.nfc_radio"
-    compileSdk = 36
-    ndkVersion = "28.2.13676358"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -46,17 +36,9 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
-        targetSdk = 34
+        targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-    }
-
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-            // Exclude Google Play Core libraries for F-Droid compliance
-            excludes += "com/google/android/play/core/**/*.class"
-        }
     }
 
     signingConfigs {
@@ -77,6 +59,11 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
+    }
+
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
 }
 
