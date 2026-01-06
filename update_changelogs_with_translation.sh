@@ -64,8 +64,8 @@ translate_text() {
     -d "{
         \"model\": \"gpt-4.1-mini\",
         \"messages\": [
-        {\"role\": \"system\", \"content\": \"You are a helpful translator.\"},
-        {\"role\": \"user\", \"content\": \"Translate the following text to $target_lang: $text\"}
+        {\"role\": \"system\", \"content\": \"You are a professional translator. Translate the given text to $target_lang. Return ONLY the translation, nothing else. Do not add explanations, questions, or any additional text.\"},
+        {\"role\": \"user\", \"content\": \"$text\"}
         ]
     }" | jq -r '.choices[0].message.content'
 

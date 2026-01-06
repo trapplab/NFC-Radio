@@ -13,6 +13,10 @@
 
 # Changelog
 
+## [0.7.2]
+### Changed
+- Shrink apk file in the build settings to remove unused google libraries we don't want in the build.
+- 
 ## [0.7.1]
 ### Changed
 - Make sure to exclude propietary google play core libraries in apk build for F-Droid compliance.
