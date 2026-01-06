@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'nfc_music_mapping.dart';
 import 'nfc_service.dart';
 import 'music_player.dart';
@@ -172,7 +173,10 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             folderProvider.initialize(),
             mappingProvider.initialize(),
           ]);
-  
+
+          // Set the restricted version flag based on the app flavor
+          folderProvider.setRestrictedVersion(AppConfig.isGooglePlayRelease);
+
           // Set providers for NFCService after initialization
           nfcService.setProviders(
             mappingProvider: mappingProvider,
@@ -360,6 +364,59 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   builder: (context, folderProvider, child) {
                     return Column(
                       children: [
+                        // Show upgrade hint for restricted version
+                        if (AppConfig.isGooglePlayRelease) Container(
+                          margin: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue[300]!),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'In this version you can add up to 2 folders with 6 audio files each.',
+                                style: TextStyle(fontSize: 14, color: Colors.blue[800]),
+                              ),
+                              const SizedBox(height: 8),
+                              GestureDetector(
+                                onTap: () async {
+                                  const premiumUrl = 'https://play.google.com/store/apps/details?id=com.example.nfc_radio_premium';
+                                  if (await canLaunchUrl(Uri.parse(premiumUrl))) {
+                                    await launchUrl(Uri.parse(premiumUrl));
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Could not open the premium version link.'),
+                                      ),
+                                    );
+                                  }
+                                },
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'The unlocked version can be found here.',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.blue[600],
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.arrow_forward,
+                                      size: 14,
+                                      color: Colors.blue[600],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                         // Folders list or empty state message
                         if (folderProvider.folders.isEmpty) ...[
                           const Padding(
@@ -468,7 +525,13 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ElevatedButton.icon(
-        onPressed: () => _showAddFolderDialog(context, folderProvider),
+        onPressed: () {
+          if (folderProvider.isFolderLimitReached()) {
+            folderProvider.showFolderLimitDialog(context);
+          } else {
+            _showAddFolderDialog(context, folderProvider);
+          }
+        },
         icon: const Icon(Icons.create_new_folder),
         label: const Text('Add New Folder'),
         style: ElevatedButton.styleFrom(
@@ -479,6 +542,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   }
 
   Widget _buildAddSongButton(BuildContext context, SongProvider songProvider, {String? folderId}) {
+    final folderProvider = Provider.of<FolderProvider>(context, listen: false);
     return Container(
       width: 120,
       margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -488,7 +552,13 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
         border: Border.all(color: Colors.grey, width: 1),
       ),
       child: InkWell(
-        onTap: () => _showSongDialog(context, songProvider, folderId: folderId),
+        onTap: () {
+          if (folderId != null && folderProvider.isSongLimitReached(folderId)) {
+            folderProvider.showSongLimitDialog(context);
+          } else {
+            _showSongDialog(context, songProvider, folderId: folderId);
+          }
+        },
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
