@@ -1,0 +1,3 @@
+## Cambiado
+- Vuelve a agregar el repositorio de Google como una dependencia en el archivo build.gradle para corregir la compilación en GitHub. Pero asegúrate de que las dependencias excluidas de Google no se incluyan en la compilación.
+

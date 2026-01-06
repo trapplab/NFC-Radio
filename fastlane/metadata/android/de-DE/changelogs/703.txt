@@ -1,0 +1,3 @@
+## Geändert
+- Fügen Sie das Google-Repository wieder als Abhängigkeit in die build.gradle-Datei ein, um den GitHub-Build zu beheben. Stellen Sie jedoch sicher, dass ausgeschlossene Google-Abhängigkeiten nicht in den Build aufgenommen werden.
+

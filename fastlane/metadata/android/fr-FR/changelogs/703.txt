@@ -1,0 +1,3 @@
+## Modifié
+- Réajoutez le dépôt Google en tant que dépendance dans le fichier build.gradle pour corriger la construction GitHub. Mais assurez-vous que les dépendances Google exclues ne soient pas incluses dans la construction.
+

@@ -1,0 +1,2 @@
+## Changed
+- re add the google repsoitory as a dependency to the build.gradle file, to fix the github build. But make sure exluded google dependencies are not included in the build.

@@ -1,0 +1,3 @@
+## Modificato
+- Aggiungi nuovamente il repository di Google come dipendenza nel file build.gradle per correggere la build su GitHub. Ma assicurati che le dipendenze di Google escluse non siano incluse nella build.
+
