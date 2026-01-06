@@ -1,0 +1,4 @@
+## Geändert
+- APK-Datei in den Build-Einstellungen verkleinern, um ungenutzte Google-Bibliotheken, die wir nicht im Build haben wollen, zu entfernen.
+-
+

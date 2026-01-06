@@ -1,0 +1,4 @@
+## Modificato
+- Riduci il file apk nelle impostazioni di build per rimuovere le librerie Google inutilizzate che non vogliamo nel build.
+-
+

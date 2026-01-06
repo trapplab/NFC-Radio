@@ -1,0 +1,4 @@
+## Cambiado
+- En la configuración de compilación, reducir el tamaño del archivo apk para eliminar las bibliotecas de Google no utilizadas que no queremos en la compilación.
+-
+
