@@ -2,6 +2,16 @@ import java.io.File
 import java.io.FileInputStream
 import java.util.Properties
 
+dependencies {
+    // Keep other dependencies normally
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.10")
+}
+
+configurations.all {
+    exclude(group = "com.google.android.play")
+    exclude(group = "com.google.android.gms")
+}
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -63,8 +73,9 @@ android {
         getByName("release") {
             signingConfig = signingConfigs.getByName("release")
 
-            isMinifyEnabled = false
-            isShrinkResources = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }
