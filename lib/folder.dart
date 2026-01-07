@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 import 'storage_service.dart';
+import 'config.dart';
+import 'iap_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 part 'folder.g.dart';
 
@@ -51,6 +54,97 @@ class FolderProvider with ChangeNotifier {
   List<Folder> get folders => _folders;
   bool get isInitialized => _isInitialized;
 
+  /// Check if premium is unlocked via IAP
+  /// GitHub and F-Droid flavors are always unlimited
+  bool get isPremiumUnlocked {
+    // Only Google Play flavor uses IAP; GitHub/F-Droid are always unlocked
+    if (!AppConfig.isGooglePlayRelease) return true;
+
+    return IAPService.instance.isPremium;
+  }
+
+  /// Check if the folder limit is reached
+  bool isFolderLimitReached() {
+    // GitHub and F-Droid are always unrestricted
+    if (AppConfig.isFdroidRelease || AppConfig.isGitHubRelease) return false;
+
+    // Google Play: restricted unless premium unlocked
+    return AppConfig.isGooglePlayRelease && !isPremiumUnlocked && _folders.length >= 2;
+  }
+
+  /// Check if the song limit is reached for a specific folder
+  bool isSongLimitReached(String folderId) {
+    // GitHub and F-Droid are always unrestricted
+    if (AppConfig.isFdroidRelease || AppConfig.isGitHubRelease) return false;
+
+    // Google Play: restricted unless premium unlocked
+    if (AppConfig.isGooglePlayRelease && !isPremiumUnlocked) {
+      final folderIndex = _folders.indexWhere((folder) => folder.id == folderId);
+      if (folderIndex != -1) {
+        return _folders[folderIndex].songIds.length >= 6;
+      }
+    }
+    return false;
+  }
+
+  /// Show the folder limit dialog
+  void showFolderLimitDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Limit Reached'),
+          content: const Text('You have reached the limit of 2 folders. To add more, please upgrade to the premium version.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            if (AppConfig.isGooglePlayRelease)
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await IAPService.instance.buyPremium();
+                },
+                child: const Text('Upgrade'),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Show the song limit dialog
+  void showSongLimitDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Limit Reached'),
+          content: const Text('You have reached the limit of 6 songs per folder. To add more, please upgrade to the premium version.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            if (AppConfig.isGooglePlayRelease)
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await IAPService.instance.buyPremium();
+                },
+                child: const Text('Upgrade'),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
   /// Initialize the provider by loading folders from storage
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -62,6 +156,11 @@ class FolderProvider with ChangeNotifier {
       debugPrint('📁 Initializing storage service...');
       await _storageService.initialize();
       debugPrint('📁 Storage service initialized');
+
+      // Listen to IAPService premium status changes
+      if (AppConfig.isGooglePlayRelease) {
+        IAPService.instance.addListener(_onPremiumChanged);
+      }
 
       // Load folders from storage
       debugPrint('📁 Loading folders from storage...');
@@ -83,7 +182,7 @@ class FolderProvider with ChangeNotifier {
       }
 
       _isInitialized = true;
-      
+
       // Collapse all folders by default on initialization
       if (_folders.isNotEmpty) {
         for (int i = 0; i < _folders.length; i++) {
@@ -119,7 +218,17 @@ class FolderProvider with ChangeNotifier {
     }
   }
 
+  /// Called when premium status changes
+  void _onPremiumChanged() {
+    notifyListeners();
+  }
+
   void addFolder(Folder folder) {
+    // Safeguard check (UI should handle this for instant feedback)
+    if (isFolderLimitReached()) {
+      return;
+    }
+
     _folders.add(folder);
     _saveFolderToStorage(folder);
     notifyListeners();
@@ -147,6 +256,11 @@ class FolderProvider with ChangeNotifier {
   void addSongToFolder(String folderId, String songId) {
     final folderIndex = _folders.indexWhere((folder) => folder.id == folderId);
     if (folderIndex != -1) {
+      // Safeguard check (UI should handle this for instant feedback)
+      if (isSongLimitReached(folderId)) {
+        return;
+      }
+
       final updatedFolder = Folder(
         id: _folders[folderIndex].id,
         name: _folders[folderIndex].name,

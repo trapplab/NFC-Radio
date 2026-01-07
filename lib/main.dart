@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:uuid/uuid.dart';
+import 'package:hive/hive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:package_info_plus/package_info_plus.dart';
@@ -18,6 +19,7 @@ import 'dimmed_mode_service.dart';
 import 'dimmed_mode_wrapper.dart';
 import 'update_service.dart';
 import 'config.dart';
+import 'iap_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -81,6 +83,16 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     
     // Get app version
     _getAppVersion();
+
+    // Initialize IAP service for Google Play flavor
+    // For other flavors, this sets isPremium=true (unlimited access)
+    if (AppConfig.isGooglePlayRelease) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (mounted) {
+          await IAPService.instance.initialize();
+        }
+      });
+    }
 
     // Automatic update check on startup
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -172,7 +184,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             folderProvider.initialize(),
             mappingProvider.initialize(),
           ]);
-  
+
           // Set providers for NFCService after initialization
           nfcService.setProviders(
             mappingProvider: mappingProvider,
@@ -267,6 +279,13 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               ),
             ),
           ),
+          // Upgrade info button (only for GP flavor when not premium)
+          if (AppConfig.isGooglePlayRelease && !IAPService.instance.isPremium)
+            IconButton(
+              icon: const Icon(Icons.info_outline, color: Colors.blue),
+              onPressed: () => _showUpgradeDialog(context),
+              tooltip: 'Upgrade to Premium',
+            ),
           // Debug info button (debug only)
           if (kDebugMode)
             IconButton(
@@ -468,7 +487,13 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ElevatedButton.icon(
-        onPressed: () => _showAddFolderDialog(context, folderProvider),
+        onPressed: () {
+          if (folderProvider.isFolderLimitReached()) {
+            folderProvider.showFolderLimitDialog(context);
+          } else {
+            _showAddFolderDialog(context, folderProvider);
+          }
+        },
         icon: const Icon(Icons.create_new_folder),
         label: const Text('Add New Folder'),
         style: ElevatedButton.styleFrom(
@@ -479,6 +504,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   }
 
   Widget _buildAddSongButton(BuildContext context, SongProvider songProvider, {String? folderId}) {
+    final folderProvider = Provider.of<FolderProvider>(context, listen: false);
     return Container(
       width: 120,
       margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -488,7 +514,13 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
         border: Border.all(color: Colors.grey, width: 1),
       ),
       child: InkWell(
-        onTap: () => _showSongDialog(context, songProvider, folderId: folderId),
+        onTap: () {
+          if (folderId != null && folderProvider.isSongLimitReached(folderId)) {
+            folderProvider.showSongLimitDialog(context);
+          } else {
+            _showSongDialog(context, songProvider, folderId: folderId);
+          }
+        },
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -1240,6 +1272,42 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     );
   }
 
+  void _showUpgradeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Upgrade to Premium'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'In the free version you can add up to 2 folders with 6 audio files each.',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Upgrade to Premium to unlock unlimited folders and audio files, and support the developers!',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Later'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await IAPService.instance.buyPremium();
+            },
+            child: const Text('Upgrade'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showStorageDebugDialog(BuildContext context) {
     final storageService = StorageService.instance;
     
@@ -1261,6 +1329,14 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               ...storageService.getStorageStats().entries.map(
                 (entry) => Text('• ${entry.key}: ${entry.value}')
               ),
+              const SizedBox(height: 16),
+              
+              const Text('IAP/Premium Status:', style: TextStyle(fontWeight: FontWeight.bold)),
+              if (AppConfig.isGooglePlayRelease) ...[
+                Text('• Premium: ${IAPService.instance.isPremium}'),
+              ] else ...[
+                const Text('• Premium: N/A (non-GP flavor)'),
+              ],
               const SizedBox(height: 16),
               
               const Text('Actions:', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -1317,6 +1393,41 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     },
                     child: const Text('Clear All Data'),
                   ),
+                  if (AppConfig.isGooglePlayRelease) ...[
+                    ElevatedButton(
+                      onPressed: () {
+                        debugPrint('💾 IAP Premium Status: ${IAPService.instance.isPremium}');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Premium status: ${IAPService.instance.isPremium}')),
+                        );
+                      },
+                      child: const Text('Log Premium Status'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        try {
+                          final box = await Hive.openBox('premium_status');
+                          await box.delete('is_premium');
+                          debugPrint('🗑️ Premium status cleared');
+                          // Refresh the IAP service to get the new value
+                          await IAPService.instance.refreshPremiumStatus();
+                          if (mounted) {
+                            messenger.showSnackBar(
+                              const SnackBar(content: Text('Premium status cleared'), backgroundColor: Colors.orange),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            messenger.showSnackBar(
+                              SnackBar(content: Text('Clear failed: $e'), backgroundColor: Colors.red),
+                            );
+                          }
+                        }
+                      },
+                      child: const Text('Clear Premium Status'),
+                    ),
+                  ],
                 ],
               ),
             ],
