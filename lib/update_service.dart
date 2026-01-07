@@ -6,6 +6,24 @@ import 'package:version/version.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'config.dart';
 
+Version _parseVersion(String tagName, {bool isLocal = false}) {
+  // Remove 'v' prefix if present
+  String cleaned = tagName.replaceFirst('v', '');
+  
+  // For local version, remove flavor suffix (e.g., "-github" from "0.7.6-github")
+  if (isLocal) {
+    cleaned = cleaned.split('-').first;
+  }
+  
+  // Check if it's just a build number (single number)
+  if (RegExp(r'^[0-9]+$').hasMatch(cleaned)) {
+    // Convert build number to version format (e.g., 706 -> 0.0.706)
+    cleaned = '0.0.$cleaned';
+  }
+  
+  return Version.parse(cleaned);
+}
+
 class UpdateService {
   static Future<void> checkGithubUpdate(BuildContext context, String owner, String repo, {bool manual = false}) async {
     // Only check for updates if this is a GitHub release
@@ -18,9 +36,9 @@ class UpdateService {
       final response = await http.get(Uri.parse('https://api.github.com/repos/$owner/$repo/releases/latest'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final remoteVersion = Version.parse(data['tag_name'].replaceFirst('v', ''));
+        final remoteVersion = _parseVersion(data['tag_name']);
         final localInfo = await PackageInfo.fromPlatform();
-        final localVersion = Version.parse(localInfo.version);
+        final localVersion = _parseVersion(localInfo.version, isLocal: true);
 
         if (remoteVersion > localVersion) {
           final releaseUrl = data['html_url'];
@@ -77,5 +95,4 @@ class UpdateService {
       }
     }
   }
-  
 }
