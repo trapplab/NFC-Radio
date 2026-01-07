@@ -1,0 +1,3 @@
+## Corregido
+- Corregido el script para preparar pubspec para la versión de fdroid
+

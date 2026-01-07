@@ -1,0 +1,3 @@
+## Risolto
+- Corretto lo script per preparare il pubspec per la versione fdroid
+

@@ -1,0 +1,2 @@
+## Fixed
+- Fixed script to prepare pubspec for fdroid version

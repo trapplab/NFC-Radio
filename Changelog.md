@@ -13,6 +13,10 @@
 
 # Changelog
 
+## [0.7.6]
+### Fixed
+- Fixed script to prepare pubspec for fdroid version
+
 ## [0.7.5]
 ### Added
 - Added a Playstore Version with In-App-Purchase, which is excluded in F-Droid an Github builds.

@@ -1,0 +1,3 @@
+## Behoben
+- Skript zur Vorbereitung des pubspec für die fdroid-Version korrigiert
+
