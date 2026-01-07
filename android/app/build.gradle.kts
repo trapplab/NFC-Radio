@@ -41,6 +41,21 @@ android {
         versionName = flutter.versionName
     }
 
+    flavorDimensions += "store"
+    productFlavors {
+        create("fdroid") {
+            dimension = "store"
+            versionNameSuffix = "-fdroid"
+        }
+        create("play") {
+            dimension = "store"
+        }
+        create("github") {
+            dimension = "store"
+            versionNameSuffix = "-github"
+        }
+    }
+
     signingConfigs {
         create("release") {
         // Fix File constructor - use file() helper or explicit String

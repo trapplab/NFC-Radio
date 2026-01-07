@@ -47,17 +47,17 @@ To set up the project locally, follow these steps:
 4. **Run the App**:
    Running the App
    ```bash
-   flutter run --dart-define=GITHUB_FLAVOR=true
-   flutter run --dart-define=FDROID_FLAVOR=true
-   flutter run --dart-define=GOOGLE_PLAY_FLAVOR=true
+   ./scripts/prepare_flavor.sh fdroid && flutter run --flavor fdroid
+   ./scripts/prepare_flavor.sh play && flutter run --flavor play
+   ./scripts/prepare_flavor.sh github && flutter run --flavor github 
    ```
 
 4. **Build the App**:
    Build a App Release with 
    ```bash
-   flutter build apk --dart-define=GITHUB_FLAVOR=true --release
-   flutter build apk --dart-define=FDROID_FLAVOR=true --release
-   flutter build apk --dart-define=GOOGLE_PLAY_FLAVOR=true --release
+   ./scripts/prepare_flavor.sh fdroid && flutter build apk --flavor fdroid --split-per-abi --target-platform=android-arm64 --release
+   ./scripts/prepare_flavor.sh play && flutter build apk --flavor play --split-per-abi --target-platform=android-arm64 --release
+   ./scripts/prepare_flavor.sh github && flutter build apk --flavor github --split-per-abi --target-platform=android-arm64 --release
    ```
 
 ## Flavors
