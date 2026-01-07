@@ -32,12 +32,20 @@ else
     cp lib/iap/iap_service_play.dart lib/iap_service.dart
 fi
 
+# Determine flutter command - use local submodule if available, otherwise from PATH
+if [ -f "$PWD/flutter/bin/flutter" ]; then
+    FLUTTER_CMD="$PWD/flutter/bin/flutter"
+else
+    FLUTTER_CMD="flutter"
+fi
+echo "Using flutter command: $FLUTTER_CMD"
+
 echo "Running flutter clean..."
-flutter clean
+$FLUTTER_CMD clean
 rm -rf build
 rm -rf android/.gradle
 
 echo "Running flutter pub get..."
-flutter pub get
+$FLUTTER_CMD pub get
 
 echo "Flavor $FLAVOR prepared successfully."
