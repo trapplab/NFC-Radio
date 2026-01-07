@@ -1,0 +1,3 @@
+## Aggiunto
+- Aggiunta una versione Playstore con acquisti in-app, esclusa nelle versioni F-Droid e Github.
+

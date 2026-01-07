@@ -1,0 +1,3 @@
+## Añadido
+- Se añadió una versión para Playstore con compra dentro de la aplicación, la cual está excluida en las versiones de F-Droid y Github.
+

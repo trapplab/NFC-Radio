@@ -13,6 +13,10 @@
 
 # Changelog
 
+## [0.7.5]
+### Added
+- Added a Playstore Version with In-App-Purchase, which is excluded in F-Droid an Github builds.
+
 ## [0.7.4]
 ### Changed
 - included flutter as a submodule in the project.

@@ -88,6 +88,18 @@ Contributions are welcome! If you'd like to contribute to this project, please f
 4. Push your changes to your fork.
 5. Submit a pull request.
 
+## Development Setup
+
+This project uses a pre-commit hook to ensure version consistency across `pubspec.yaml`, `pubspec.play.yaml`, and `pubspec.fdroid.yaml`. And check the consistency of the Changelog.md with the changelog files in the fastlane folder. And calls the `update_changelogs_with_translation.sh` script to update the changelog files in the fastlane folders.
+
+To install the hook, run the following command in the project root:
+
+```bash
+ln -sf scripts/git-hooks/pre-commit .git/hooks/pre-commit
+```
+
+This will ensure that every commit checks for consistent versions in the pubspec files.
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.

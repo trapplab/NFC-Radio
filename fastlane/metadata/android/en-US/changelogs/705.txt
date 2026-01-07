@@ -1,0 +1,2 @@
+## Added
+- Added a Playstore Version with In-App-Purchase, which is excluded in F-Droid an Github builds.
