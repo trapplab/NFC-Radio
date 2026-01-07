@@ -28,6 +28,7 @@
 * flutter_native_splash: ^2.4.7: MIT
 * package_info_plus: ^9.0.0: BSD-3-Clause
 * http: ^1.6.0: BSD-3-Clause
+* in_app_purchase: ^3.2.0: BSD-3-Clause
 
 ## useful commands
 ```bash
