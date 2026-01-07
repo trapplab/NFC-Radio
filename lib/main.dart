@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:uuid/uuid.dart';
+import 'package:hive/hive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'nfc_music_mapping.dart';
 import 'nfc_service.dart';
 import 'music_player.dart';
@@ -19,6 +19,7 @@ import 'dimmed_mode_service.dart';
 import 'dimmed_mode_wrapper.dart';
 import 'update_service.dart';
 import 'config.dart';
+import 'iap_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -82,6 +83,16 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     
     // Get app version
     _getAppVersion();
+
+    // Initialize IAP service for Google Play flavor
+    // For other flavors, this sets isPremium=true (unlimited access)
+    if (AppConfig.isGooglePlayRelease) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (mounted) {
+          await IAPService.instance.initialize();
+        }
+      });
+    }
 
     // Automatic update check on startup
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -173,9 +184,6 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             folderProvider.initialize(),
             mappingProvider.initialize(),
           ]);
-
-          // Set the restricted version flag based on the app flavor
-          folderProvider.setRestrictedVersion(AppConfig.isGooglePlayRelease);
 
           // Set providers for NFCService after initialization
           nfcService.setProviders(
@@ -271,6 +279,13 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               ),
             ),
           ),
+          // Upgrade info button (only for GP flavor when not premium)
+          if (AppConfig.isGooglePlayRelease && !IAPService.instance.isPremium)
+            IconButton(
+              icon: const Icon(Icons.info_outline, color: Colors.blue),
+              onPressed: () => _showUpgradeDialog(context),
+              tooltip: 'Upgrade to Premium',
+            ),
           // Debug info button (debug only)
           if (kDebugMode)
             IconButton(
@@ -364,59 +379,6 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   builder: (context, folderProvider, child) {
                     return Column(
                       children: [
-                        // Show upgrade hint for restricted version
-                        if (AppConfig.isGooglePlayRelease) Container(
-                          margin: const EdgeInsets.all(16),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.blue[50],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.blue[300]!),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'In this version you can add up to 2 folders with 6 audio files each.',
-                                style: TextStyle(fontSize: 14, color: Colors.blue[800]),
-                              ),
-                              const SizedBox(height: 8),
-                              GestureDetector(
-                                onTap: () async {
-                                  const premiumUrl = 'https://play.google.com/store/apps/details?id=com.example.nfc_radio_premium';
-                                  if (await canLaunchUrl(Uri.parse(premiumUrl))) {
-                                    await launchUrl(Uri.parse(premiumUrl));
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Could not open the premium version link.'),
-                                      ),
-                                    );
-                                  }
-                                },
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      'The unlocked version can be found here.',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.blue[600],
-                                        decoration: TextDecoration.underline,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      Icons.arrow_forward,
-                                      size: 14,
-                                      color: Colors.blue[600],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                         // Folders list or empty state message
                         if (folderProvider.folders.isEmpty) ...[
                           const Padding(
@@ -1310,6 +1272,42 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     );
   }
 
+  void _showUpgradeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Upgrade to Premium'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'In the free version you can add up to 2 folders with 6 audio files each.',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Upgrade to Premium to unlock unlimited folders and audio files, and support the developers!',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Later'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await IAPService.instance.buyPremium();
+            },
+            child: const Text('Upgrade'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showStorageDebugDialog(BuildContext context) {
     final storageService = StorageService.instance;
     
@@ -1331,6 +1329,14 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               ...storageService.getStorageStats().entries.map(
                 (entry) => Text('• ${entry.key}: ${entry.value}')
               ),
+              const SizedBox(height: 16),
+              
+              const Text('IAP/Premium Status:', style: TextStyle(fontWeight: FontWeight.bold)),
+              if (AppConfig.isGooglePlayRelease) ...[
+                Text('• Premium: ${IAPService.instance.isPremium}'),
+              ] else ...[
+                const Text('• Premium: N/A (non-GP flavor)'),
+              ],
               const SizedBox(height: 16),
               
               const Text('Actions:', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -1387,6 +1393,41 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     },
                     child: const Text('Clear All Data'),
                   ),
+                  if (AppConfig.isGooglePlayRelease) ...[
+                    ElevatedButton(
+                      onPressed: () {
+                        debugPrint('💾 IAP Premium Status: ${IAPService.instance.isPremium}');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Premium status: ${IAPService.instance.isPremium}')),
+                        );
+                      },
+                      child: const Text('Log Premium Status'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        try {
+                          final box = await Hive.openBox('premium_status');
+                          await box.delete('is_premium');
+                          debugPrint('🗑️ Premium status cleared');
+                          // Refresh the IAP service to get the new value
+                          await IAPService.instance.refreshPremiumStatus();
+                          if (mounted) {
+                            messenger.showSnackBar(
+                              const SnackBar(content: Text('Premium status cleared'), backgroundColor: Colors.orange),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            messenger.showSnackBar(
+                              SnackBar(content: Text('Clear failed: $e'), backgroundColor: Colors.red),
+                            );
+                          }
+                        }
+                      },
+                      child: const Text('Clear Premium Status'),
+                    ),
+                  ],
                 ],
               ),
             ],

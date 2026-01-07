@@ -3,6 +3,7 @@ import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 import 'storage_service.dart';
 import 'config.dart';
+import 'iap_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 part 'folder.g.dart';
@@ -49,27 +50,39 @@ class FolderProvider with ChangeNotifier {
   final List<Folder> _folders = [];
   final StorageService _storageService = StorageService.instance;
   bool _isInitialized = false;
-  bool _isRestrictedVersion = AppConfig.isGooglePlayRelease;
 
   List<Folder> get folders => _folders;
   bool get isInitialized => _isInitialized;
-  
-  /// Set whether the app is in restricted version mode
-  void setRestrictedVersion(bool isRestricted) {
-    _isRestrictedVersion = isRestricted;
+
+  /// Check if premium is unlocked via IAP
+  /// GitHub and F-Droid flavors are always unlimited
+  bool get isPremiumUnlocked {
+    // Only Google Play flavor uses IAP; GitHub/F-Droid are always unlocked
+    if (!AppConfig.isGooglePlayRelease) return true;
+
+    return IAPService.instance.isPremium;
   }
 
   /// Check if the folder limit is reached
   bool isFolderLimitReached() {
-    return _isRestrictedVersion && _folders.length >= 2;
+    // GitHub and F-Droid are always unrestricted
+    if (AppConfig.isFdroidRelease || AppConfig.isGitHubRelease) return false;
+
+    // Google Play: restricted unless premium unlocked
+    return AppConfig.isGooglePlayRelease && !isPremiumUnlocked && _folders.length >= 2;
   }
 
   /// Check if the song limit is reached for a specific folder
   bool isSongLimitReached(String folderId) {
-    if (!_isRestrictedVersion) return false;
-    final folderIndex = _folders.indexWhere((folder) => folder.id == folderId);
-    if (folderIndex != -1) {
-      return _folders[folderIndex].songIds.length >= 6;
+    // GitHub and F-Droid are always unrestricted
+    if (AppConfig.isFdroidRelease || AppConfig.isGitHubRelease) return false;
+
+    // Google Play: restricted unless premium unlocked
+    if (AppConfig.isGooglePlayRelease && !isPremiumUnlocked) {
+      final folderIndex = _folders.indexWhere((folder) => folder.id == folderId);
+      if (folderIndex != -1) {
+        return _folders[folderIndex].songIds.length >= 6;
+      }
     }
     return false;
   }
@@ -81,7 +94,7 @@ class FolderProvider with ChangeNotifier {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Limit Reached'),
-          content: const Text('You have reached the limit of 2 folders. To add more, please consider to upgrade to the premium version and support us to develop more awesome apps.'),
+          content: const Text('You have reached the limit of 2 folders. To add more, please upgrade to the premium version.'),
           actions: [
             TextButton(
               onPressed: () {
@@ -89,36 +102,14 @@ class FolderProvider with ChangeNotifier {
               },
               child: const Text('Cancel'),
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
+            if (AppConfig.isGooglePlayRelease)
+              ElevatedButton(
                 onPressed: () async {
-                  const premiumUrl = 'https://play.google.com/store/apps/details?id=com.example.nfc_radio_premium';
-                  if (await canLaunchUrl(Uri.parse(premiumUrl))) {
-                    await launchUrl(Uri.parse(premiumUrl));
-                  }
                   Navigator.of(context).pop();
+                  await IAPService.instance.buyPremium();
                 },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Checkout',
-                      style: TextStyle(
-                        color: Colors.blue[600],
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_forward,
-                      color: Colors.blue[600],
-                      size: 16,
-                    ),
-                  ],
-                ),
+                child: const Text('Upgrade'),
               ),
-            ),
           ],
         );
       },
@@ -132,7 +123,7 @@ class FolderProvider with ChangeNotifier {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Limit Reached'),
-          content: const Text('You have reached the limit of 6 songs per folder. To add more, please consider to upgrade to the premium version and support us to develop more awesome apps.'),
+          content: const Text('You have reached the limit of 6 songs per folder. To add more, please upgrade to the premium version.'),
           actions: [
             TextButton(
               onPressed: () {
@@ -140,36 +131,14 @@ class FolderProvider with ChangeNotifier {
               },
               child: const Text('Cancel'),
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
+            if (AppConfig.isGooglePlayRelease)
+              ElevatedButton(
                 onPressed: () async {
-                  const premiumUrl = 'https://play.google.com/store/apps/details?id=com.example.nfc_radio_premium';
-                  if (await canLaunchUrl(Uri.parse(premiumUrl))) {
-                    await launchUrl(Uri.parse(premiumUrl));
-                  }
                   Navigator.of(context).pop();
+                  await IAPService.instance.buyPremium();
                 },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Checkout',
-                      style: TextStyle(
-                        color: Colors.blue[600],
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_forward,
-                      color: Colors.blue[600],
-                      size: 16,
-                    ),
-                  ],
-                ),
+                child: const Text('Upgrade'),
               ),
-            ),
           ],
         );
       },
@@ -187,6 +156,11 @@ class FolderProvider with ChangeNotifier {
       debugPrint('📁 Initializing storage service...');
       await _storageService.initialize();
       debugPrint('📁 Storage service initialized');
+
+      // Listen to IAPService premium status changes
+      if (AppConfig.isGooglePlayRelease) {
+        IAPService.instance.addListener(_onPremiumChanged);
+      }
 
       // Load folders from storage
       debugPrint('📁 Loading folders from storage...');
@@ -208,7 +182,7 @@ class FolderProvider with ChangeNotifier {
       }
 
       _isInitialized = true;
-      
+
       // Collapse all folders by default on initialization
       if (_folders.isNotEmpty) {
         for (int i = 0; i < _folders.length; i++) {
@@ -244,12 +218,17 @@ class FolderProvider with ChangeNotifier {
     }
   }
 
+  /// Called when premium status changes
+  void _onPremiumChanged() {
+    notifyListeners();
+  }
+
   void addFolder(Folder folder) {
     // Safeguard check (UI should handle this for instant feedback)
-    if (_isRestrictedVersion && _folders.length >= 2) {
+    if (isFolderLimitReached()) {
       return;
     }
-    
+
     _folders.add(folder);
     _saveFolderToStorage(folder);
     notifyListeners();
@@ -278,10 +257,10 @@ class FolderProvider with ChangeNotifier {
     final folderIndex = _folders.indexWhere((folder) => folder.id == folderId);
     if (folderIndex != -1) {
       // Safeguard check (UI should handle this for instant feedback)
-      if (_isRestrictedVersion && _folders[folderIndex].songIds.length >= 6) {
+      if (isSongLimitReached(folderId)) {
         return;
       }
-      
+
       final updatedFolder = Folder(
         id: _folders[folderIndex].id,
         name: _folders[folderIndex].name,
