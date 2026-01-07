@@ -13,6 +13,10 @@
 
 # Changelog
 
+## [0.7.4]
+### Changed
+- included flutter as a submodule in the project.
+
 ## [0.7.3]
 ### Changed
 - re add the google repsoitory as a dependency to the build.gradle file, to fix the github build. But make sure exluded google dependencies are not included in the build.
