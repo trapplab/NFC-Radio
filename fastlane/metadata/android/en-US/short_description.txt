@@ -1,1 +1,1 @@
-A simple NFC audio player
+Simple NFC audio player to start playback with NFC tags

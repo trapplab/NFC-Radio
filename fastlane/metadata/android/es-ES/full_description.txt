@@ -1,1 +1,1 @@
-NFC Radio es un reproductor de audio simple que te permite controlar tu música usando etiquetas NFC. Simplemente toca tu etiqueta NFC para reproducir tu archivo de audio o música.
+NFC Radio es un reproductor de audio simple para niños y adultos que te permite controlar tu música usando etiquetas NFC. Simplemente coloca una etiqueta NFC en tu teléfono para reproducir o pausar tu archivo de audio o música.

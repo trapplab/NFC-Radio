@@ -1,0 +1,6 @@
+## Risolto
+- Corretto il confronto aggiornato per l'ultima versione di GitHub
+
+## Modificato
+- Descrizioni aggiornate dell'app
+

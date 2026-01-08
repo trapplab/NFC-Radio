@@ -1,0 +1,6 @@
+## Corregido
+- Corrección de la comparación actualizada para la última versión de GitHub
+
+## Cambiado
+- Descripciones de la aplicación actualizadas
+

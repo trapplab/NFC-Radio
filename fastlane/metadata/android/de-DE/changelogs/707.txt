@@ -1,0 +1,6 @@
+## Behoben
+- Aktualisierten Vergleich für die neueste GitHub-Version behoben
+
+## Geändert
+- Aktualisierte App-Beschreibungen
+

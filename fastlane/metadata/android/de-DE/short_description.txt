@@ -1,0 +1,1 @@
+Einfacher NFC-Audioplayer um die Wiedergabe mit NFC-Tags zu starten.

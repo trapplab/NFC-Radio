@@ -1,0 +1,5 @@
+## Fixed
+- Fixed updated compare for latest github version
+
+## Changed
+- Updated app descriptions

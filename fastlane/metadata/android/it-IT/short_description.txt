@@ -1,1 +1,1 @@
-Un semplice lettore audio che consente di controllare la tua musica con tag NFC
+Lettore audio NFC semplice per avviare la riproduzione con tag NFC

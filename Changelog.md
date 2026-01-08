@@ -13,6 +13,13 @@
 
 # Changelog
 
+## [0.7.7]
+### Fixed
+- Fixed updated compare for latest github version
+
+### Changed
+- Updated app descriptions
+
 ## [0.7.6]
 ### Fixed
 - Fixed script to prepare pubspec for fdroid version

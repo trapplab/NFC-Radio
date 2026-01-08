@@ -1,1 +1,1 @@
-Un lecteur audio simple qui permet de contrôler votre musique avec des étiquettes NFC
+Lecteur audio NFC simple pour démarrer la lecture avec des tags NFC

@@ -1,1 +1,1 @@
-NFC Radio is a simple audio player that allows you to control your music using NFC tags. Simply tap your NFC tag to play your audio file or music.
+NFC Radio is a simple audio player for children and adults that allows you to control your music using NFC tags. Simply place an NFC tag on your phone to play or pause your audio file or music.
