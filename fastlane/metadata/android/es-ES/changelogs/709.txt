@@ -1,0 +1,3 @@
+## Cambiado
+- También publica una versión en fdroid en GitHub para tener una versión comparable a la compilación de fdroid.
+

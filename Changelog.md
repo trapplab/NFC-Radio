@@ -13,6 +13,10 @@
 
 # Changelog
 
+## [0.7.9]
+### Changed
+- Release also a fdroid version in github to have a comparable version to the fdroid build.
+
 ## [0.7.8]
 ### Fixed
 - Use flutter as a submodule in the github build to have reproducible build.

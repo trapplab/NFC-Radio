@@ -1,0 +1,3 @@
+## Modificato
+- Rilasciare anche una versione fdroid su GitHub per avere una versione comparabile a quella buildata da fdroid.
+

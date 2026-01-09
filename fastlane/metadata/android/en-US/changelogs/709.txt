@@ -1,0 +1,2 @@
+## Changed
+- Release also a fdroid version in github to have a comparable version to the fdroid build.

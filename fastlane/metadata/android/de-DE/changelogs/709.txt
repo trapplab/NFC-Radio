@@ -1,0 +1,3 @@
+## Geändert
+- Veröffentlichen Sie auch eine F-Droid-Version auf GitHub, um eine vergleichbare Version zum F-Droid-Build zu haben.
+

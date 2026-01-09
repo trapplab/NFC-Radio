@@ -34,12 +34,23 @@ jobs:
       - name: Prepare GitHub Flavor
         run: ./scripts/prepare_flavor.sh github
 
-      - name: Build APK
+      - name: Build GitHub APK
         run: ./flutter/bin/flutter build apk --flavor github --target-platform=android-arm64 --release
         
-      - name: Rename APK with tag
+      - name: Rename GitHub APK with tag
         if: startsWith(github.ref, 'refs/tags/')
         run: mv build/app/outputs/flutter-apk/app-github-release.apk build/app/outputs/flutter-apk/nfc-radio-arm64-v8a-${{ github.ref_name }}.apk
+
+      # Build F-Droid flavor for reproducibility
+      - name: Prepare F-Droid Flavor
+        run: ./scripts/prepare_flavor.sh fdroid
+
+      - name: Build F-Droid APK
+        run: ./flutter/bin/flutter build apk --flavor fdroid --target-platform=android-arm64 --release
+        
+      - name: Rename F-Droid APK with tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: mv build/app/outputs/flutter-apk/app-fdroid-release.apk build/app/outputs/flutter-apk/fdroid-nfc-radio-arm64-v8a-${{ github.ref_name }}.apk
 
       - name: Get Version and Build Number
         id: version
@@ -84,4 +95,6 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           body_path: release_notes.md
-          files: build/app/outputs/flutter-apk/nfc-radio-arm64-v8a-${{ github.ref_name }}.apk
+          files: |
+            build/app/outputs/flutter-apk/nfc-radio-arm64-v8a-${{ github.ref_name }}.apk
+            build/app/outputs/flutter-apk/fdroid-nfc-radio-arm64-v8a-${{ github.ref_name }}.apk
