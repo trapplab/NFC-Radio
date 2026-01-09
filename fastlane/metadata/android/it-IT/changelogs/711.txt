@@ -1,0 +1,3 @@
+## Modificato
+- Modificata la toolchain di GitHub per essere simile alle configurazioni di GitLab per la build di Flutter.
+

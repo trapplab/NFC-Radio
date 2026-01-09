@@ -1,0 +1,3 @@
+## Modifié
+- Modification de la chaîne d'outils GitHub pour qu'elle soit similaire aux configurations GitLab pour la compilation Flutter.
+

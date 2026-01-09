@@ -1,0 +1,3 @@
+## Cambiado
+- Se cambió la cadena de herramientas de GitHub para que sea similar a las configuraciones de GitLab para la compilación de Flutter.
+

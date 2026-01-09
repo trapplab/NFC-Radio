@@ -1,0 +1,2 @@
+## Changed
+- Changed github toolchain to be similar to gitlabs configs for flutter build.

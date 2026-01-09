@@ -20,6 +20,11 @@ jobs:
       - name: Checkout Flutter
         run: git submodule update --init --recursive
 
+      - name: Configure Flutter Environment
+        run: |
+          export PUB_CACHE=$(pwd)/.pub-cache
+          ./flutter/bin/flutter config --no-analytics
+          
       - name: Decode keystore
         run: |
           echo "${{ secrets.ANDROID_GITHUB_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
@@ -35,7 +40,9 @@ jobs:
         run: ./scripts/prepare_flavor.sh github
 
       - name: Build GitHub APK
-        run: ./flutter/bin/flutter build apk --flavor github --target-platform=android-arm64 --release
+        run: |
+          export PUB_CACHE=$(pwd)/.pub-cache
+          ./flutter/bin/flutter build apk --flavor github --target-platform=android-arm64 --release
 
       - name: Save GitHub APK
         run: |
@@ -46,7 +53,9 @@ jobs:
         run: ./scripts/prepare_flavor.sh fdroid
 
       - name: Build F-Droid APK
-        run: ./flutter/bin/flutter build apk --flavor fdroid --target-platform=android-arm64 --release
+        run: |
+          export PUB_CACHE=$(pwd)/.pub-cache
+          ./flutter/bin/flutter build apk --flavor fdroid --target-platform=android-arm64 --release
 
       - name: Rename APKs with tag
         run: |

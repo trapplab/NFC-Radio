@@ -13,6 +13,10 @@
 
 # Changelog
 
+## [0.7.11]
+### Changed
+- Changed github toolchain to be similar to gitlabs configs for flutter build.
+
 ## [0.7.10]
 ### Fixed
 - Make sure both builds (github and fdroid) are in the release.
