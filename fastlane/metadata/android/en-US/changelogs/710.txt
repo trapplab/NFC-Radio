@@ -1,0 +1,2 @@
+## Fixed
+- Make sure both builds (github and fdroid) are in the release.

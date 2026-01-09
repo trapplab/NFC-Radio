@@ -13,6 +13,10 @@
 
 # Changelog
 
+## [0.7.10]
+### Fixed
+- Make sure both builds (github and fdroid) are in the release.
+
 ## [0.7.9]
 ### Changed
 - Release also a fdroid version in github to have a comparable version to the fdroid build.

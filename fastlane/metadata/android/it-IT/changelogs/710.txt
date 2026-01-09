@@ -1,0 +1,3 @@
+## Risolto
+- Assicurati che entrambe le build (github e fdroid) siano nella release.
+

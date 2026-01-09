@@ -1,0 +1,3 @@
+## Behoben
+- Stellen Sie sicher, dass beide Builds (GitHub und F-Droid) in der Veröffentlichung enthalten sind.
+

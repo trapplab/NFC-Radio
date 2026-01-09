@@ -1,0 +1,3 @@
+## Corrigé
+- Assurez-vous que les deux versions (GitHub et F-Droid) soient dans la release.
+
