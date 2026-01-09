@@ -1,0 +1,3 @@
+## Arreglado
+- Utilizar flutter como un submódulo en la compilación de GitHub para tener una compilación reproducible.
+

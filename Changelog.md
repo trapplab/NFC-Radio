@@ -13,6 +13,10 @@
 
 # Changelog
 
+## [0.7.8]
+### Fixed
+- Use flutter as a submodule in the github build to have reproducible build.
+
 ## [0.7.7]
 ### Fixed
 - Fixed updated compare for latest github version

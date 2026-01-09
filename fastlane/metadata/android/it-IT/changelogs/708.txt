@@ -1,0 +1,3 @@
+## Risolto
+- Usa Flutter come sottomodulo nel build di GitHub per avere build riproducibili.
+

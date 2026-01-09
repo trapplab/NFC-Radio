@@ -1,0 +1,3 @@
+## Corrigé
+- Utilisez Flutter comme sous-module dans la compilation GitHub pour avoir une compilation reproductible.
+

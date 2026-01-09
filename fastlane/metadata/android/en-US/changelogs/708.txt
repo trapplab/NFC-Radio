@@ -1,0 +1,2 @@
+## Fixed
+- Use flutter as a submodule in the github build to have reproducible build.
