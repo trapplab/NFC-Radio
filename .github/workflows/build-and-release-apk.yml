@@ -55,22 +55,9 @@ jobs:
           mkdir -p ${{ github.workspace }}/apks
           cp build/app/outputs/flutter-apk/app-github-release.apk ${{ github.workspace }}/apks/github.apk
 
-      - name: Prepare F-Droid Flavor
-        run: ./scripts/prepare_flavor.sh fdroid
-
-      - name: Build F-Droid APK
-        run: |
-          export PUB_CACHE=$(pwd)/.pub-cache
-          # Reproducible builds: set SOURCE_DATE_EPOCH for deterministic timestamps
-          export SOURCE_DATE_EPOCH=1704067200
-          
-          # Use --no-tree-shake-icons to avoid potential non-determinism in icon font generation
-          ./flutter/bin/flutter build apk --flavor fdroid --target-platform=android-arm64 --release --no-tree-shake-icons
-
       - name: Rename APKs with tag
         run: |
-          mv ${{ github.workspace }}/apks/github.apk ${{ github.workspace }}/apks/github-nfc-radio-arm64-v8a-${{ github.ref_name }}.apk
-          mv build/app/outputs/flutter-apk/app-fdroid-release.apk ${{ github.workspace }}/apks/fdroid-nfc-radio-arm64-v8a-${{ github.ref_name }}.apk
+          mv ${{ github.workspace }}/apks/github.apk ${{ github.workspace }}/apks/nfc-radio-arm64-v8a-${{ github.ref_name }}.apk
 
       - name: Get Version and Build Number
         id: version
@@ -116,5 +103,4 @@ jobs:
         with:
           body_path: release_notes.md
           files: |
-            ${{ github.workspace }}/apks/github-nfc-radio-arm64-v8a-${{ github.ref_name }}.apk
-            ${{ github.workspace }}/apks/fdroid-nfc-radio-arm64-v8a-${{ github.ref_name }}.apk
+            ${{ github.workspace }}/apks/nfc-radio-arm64-v8a-${{ github.ref_name }}.apk
