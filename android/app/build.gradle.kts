@@ -21,18 +21,6 @@ android {
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
-    // Reproducible builds: use a fixed timestamp for all files in the APK
-    // This ensures that the APK is bit-for-bit identical when built from the same source
-    // We use the value from SOURCE_DATE_EPOCH if available, otherwise a fixed default.
-    val sourceDateEpoch = System.getenv("SOURCE_DATE_EPOCH")?.toLong()
-    val fixedTimestamp = if (sourceDateEpoch != null) sourceDateEpoch * 1000L else 1704067200000L
-
-    // Apply fixed timestamp to all tasks that support it
-    tasks.withType<AbstractArchiveTask>().configureEach {
-        isPreserveFileTimestamps = false
-        isReproducibleFileOrder = true
-    }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -71,17 +59,30 @@ android {
 
     signingConfigs {
         create("release") {
-        // Fix File constructor - use file() helper or explicit String
-        storeFile = file(keystoreProperties.getProperty("storeFile") ?: error("storeFile missing"))
-        storePassword = keystoreProperties.getProperty("storePassword") ?: error("storePassword missing")
-        keyAlias = keystoreProperties.getProperty("keyAlias") ?: error("keyAlias missing")
-        keyPassword = keystoreProperties.getProperty("keyPassword") ?: error("keyPassword missing")
+            // For F-Droid reproducibility, we only configure signing if the properties are present.
+            // F-Droid's 'fdroid verify' compares the unsigned contents of the APK.
+            // If this block is skipped, Gradle produces an unsigned APK.
+            if (keystorePropertiesFile.exists() && keystoreProperties.getProperty("storeFile") != null) {
+                storeFile = file(keystoreProperties.getProperty("storeFile")!!)
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                
+                // Explicitly enable V1 and V2 signing, disable V3 and V4 for maximum compatibility and reproducibility
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = false
+                enableV4Signing = false
+            }
         }
     }
 
     buildTypes {
         getByName("release") {
-            signingConfig = signingConfigs.getByName("release")
+            // Only assign signingConfig if it was actually configured above
+            if (keystorePropertiesFile.exists() && keystoreProperties.getProperty("storeFile") != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
 
             isMinifyEnabled = true
             isShrinkResources = true
@@ -98,7 +99,15 @@ android {
     // and setting a fixed timestamp for the APK entries.
     packaging {
         resources {
-            excludes += "/META-INF/**"
+            // Exclude only non-essential metadata that can vary between builds
+            excludes += "/META-INF/com.android.tools/**"
+            excludes += "/META-INF/*.kotlin_module"
+        }
+        dex {
+            useLegacyPackaging = false
+        }
+        jniLibs {
+            useLegacyPackaging = false
         }
     }
 }

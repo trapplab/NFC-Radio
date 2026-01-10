@@ -55,9 +55,9 @@ To set up the project locally, follow these steps:
 4. **Build the App**:
    Build a App Release with 
    ```bash
-   ./scripts/prepare_flavor.sh fdroid && flutter build apk --flavor fdroid --split-per-abi --target-platform=android-arm64 --release
-   ./scripts/prepare_flavor.sh play && flutter build apk --flavor play --split-per-abi --target-platform=android-arm64 --release
-   ./scripts/prepare_flavor.sh github && flutter build apk --flavor github --split-per-abi --target-platform=android-arm64 --release
+   ./scripts/prepare_flavor.sh fdroid && flutter build apk --flavor fdroid --split-per-abi --target-platform=android-arm64 --no-tree-shake-icons --release  --no-tree-shake-icons
+   ./scripts/prepare_flavor.sh play && flutter build apk --flavor play --split-per-abi --target-platform=android-arm64 --no-tree-shake-icons --release
+   ./scripts/prepare_flavor.sh github && flutter build apk --flavor github --split-per-abi --target-platform=android-arm64 --no-tree-shake-icons --release
    ```
 
 ## Flavors

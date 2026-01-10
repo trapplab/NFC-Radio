@@ -17,13 +17,6 @@ jobs:
           fetch-depth: 0
           submodules: true
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'gradle'
-
       - name: Checkout Flutter
         run: git submodule update --init --recursive
 
@@ -31,6 +24,12 @@ jobs:
         run: |
           export PUB_CACHE=$(pwd)/.pub-cache
           ./flutter/bin/flutter config --no-analytics
+
+      - name: Flutter Doctor
+        id: flutter_doctor
+        run: |
+          ./flutter/bin/flutter doctor -v
+
           
       - name: Decode keystore
         run: |
@@ -64,7 +63,16 @@ jobs:
           export PUB_CACHE=$(pwd)/.pub-cache
           # Reproducible builds: set SOURCE_DATE_EPOCH for deterministic timestamps
           export SOURCE_DATE_EPOCH=1704067200
-          ./flutter/bin/flutter build apk --flavor fdroid --target-platform=android-arm64 --release
+          
+          # Use --no-tree-shake-icons to avoid potential non-determinism in icon font generation
+          ./flutter/bin/flutter build apk --flavor fdroid --target-platform=android-arm64 --release --no-tree-shake-icons
+
+      - name: Verify APK Signatures
+        run: |
+          echo "Verifying GitHub APK..."
+          apksigner verify --verbose build/app/outputs/flutter-apk/app-github-release.apk
+          echo "Verifying F-Droid APK..."
+          apksigner verify --verbose build/app/outputs/flutter-apk/app-fdroid-release.apk
 
       - name: Rename APKs with tag
         run: |

@@ -36,4 +36,6 @@
 dexdump build/app/outputs/flutter-apk/app-release.apk | grep OnFailureListener
 # checksum
 sha256sum build/app/outputs/flutter-apk/app-release.apk
+# get certificates hashsums
+apksigner verify --print-certs <apk>
 ```
