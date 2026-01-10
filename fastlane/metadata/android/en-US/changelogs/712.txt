@@ -1,0 +1,2 @@
+## Changed
+- Use fixed timestamps and javaversion in build.gradle to make build reproducible.

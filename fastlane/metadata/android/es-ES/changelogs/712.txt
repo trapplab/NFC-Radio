@@ -1,0 +1,3 @@
+## Cambiado
+- Usa marcas de tiempo fijas y la versión de Java en build.gradle para hacer que la compilación sea reproducible.
+

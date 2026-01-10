@@ -1,0 +1,3 @@
+## Modificato
+- Usa timestamp fissi e javaversion in build.gradle per rendere la build riproducibile.
+

@@ -13,6 +13,10 @@
 
 # Changelog
 
+## [0.7.12]
+### Changed
+- Use fixed timestamps and javaversion in build.gradle to make build reproducible.
+
 ## [0.7.11]
 ### Changed
 - Changed github toolchain to be similar to gitlabs configs for flutter build.

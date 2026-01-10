@@ -1,0 +1,3 @@
+## Geändert
+- Verwenden Sie feste Zeitstempel und javaversion in build.gradle, um den Build reproduzierbar zu machen.
+

@@ -1,0 +1,3 @@
+## Modifié
+- Utilisez des horodatages fixes et la version Java dans build.gradle pour rendre la compilation reproductible.
+
