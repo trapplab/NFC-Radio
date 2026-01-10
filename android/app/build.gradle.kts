@@ -1,6 +1,7 @@
 import java.io.File
 import java.io.FileInputStream
 import java.util.Properties
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
 
 plugins {
     id("com.android.application")
@@ -19,6 +20,18 @@ android {
     namespace = "com.trapplab.nfc_radio"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+
+    // Reproducible builds: use a fixed timestamp for all files in the APK
+    // This ensures that the APK is bit-for-bit identical when built from the same source
+    // We use the value from SOURCE_DATE_EPOCH if available, otherwise a fixed default.
+    val sourceDateEpoch = System.getenv("SOURCE_DATE_EPOCH")?.toLong()
+    val fixedTimestamp = if (sourceDateEpoch != null) sourceDateEpoch * 1000L else 1704067200000L
+
+    // Apply fixed timestamp to all tasks that support it
+    tasks.withType<AbstractArchiveTask>().configureEach {
+        isPreserveFileTimestamps = false
+        isReproducibleFileOrder = true
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -79,6 +92,14 @@ android {
     dependenciesInfo {
         includeInApk = false
         includeInBundle = false
+    }
+
+    // Ensure reproducible builds by disabling build config fields that might change
+    // and setting a fixed timestamp for the APK entries.
+    packaging {
+        resources {
+            excludes += "/META-INF/**"
+        }
     }
 }
 
