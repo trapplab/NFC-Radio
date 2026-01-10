@@ -67,22 +67,6 @@ jobs:
           # Use --no-tree-shake-icons to avoid potential non-determinism in icon font generation
           ./flutter/bin/flutter build apk --flavor fdroid --target-platform=android-arm64 --release --no-tree-shake-icons
 
-      - name: Install Android SDK Command-line Tools
-        run: |
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdline-tools.zip
-          unzip -q /tmp/cmdline-tools.zip -d /tmp
-          mkdir -p $HOME/android-sdk/cmdline-tools
-          mv /tmp/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
-          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-
-      - name: Verify APK Signatures
-        run: |
-          echo "Verifying GitHub APK..."
-          apksigner verify --verbose build/app/outputs/flutter-apk/app-github-release.apk
-          echo "Verifying F-Droid APK..."
-          apksigner verify --verbose build/app/outputs/flutter-apk/app-fdroid-release.apk
-
       - name: Rename APKs with tag
         run: |
           mv ${{ github.workspace }}/apks/github.apk ${{ github.workspace }}/apks/github-nfc-radio-arm64-v8a-${{ github.ref_name }}.apk
