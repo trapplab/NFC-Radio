@@ -20,6 +20,8 @@ import 'dimmed_mode_wrapper.dart';
 import 'update_service.dart';
 import 'config.dart';
 import 'iap_service.dart';
+import 'tutorial_service.dart';
+import 'tutorial_steps.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,6 +78,10 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   StreamSubscription<String>? _nfcMessageSubscription;
   String _appVersion = '';
 
+  // Global keys for tutorial
+  final GlobalKey _addFolderButtonKey = GlobalKey();
+  final GlobalKey _foldersAreaKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -98,6 +104,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForUpdates(manual: false);
     });
+    
+    // Initialize tutorial service and show tutorial if needed
+    _initializeTutorial();
     
     debugPrint('🚀 ===== APP INITIALIZATION STARTED =====');
     debugPrint('🚀 Timestamp: ${DateTime.now()}');
@@ -137,6 +146,39 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
         );
       }
     }
+  }
+
+  /// Initialize tutorial service and show tutorial on first run
+  Future<void> _initializeTutorial() async {
+    try {
+      await TutorialService.instance.initialize();
+      
+      if (mounted && TutorialService.instance.shouldShowTutorial) {
+        // Wait for the first frame to ensure widgets are built
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _showTutorial();
+        });
+      }
+    } catch (e) {
+      debugPrint('⚠️ Failed to initialize tutorial: $e');
+    }
+  }
+
+  /// Show the tutorial
+  void _showTutorial() {
+    final targets = createTutorialTargets(
+      addFolderButtonKey: _addFolderButtonKey,
+      foldersAreaKey: _foldersAreaKey,
+    );
+    
+    showTutorial(
+      context: context,
+      targets: targets,
+      onFinish: () {
+        TutorialService.instance.markTutorialShown();
+      },
+    );
   }
 
   /// Check if we're running in a test environment
@@ -376,6 +418,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 
                 // Vertical ListView for folders
                 Consumer<FolderProvider>(
+                  key: _foldersAreaKey,
                   builder: (context, folderProvider, child) {
                     return Column(
                       children: [
@@ -485,6 +528,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
 
   Widget _buildAddFolderButton(BuildContext context, FolderProvider folderProvider) {
     return Container(
+      key: _addFolderButtonKey,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ElevatedButton.icon(
         onPressed: () {
@@ -1540,6 +1584,16 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     },
                     child: const Text('Force Process UUID'),
                   ),
+                  if (kDebugMode)
+                    ElevatedButton(
+                      onPressed: () async {
+                        await TutorialService.instance.resetTutorial();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Tutorial reset - will show on next restart')),
+                        );
+                      },
+                      child: const Text('Reset Tutorial'),
+                    ),
                 ],
               ),
             ],

@@ -46,6 +46,7 @@ dependencies:
   hive_flutter: ^1.1.0
   version: ^3.0.0
   url_launcher: ^6.3.1
+  tutorial_coach_mark: ^1.2.0
 
   # Splash screen: to update run `dart run flutter_native_splash:create`
   flutter_native_splash: ^2.4.7
