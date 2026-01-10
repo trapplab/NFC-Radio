@@ -20,6 +20,8 @@ import 'dimmed_mode_wrapper.dart';
 import 'update_service.dart';
 import 'config.dart';
 import 'iap_service.dart';
+import 'tutorial_service.dart';
+import 'tutorial_steps.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -99,6 +101,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
       _checkForUpdates(manual: false);
     });
     
+    // Initialize tutorial service and show tutorial if needed
+    _initializeTutorial();
+    
     debugPrint('🚀 ===== APP INITIALIZATION STARTED =====');
     debugPrint('🚀 Timestamp: ${DateTime.now()}');
     
@@ -143,6 +148,33 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   bool _isTestEnvironment() {
     return Platform.environment.containsKey('FLUTTER_TEST') || 
            Platform.environment.containsKey('DART_VM_OPTIONS');
+  }
+
+  /// Initialize tutorial service and show tutorial on first run
+  Future<void> _initializeTutorial() async {
+    try {
+      await TutorialService.instance.initialize();
+      
+      if (mounted && TutorialService.instance.shouldShowTutorial) {
+        // Wait for the first frame to ensure widgets are built
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _showTutorial();
+        });
+      }
+    } catch (e) {
+      debugPrint('⚠️ Failed to initialize tutorial: $e');
+    }
+  }
+
+  /// Show the tutorial
+  void _showTutorial() {
+    showTutorial(
+      context: context,
+      onFinish: () {
+        TutorialService.instance.markTutorialShown();
+      },
+    );
   }
 
   @override
@@ -634,14 +666,14 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           nfcService.addListener(updateNfcUuid);
 
           return AlertDialog(
-            title: Text(isEditing ? 'Edit Song' : 'Add New Song'),
+            title: Text(isEditing ? 'Edit Audio' : 'Add New Audio'),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
                     controller: titleController,
-                    decoration: const InputDecoration(labelText: 'Song Title'),
+                    decoration: const InputDecoration(labelText: 'Audio Title (optional)'),
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -1539,6 +1571,15 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                       );
                     },
                     child: const Text('Force Process UUID'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      await TutorialService.instance.resetTutorial();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Tutorial reset - will show on next restart')),
+                      );
+                    },
+                    child: const Text('Reset Tutorial'),
                   ),
                 ],
               ),
