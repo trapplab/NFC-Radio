@@ -90,9 +90,13 @@ class MusicPlayer with ChangeNotifier {
     // Attempt to play with retry mechanism
     try {
       debugPrint('▶️ Starting audio playback...');
-      debugPrint('📱 Using DeviceFileSource for: $musicFilePath');
-      
-      await _audioPlayer.play(DeviceFileSource(musicFilePath));
+      if (musicFilePath.startsWith('content://') || musicFilePath.startsWith('http')) {
+        debugPrint('📱 Using UrlSource for: $musicFilePath');
+        await _audioPlayer.play(UrlSource(musicFilePath));
+      } else {
+        debugPrint('📱 Using DeviceFileSource for: $musicFilePath');
+        await _audioPlayer.play(DeviceFileSource(musicFilePath));
+      }
       _currentState = PlayerState.playing;
       debugPrint('✅ SUCCESS: Started playing $musicFilePath');
       debugPrint('📊 New player state: $_currentState');
