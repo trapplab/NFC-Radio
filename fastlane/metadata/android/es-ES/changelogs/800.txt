@@ -1,0 +1,4 @@
+## Cambiado
+- Utilice la selección de archivos para copiar archivos al almacenamiento local de la aplicación y aprovechar el diseño sandbox de Android.
+- Mostrar el nombre de la canción en el reproductor cuando se esté reproduciendo una canción.
+

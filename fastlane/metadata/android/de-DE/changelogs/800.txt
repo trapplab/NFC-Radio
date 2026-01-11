@@ -1,0 +1,4 @@
+## Geändert
+- Verwenden Sie die Dateiauswahl, um Dateien in den lokalen Speicher der App zu kopieren, um das sandboxed Design von Android zu nutzen.
+- Zeige den gegebenen Liednamen im Player an, wenn ein Lied abgespielt wird.
+

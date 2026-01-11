@@ -1,0 +1,4 @@
+## Modificato
+- Usa la selezione dei file per copiare i file nell'archiviazione locale delle app per sfruttare il design sandbox di Android.
+- Mostra il nome della canzone riprodotta nel lettore durante la riproduzione.
+

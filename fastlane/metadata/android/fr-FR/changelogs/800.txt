@@ -1,0 +1,4 @@
+## Modifié
+- Utilisez la sélection de fichiers pour copier des fichiers dans le stockage local de l'application afin de profiter de la conception isolée d'Android.
+- Afficher le nom de la chanson dans le lecteur lorsqu'une chanson est en cours de lecture.
+
