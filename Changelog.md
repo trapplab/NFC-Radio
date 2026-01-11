@@ -13,6 +13,11 @@
 
 # Changelog
 
+## [0.8.0]
+### Changed
+- Use file select to copy over files into apps local storage to make use of androids sandboxed design.
+- Show given song name in the player when playing a song.
+
 ## [0.7.12]
 ### Changed
 - Use fixed timestamps and javaversion in build.gradle to make build reproducible.

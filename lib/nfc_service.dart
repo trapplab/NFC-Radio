@@ -319,7 +319,7 @@ class NFCService with ChangeNotifier {
         _notifyUser('Resumed: ${song.title}');
       } else {
         debugPrint('🎵 Action: START NEW SONG');
-        await _executeWithRetry('play', () => _musicPlayer!.playMusic(song.filePath), 3);
+        await _executeWithRetry('play', () => _musicPlayer!.playMusic(song.filePath, songTitle: song.title), 3);
         _notifyUser('Playing: ${song.title}');
       }
     } catch (e, s) {

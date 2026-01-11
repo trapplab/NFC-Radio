@@ -1,0 +1,3 @@
+## Changed
+- Use file select to copy over files into apps local storage to make use of androids sandboxed design.
+- Show given song name in the player when playing a song.

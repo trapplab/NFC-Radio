@@ -6,8 +6,6 @@ import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:uuid/uuid.dart';
 import 'package:hive/hive.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:path/path.dart' as p;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'nfc_music_mapping.dart';
 import 'nfc_service.dart';
@@ -20,10 +18,14 @@ import 'dimmed_mode_wrapper.dart';
 import 'update_service.dart';
 import 'config.dart';
 import 'iap_service.dart';
+import 'services/audio_intent_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await WakelockPlus.enable();
+  
+  // Initialize audio intent service
+  AudioIntentService().initialize();
   
   // Initialize storage service first
   try {
@@ -139,9 +141,29 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     }
   }
 
+  /// Get display name from file path or URI
+  String _getDisplayName(String? path) {
+    if (path == null || path.isEmpty) return 'Unknown';
+    String name;
+    if (path.startsWith('content://')) {
+      final uri = Uri.parse(path);
+      name = uri.pathSegments.lastOrNull ?? 'Unknown';
+    } else {
+      name = path.split('/').last;
+    }
+
+    // Strip timestamp prefix (e.g., 1736590000000_filename.mp3)
+    final regex = RegExp(r'^\d{13}_');
+    if (regex.hasMatch(name)) {
+      name = name.replaceFirst(regex, '');
+    }
+
+    return name;
+  }
+
   /// Check if we're running in a test environment
   bool _isTestEnvironment() {
-    return Platform.environment.containsKey('FLUTTER_TEST') || 
+    return Platform.environment.containsKey('FLUTTER_TEST') ||
            Platform.environment.containsKey('DART_VM_OPTIONS');
   }
 
@@ -438,7 +460,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Now Playing: ${musicPlayer.currentMusicFilePath?.split('/').last ?? 'Unknown'}',
+                      'Now Playing: ${musicPlayer.currentSongTitle ?? _getDisplayName(musicPlayer.currentMusicFilePath)}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -614,6 +636,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     
     // Store the listener function so we can remove it later
     late void Function() updateNfcUuid;
+    StreamSubscription? audioSubscription;
 
     showDialog(
       context: context,
@@ -633,6 +656,26 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           
           nfcService.addListener(updateNfcUuid);
 
+          // Listen for audio picked from external apps
+          audioSubscription ??= AudioIntentService().onAudioPicked.listen((audioFile) {
+            if (dialogState.isOpen) {
+              setState(() {
+                if (audioFile.sourceUri.isScheme('file')) {
+                  filePathController.text = audioFile.sourceUri.toFilePath();
+                } else {
+                  filePathController.text = audioFile.sourceUri.toString();
+                }
+                
+                if (titleController.text.isEmpty && audioFile.displayName != null) {
+                  titleController.text = audioFile.displayName!;
+                }
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('📥 Audio selected: ${audioFile.displayName ?? "Unknown"}')),
+              );
+            }
+          });
+
           return AlertDialog(
             title: Text(isEditing ? 'Edit Song' : 'Add New Song'),
             content: SingleChildScrollView(
@@ -649,44 +692,18 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                       Expanded(
                         child: TextField(
                           controller: filePathController,
-                          decoration: const InputDecoration(labelText: 'File Path'),
+                          decoration: const InputDecoration(labelText: 'Audio Source'),
                           readOnly: true,
                         ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.attach_file),
                         onPressed: () async {
-                          FilePickerResult? result = await FilePicker.platform.pickFiles(
-                            type: FileType.audio,
-                            allowMultiple: false,
-                          );
-                          
-                          if (result != null && result.files.isNotEmpty) {
-                            final file = result.files.first;
-                            if (file.path != null) {
-                              final newTitle = p.basenameWithoutExtension(file.path!);
-                              
-                              if (titleController.text.isNotEmpty && titleController.text != newTitle) {
-                                if (!dialogContext.mounted) return;
-                                final shouldUpdateTitle = await showDialog<bool>(
-                                  context: dialogContext,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      title: const Text('Update Title?'),
-                                      content: Text('Do you want to update the title to "$newTitle"?'),
-                                      actions: [
-                                        TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Keep Original')),
-                                        TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Update Title')),
-                                      ],
-                                    );
-                                  },
-                                );
-                                if (shouldUpdateTitle == true) titleController.text = newTitle;
-                              } else if (titleController.text.isEmpty) {
-                                titleController.text = newTitle;
-                              }
-                              filePathController.text = file.path!;
-                            }
+                          final success = await AudioIntentService().pickAudioFromApp();
+                          if (!success && dialogContext.mounted) {
+                            ScaffoldMessenger.of(dialogContext).showSnackBar(
+                              const SnackBar(content: Text('❌ Failed to launch audio picker')),
+                            );
                           }
                         },
                       ),
@@ -836,7 +853,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   if (filePathController.text.isNotEmpty) {
                     final String finalTitle = titleController.text.isNotEmpty
                         ? titleController.text
-                        : p.basenameWithoutExtension(filePathController.text);
+                        : _getDisplayName(filePathController.text).replaceAll(RegExp(r'\.[^.]+$'), '');
 
                     final newSong = Song(
                       id: song?.id ?? const Uuid().v4(),
@@ -870,6 +887,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
 
                     dialogState.isOpen = false;
                     nfcService.removeListener(updateNfcUuid);
+                    audioSubscription?.cancel();
                     nfcService.setEditMode(false);
                     Navigator.pop(dialogContext);
                   }
@@ -1043,7 +1061,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                                   if (musicPlayer.isSongPlaying(song.filePath) || musicPlayer.isSongPaused(song.filePath)) {
                                     await musicPlayer.togglePlayPause();
                                   } else {
-                                    await musicPlayer.playMusic(song.filePath);
+                                    await musicPlayer.playMusic(song.filePath, songTitle: song.title);
                                   }
                                 },
                               ),
@@ -1054,8 +1072,6 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                                     _showSongDialog(context, songProvider, song: song);
                                   } else if (value == 'delete') {
                                     _showDeleteSongDialog(context, song, songProvider);
-                                  } else if (value == 'remove_from_folder') {
-                                    _removeSongFromFolder(context, folder, song, folderProvider);
                                   }
                                 },
                                 itemBuilder: (BuildContext context) => [
@@ -1066,16 +1082,6 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                                         Icon(Icons.edit, size: 16),
                                         SizedBox(width: 8),
                                         Text('Edit'),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuItem<String>(
-                                    value: 'remove_from_folder',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.folder_delete, size: 16),
-                                        SizedBox(width: 8),
-                                        Text('Remove from Folder'),
                                       ],
                                     ),
                                   ),
@@ -1150,6 +1156,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   }
 
   void _showDeleteFolderDialog(BuildContext context, Folder folder, FolderProvider folderProvider) {
+    final songProvider = Provider.of<SongProvider>(context, listen: false);
+    final mappingProvider = Provider.of<NFCMusicMappingProvider>(context, listen: false);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1165,8 +1174,8 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             if (folder.songIds.isNotEmpty) ...[
               const SizedBox(height: 8),
               const Text(
-                'Note: Songs in this folder will not be deleted, only removed from the folder.',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+                'Note: All songs in this folder and their audio files will also be deleted.',
+                style: TextStyle(fontSize: 12, color: Colors.red),
               ),
             ],
           ],
@@ -1177,57 +1186,41 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
+              // Delete all songs in the folder
+              for (final songId in folder.songIds) {
+                try {
+                  final song = songProvider.songs.firstWhere((s) => s.id == songId);
+                  
+                  // Remove NFC mapping
+                  mappingProvider.removeMapping(song.id);
+                  
+                  // Delete physical file
+                  if (song.filePath.isNotEmpty) {
+                    final file = File(song.filePath);
+                    if (await file.exists()) {
+                      await file.delete();
+                    }
+                  }
+                  
+                  // Remove from song provider
+                  songProvider.removeSong(song.id);
+                } catch (e) {
+                  debugPrint('⚠️ Error deleting song $songId during folder deletion: $e');
+                }
+              }
+
+              // Finally remove the folder
               folderProvider.removeFolder(folder.id);
               Navigator.pop(context);
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const Text('Delete All', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
   }
 
-
-  void _removeSongFromFolder(
-    BuildContext context,
-    Folder folder,
-    Song song,
-    FolderProvider folderProvider,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Remove Song from Folder'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Are you sure you want to remove this song from the folder?'),
-            const SizedBox(height: 8),
-            Text('Song: ${song.title}', style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text(
-              'Note: The song will not be deleted, only removed from this folder.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              folderProvider.removeSongFromFolder(folder.id, song.id);
-              Navigator.pop(context);
-            },
-            child: const Text('Remove', style: TextStyle(color: Colors.orange)),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showDeleteSongDialog(BuildContext context, Song song, SongProvider songProvider) {
     final mappingProvider = Provider.of<NFCMusicMappingProvider>(context, listen: false);
@@ -1249,6 +1242,11 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 style: TextStyle(color: Colors.red[700]),
               ),
             ],
+            const SizedBox(height: 8),
+            const Text(
+              'The audio file will also be deleted from the app storage.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
           ],
         ),
         actions: [
@@ -1257,9 +1255,23 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               // Remove NFC mapping if it exists
               mappingProvider.removeMapping(song.id);
+              
+              // Delete the physical file if it's in the app's audio directory
+              final filePath = song.filePath;
+              if (filePath.isNotEmpty) {
+                try {
+                  final file = File(filePath);
+                  if (await file.exists()) {
+                    await file.delete();
+                    debugPrint('🗑️ Deleted audio file: $filePath');
+                  }
+                } catch (e) {
+                  debugPrint('⚠️ Failed to delete audio file: $e');
+                }
+              }
               
               // Delete the song
               songProvider.removeSong(song.id);
