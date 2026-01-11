@@ -144,11 +144,21 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   /// Get display name from file path or URI
   String _getDisplayName(String? path) {
     if (path == null || path.isEmpty) return 'Unknown';
+    String name;
     if (path.startsWith('content://')) {
       final uri = Uri.parse(path);
-      return uri.pathSegments.lastOrNull ?? 'Unknown';
+      name = uri.pathSegments.lastOrNull ?? 'Unknown';
+    } else {
+      name = path.split('/').last;
     }
-    return path.split('/').last;
+
+    // Strip timestamp prefix (e.g., 1736590000000_filename.mp3)
+    final regex = RegExp(r'^\d{13}_');
+    if (regex.hasMatch(name)) {
+      name = name.replaceFirst(regex, '');
+    }
+
+    return name;
   }
 
   /// Check if we're running in a test environment
@@ -450,7 +460,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Now Playing: ${_getDisplayName(musicPlayer.currentMusicFilePath)}',
+                      'Now Playing: ${musicPlayer.currentSongTitle ?? _getDisplayName(musicPlayer.currentMusicFilePath)}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1051,7 +1061,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                                   if (musicPlayer.isSongPlaying(song.filePath) || musicPlayer.isSongPaused(song.filePath)) {
                                     await musicPlayer.togglePlayPause();
                                   } else {
-                                    await musicPlayer.playMusic(song.filePath);
+                                    await musicPlayer.playMusic(song.filePath, songTitle: song.title);
                                   }
                                 },
                               ),

@@ -29,22 +29,13 @@ class AudioIntentService {
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
     if (call.method == _methodOnAudioPicked) {
-      final String uriString = call.arguments as String;
-      Uri uri;
-      String? displayName;
+      final Map<dynamic, dynamic> args = call.arguments as Map<dynamic, dynamic>;
+      final String filePath = args['filePath'] as String;
+      final String? displayName = args['displayName'] as String?;
       
-      if (uriString.startsWith('/') || uriString.startsWith('file://')) {
-        final path = uriString.startsWith('file://') ? uriString.substring(7) : uriString;
-        uri = Uri.file(path);
-        displayName = path.split('/').last;
-      } else {
-        uri = Uri.parse(uriString);
-        displayName = uri.pathSegments.lastOrNull;
-      }
-
       final audioFile = ExternalAudioFile(
-        sourceUri: uri,
-        displayName: displayName,
+        sourceUri: Uri.file(filePath),
+        displayName: displayName ?? filePath.split('/').last,
       );
       debugPrint('AudioIntentService: Picked audio - $audioFile');
       _audioPickedController.add(audioFile);

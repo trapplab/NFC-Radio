@@ -74,7 +74,11 @@ class MainActivity : FlutterActivity() {
             }
             
             Log.d(TAG, "File copied to: ${destFile.absolutePath}")
-            methodChannel?.invokeMethod("onAudioPicked", destFile.absolutePath)
+            val result = mapOf(
+                "filePath" to destFile.absolutePath,
+                "displayName" to originalFileName
+            )
+            methodChannel?.invokeMethod("onAudioPicked", result)
             
         } catch (e: Exception) {
             Log.e(TAG, "Error copying file", e)
