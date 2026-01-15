@@ -167,42 +167,42 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     return name;
   }
 
-  /// Check if a file is a playable audio file based on its extension and magic numbers
+  /// Check if a file is a playable audio file based on its magic numbers or extension
   Future<bool> _isValidAudioFile(String path) async {
-    // 1. Check extension first (quick check)
-    final audioExtensions = [
-      '.mp3', '.wav', '.m4a', '.flac', '.ogg', '.aac', '.wma', '.aiff', '.mid', '.midi', '.opus'
-    ];
-    final lowercasePath = path.toLowerCase();
-    if (!audioExtensions.any((ext) => lowercasePath.endsWith(ext))) {
-      return false;
-    }
-
-    // 2. Check magic numbers (strict check)
     try {
       final file = File(path);
       if (!await file.exists()) return false;
 
+      // 1. Check magic numbers first (High confidence)
+      // We read the first 32 bytes to identify the file format
       final bytes = await file.openRead(0, 32).first;
-      if (bytes.length < 4) return false;
+      if (bytes.length >= 3) {
+        // MP3 (ID3 tag: 'ID3')
+        if (bytes[0] == 0x49 && bytes[1] == 0x44 && bytes[2] == 0x33) return true;
+        // MP3 (Frame sync: 11 bits set)
+        if (bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0) return true;
+        // WAV (RIFF header: 'RIFF')
+        if (bytes.length >= 4 && bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46) return true;
+        // FLAC (Stream marker: 'fLaC')
+        if (bytes.length >= 4 && bytes[0] == 0x66 && bytes[1] == 0x4C && bytes[2] == 0x61 && bytes[3] == 0x43) return true;
+        // OGG (Ogg container: 'OggS')
+        if (bytes.length >= 4 && bytes[0] == 0x4F && bytes[1] == 0x67 && bytes[2] == 0x67 && bytes[3] == 0x53) return true;
+        // M4A/MP4 (ftyp box at offset 4)
+        if (bytes.length >= 12 && bytes[4] == 0x66 && bytes[5] == 0x74 && bytes[6] == 0x79 && bytes[7] == 0x70) return true;
+      }
 
-      // MP3 (ID3 tag)
-      if (bytes[0] == 0x49 && bytes[1] == 0x44 && bytes[2] == 0x33) return true;
-      // MP3 (Frame sync)
-      if (bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0) return true;
-      // WAV (RIFF)
-      if (bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46) return true;
-      // FLAC (fLaC)
-      if (bytes[0] == 0x66 && bytes[1] == 0x4C && bytes[2] == 0x61 && bytes[3] == 0x43) return true;
-      // OGG (OggS)
-      if (bytes[0] == 0x4F && bytes[1] == 0x67 && bytes[2] == 0x67 && bytes[3] == 0x53) return true;
-      // M4A (ftypM4A at offset 4)
-      if (bytes.length >= 12 &&
-          bytes[4] == 0x66 && bytes[5] == 0x74 && bytes[6] == 0x79 && bytes[7] == 0x70) return true;
-      
-      // If we reach here, it might be a format we don't recognize by magic numbers but has a valid extension.
-      // For now, we'll allow it if the extension is valid, but we could be stricter.
-      return true;
+      // 2. Fallback to extension check (Medium confidence)
+      // This handles formats where magic numbers might vary or are not checked above
+      final audioExtensions = [
+        '.mp3', '.wav', '.m4a', '.flac', '.ogg', '.aac', '.wma', '.aiff', '.mid', '.midi', '.opus'
+      ];
+      final lowercasePath = path.toLowerCase();
+      if (audioExtensions.any((ext) => lowercasePath.endsWith(ext))) {
+        return true;
+      }
+
+      // 3. If neither matches, it's likely not a supported audio file
+      return false;
     } catch (e) {
       debugPrint('Error validating audio file: $e');
       return false;
