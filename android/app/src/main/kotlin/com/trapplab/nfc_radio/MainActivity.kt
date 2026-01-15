@@ -26,7 +26,8 @@ class MainActivity : FlutterActivity() {
         methodChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
                 "pickAudio" -> {
-                    pickAudio()
+                    val filterAudioOnly = call.argument<Boolean>("filterAudioOnly") ?: false
+                    pickAudio(filterAudioOnly)
                     result.success("started")
                 }
                 else -> result.notImplemented()
@@ -34,9 +35,9 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun pickAudio() {
+    private fun pickAudio(filterAudioOnly: Boolean) {
         val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-            type = "audio/*"
+            type = if (filterAudioOnly) "audio/*" else "*/*"
             addCategory(Intent.CATEGORY_OPENABLE)
         }
         startActivityForResult(Intent.createChooser(intent, "Select Audio App"), REQUEST_CODE_PICK_AUDIO)

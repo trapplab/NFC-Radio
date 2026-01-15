@@ -19,6 +19,10 @@ App Overview | App Detail | App Lock
 - **Cross-Platform**: Is tested on Android devices, but might also work on iOS.
 - **Privacy Focused**: No data is collected or stored. Everything is stored locally on the device.
 
+## Get audio test files
+
+A good source to test some audio files I liked is: [https://freeanimalsounds.org/farm-animals/](https://freeanimalsounds.org/farm-animals/)
+
 ## Technologies Used
 
 - **Flutter**: A UI toolkit for building natively compiled applications for mobile, web, and desktop from a single codebase.
@@ -55,9 +59,13 @@ To set up the project locally, follow these steps:
 4. **Build the App**:
    Build a App Release with 
    ```bash
+   # single apk
    ./scripts/prepare_flavor.sh fdroid && flutter build apk --flavor fdroid --split-per-abi --target-platform=android-arm64  --release  
    ./scripts/prepare_flavor.sh play && flutter build apk --flavor play --split-per-abi --target-platform=android-arm64  --release
    ./scripts/prepare_flavor.sh github && flutter build apk --flavor github --split-per-abi --target-platform=android-arm64  --release
+   
+   # app bundle
+   ./scripts/prepare_flavor.sh play && flutter build appbundle --flavor play --release
    ```
 
 ## Flavors
@@ -99,6 +107,7 @@ ln -sf scripts/git-hooks/pre-commit .git/hooks/pre-commit
 ```
 
 This will ensure that every commit checks for consistent versions in the pubspec files.
+
 
 ## License
 

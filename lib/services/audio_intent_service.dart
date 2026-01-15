@@ -43,13 +43,15 @@ class AudioIntentService {
     return null;
   }
 
-  Future<bool> pickAudioFromApp() async {
+  Future<bool> pickAudioFromApp({bool filterAudioOnly = false}) async {
     if (!_isInitialized) {
       initialize();
     }
     
     try {
-      await _channel?.invokeMethod(_methodPickAudio);
+      await _channel?.invokeMethod(_methodPickAudio, {
+        'filterAudioOnly': filterAudioOnly,
+      });
       return true;
     } catch (e) {
       debugPrint('AudioIntentService: Error launching picker: $e');
