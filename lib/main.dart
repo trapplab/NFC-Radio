@@ -54,6 +54,7 @@ class NFCJukeboxApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MusicPlayer()),
         ChangeNotifierProvider(create: (_) => DimmedModeService()),
         ChangeNotifierProvider(create: (_) => NFCService()),
+        ChangeNotifierProvider.value(value: IAPService.instance),
       ],
       child: MaterialApp(
         title: 'NFC Radio',
@@ -157,6 +158,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     if (regex.hasMatch(name)) {
       name = name.replaceFirst(regex, '');
     }
+
+    // Strip extension
+    name = name.replaceAll(RegExp(r'\.[^.]+$'), '');
 
     return name;
   }
@@ -275,6 +279,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     final nfcService = Provider.of<NFCService>(context);
     final musicPlayer = Provider.of<MusicPlayer>(context);
     final songProvider = Provider.of<SongProvider>(context);
+    final iapService = Provider.of<IAPService>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -302,7 +307,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             ),
           ),
           // Upgrade info button (only for GP flavor when not premium)
-          if (AppConfig.isGooglePlayRelease && !IAPService.instance.isPremium)
+          if (AppConfig.isGooglePlayRelease && !iapService.isPremium)
             IconButton(
               icon: const Icon(Icons.info_outline, color: Colors.blue),
               onPressed: () => _showUpgradeDialog(context),
@@ -436,7 +441,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             ),
           ),
           // Music Player Section - Absolutely positioned at the bottom
-          if (musicPlayer.isPlaying || musicPlayer.isPaused)
+          // Audio player should only be visible when not in "Add New Song" or "Edit Song" mode
+          // Since nfcService.setEditMode is true when in those dialogs, we can use that flag
+          if ((musicPlayer.isPlaying || musicPlayer.isPaused) && !nfcService.isInEditMode)
             Positioned(
               bottom: MediaQuery.of(context).padding.bottom + 16,
               left: 0,
@@ -649,8 +656,39 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               nfcService.setEditMode(false);
               return;
             }
-            if (nfcService.currentNfcUuid != null) {
-              setState(() {}); // Trigger rebuild to show "New NFC" button
+            
+            final currentNfcUuid = nfcService.currentNfcUuid;
+            if (currentNfcUuid != null && currentNfcUuid != dialogNfcUuid) {
+              // Check if this NFC is already linked in the same folder
+              Song? existingSong;
+              try {
+                if (currentFolderId != null) {
+                  final currentFolder = folderProvider.folders.firstWhere((f) => f.id == currentFolderId);
+                  existingSong = songProvider.songs.firstWhere(
+                    (s) => s.connectedNfcUuid == currentNfcUuid &&
+                           currentFolder.songIds.contains(s.id) &&
+                           (song == null || s.id != song.id),
+                  );
+                }
+              } catch (_) {
+                existingSong = null;
+              }
+
+              if (existingSong == null) {
+                // Automatically link if not already linked to another song in this folder
+                setState(() {
+                  dialogNfcUuid = currentNfcUuid;
+                });
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(
+                    content: Text('🔗 NFC tag linked automatically'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              } else {
+                // Just trigger rebuild to show the "Use This NFC" button for manual resolution
+                setState(() {});
+              }
             }
           };
           
@@ -667,7 +705,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 }
                 
                 if (titleController.text.isEmpty && audioFile.displayName != null) {
-                  titleController.text = audioFile.displayName!;
+                  titleController.text = audioFile.displayName!.replaceAll(RegExp(r'\.[^.]+$'), '');
                 }
               });
               ScaffoldMessenger.of(context).showSnackBar(
@@ -682,11 +720,6 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextField(
-                    controller: titleController,
-                    decoration: const InputDecoration(labelText: 'Song Title'),
-                  ),
-                  const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(
@@ -708,6 +741,11 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                         },
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(labelText: 'Song Title'),
                   ),
                   const SizedBox(height: 16),
                   if (nfcService.isNfcAvailable) ...[
@@ -853,7 +891,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   if (filePathController.text.isNotEmpty) {
                     final String finalTitle = titleController.text.isNotEmpty
                         ? titleController.text
-                        : _getDisplayName(filePathController.text).replaceAll(RegExp(r'\.[^.]+$'), '');
+                        : _getDisplayName(filePathController.text);
 
                     final newSong = Song(
                       id: song?.id ?? const Uuid().v4(),
