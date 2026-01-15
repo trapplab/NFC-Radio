@@ -19,6 +19,7 @@ import 'update_service.dart';
 import 'config.dart';
 import 'iap_service.dart';
 import 'services/audio_intent_service.dart';
+import 'settings_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,6 +56,7 @@ class NFCJukeboxApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DimmedModeService()),
         ChangeNotifierProvider(create: (_) => NFCService()),
         ChangeNotifierProvider.value(value: IAPService.instance),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
       child: MaterialApp(
         title: 'NFC Radio',
@@ -165,6 +167,48 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     return name;
   }
 
+  /// Check if a file is a playable audio file based on its extension and magic numbers
+  Future<bool> _isValidAudioFile(String path) async {
+    // 1. Check extension first (quick check)
+    final audioExtensions = [
+      '.mp3', '.wav', '.m4a', '.flac', '.ogg', '.aac', '.wma', '.aiff', '.mid', '.midi', '.opus'
+    ];
+    final lowercasePath = path.toLowerCase();
+    if (!audioExtensions.any((ext) => lowercasePath.endsWith(ext))) {
+      return false;
+    }
+
+    // 2. Check magic numbers (strict check)
+    try {
+      final file = File(path);
+      if (!await file.exists()) return false;
+
+      final bytes = await file.openRead(0, 32).first;
+      if (bytes.length < 4) return false;
+
+      // MP3 (ID3 tag)
+      if (bytes[0] == 0x49 && bytes[1] == 0x44 && bytes[2] == 0x33) return true;
+      // MP3 (Frame sync)
+      if (bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0) return true;
+      // WAV (RIFF)
+      if (bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46) return true;
+      // FLAC (fLaC)
+      if (bytes[0] == 0x66 && bytes[1] == 0x4C && bytes[2] == 0x61 && bytes[3] == 0x43) return true;
+      // OGG (OggS)
+      if (bytes[0] == 0x4F && bytes[1] == 0x67 && bytes[2] == 0x67 && bytes[3] == 0x53) return true;
+      // M4A (ftypM4A at offset 4)
+      if (bytes.length >= 12 &&
+          bytes[4] == 0x66 && bytes[5] == 0x74 && bytes[6] == 0x79 && bytes[7] == 0x70) return true;
+      
+      // If we reach here, it might be a format we don't recognize by magic numbers but has a valid extension.
+      // For now, we'll allow it if the extension is valid, but we could be stricter.
+      return true;
+    } catch (e) {
+      debugPrint('Error validating audio file: $e');
+      return false;
+    }
+  }
+
   /// Check if we're running in a test environment
   bool _isTestEnvironment() {
     return Platform.environment.containsKey('FLUTTER_TEST') ||
@@ -200,8 +244,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
         final mappingProvider = Provider.of<NFCMusicMappingProvider>(context, listen: false);
         final musicPlayer = Provider.of<MusicPlayer>(context, listen: false);
         final nfcService = Provider.of<NFCService>(context, listen: false);
+        final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
   
-        if (!songProvider.isInitialized || !folderProvider.isInitialized) {
+        if (!songProvider.isInitialized || !folderProvider.isInitialized || !settingsProvider.isInitialized) {
           debugPrint('🔄 Initializing providers with persisted data...');
   
           // Initialize providers in parallel
@@ -209,6 +254,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             songProvider.initialize(),
             folderProvider.initialize(),
             mappingProvider.initialize(),
+            settingsProvider.initialize(),
           ]);
 
           // Set providers for NFCService after initialization
@@ -282,6 +328,34 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     final iapService = Provider.of<IAPService>(context);
 
     return Scaffold(
+      endDrawer: Drawer(
+        child: Consumer<SettingsProvider>(
+          builder: (context, settings, child) {
+            return ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                DrawerHeader(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  child: const Text(
+                    'Settings',
+                    style: TextStyle(color: Colors.white, fontSize: 24),
+                  ),
+                ),
+                SwitchListTile(
+                  title: const Text('Browse audio files only'),
+                  subtitle: Text(settings.filterAudioOnly ? 'Filter: audio/*' : 'Filter: */*'),
+                  value: settings.filterAudioOnly,
+                  onChanged: (value) {
+                    settings.setFilterAudioOnly(value);
+                  },
+                ),
+              ],
+            );
+          },
+        ),
+      ),
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('NFC Radio'),
@@ -327,6 +401,13 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               onPressed: () => _showStorageDebugDialog(context),
               tooltip: 'Storage Debug',
             ),
+          Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () => Scaffold.of(context).openEndDrawer(),
+              tooltip: 'Settings',
+            ),
+          ),
         ],
       ),
       body: Stack(
@@ -697,20 +778,33 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           // Listen for audio picked from external apps
           audioSubscription ??= AudioIntentService().onAudioPicked.listen((audioFile) {
             if (dialogState.isOpen) {
-              setState(() {
-                if (audioFile.sourceUri.isScheme('file')) {
-                  filePathController.text = audioFile.sourceUri.toFilePath();
-                } else {
-                  filePathController.text = audioFile.sourceUri.toString();
+              final path = audioFile.sourceUri.isScheme('file')
+                  ? audioFile.sourceUri.toFilePath()
+                  : audioFile.sourceUri.toString();
+              
+              _isValidAudioFile(path).then((isValid) {
+                if (!isValid) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('❌ Rejected: Selected file is not a valid audio file.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
                 }
-                
-                if (titleController.text.isEmpty && audioFile.displayName != null) {
-                  titleController.text = audioFile.displayName!.replaceAll(RegExp(r'\.[^.]+$'), '');
-                }
+
+                setState(() {
+                  filePathController.text = path;
+                  
+                  if (titleController.text.isEmpty && audioFile.displayName != null) {
+                    titleController.text = audioFile.displayName!.replaceAll(RegExp(r'\.[^.]+$'), '');
+                  }
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('📥 Audio selected: ${audioFile.displayName ?? "Unknown"}')),
+                );
               });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('📥 Audio selected: ${audioFile.displayName ?? "Unknown"}')),
-              );
+                
             }
           });
 
@@ -732,7 +826,10 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                       IconButton(
                         icon: const Icon(Icons.attach_file),
                         onPressed: () async {
-                          final success = await AudioIntentService().pickAudioFromApp();
+                          final settings = Provider.of<SettingsProvider>(context, listen: false);
+                          final success = await AudioIntentService().pickAudioFromApp(
+                            filterAudioOnly: settings.filterAudioOnly,
+                          );
                           if (!success && dialogContext.mounted) {
                             ScaffoldMessenger.of(dialogContext).showSnackBar(
                               const SnackBar(content: Text('❌ Failed to launch audio picker')),
@@ -887,8 +984,18 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 child: const Text('Cancel'),
               ),
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   if (filePathController.text.isNotEmpty) {
+                    if (!await _isValidAudioFile(filePathController.text)) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        const SnackBar(
+                          content: Text('❌ Cannot save: File is not a valid audio file.'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
                     final String finalTitle = titleController.text.isNotEmpty
                         ? titleController.text
                         : _getDisplayName(filePathController.text);
