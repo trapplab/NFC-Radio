@@ -1,0 +1,4 @@
+## Modifié
+- Quelques améliorations de l'interface utilisateur et de l'ergonomie, basées sur les retours des testeurs
+- Supprimer la permission INTERNET de la version fdroid. Toutes les variantes fonctionnent entièrement hors ligne, mais github vérifie les mises à jour et play pour les achats intégrés.
+- Ouverture du filtre de l'explorateur de fichiers de manière à ce que tous les fichiers soient visibles, mais seuls les fichiers audio puissent être sélectionnés.

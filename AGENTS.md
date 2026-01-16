@@ -33,6 +33,7 @@ To bump the version, do the following:
    * __Removed__ for now removed features.
    * __Fixed__ for any bug fixes.
    * __Security__ in case of vulnerabilities.
+3. The changelog and translations shall have a maximum of 500 characters in total.
 
 # Security
 * Never commit API keys or secrets
