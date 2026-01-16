@@ -1,13 +1,24 @@
 # <img src="assets/icon/nrf_radio_icon.png" alt="Triceratops icon" width="17%"/> NFC Radio
 
+## Available on
+[![F-Droid](https://img.shields.io/badge/F-Droid-1976D2?style=for-the-badge&logo=f-droid&logoColor=white)](
+https://f-droid.org/packages/com.trapplab.nfc_radio/
+)
+[![GitHub Releases](https://img.shields.io/badge/Get%20it%20on-GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](
+https://github.com/trapplab/NFC-Radio/releases
+)
 
+### Status
+![GitHub Release](https://img.shields.io/github/v/release/trapplab/NFC-Radio)
+
+## Description
 This Flutter project is a music player app (mainly for mobile due to the need for NFC) that can be controlled by any NFC tag. There is no information saved on the tag itself, but the tag's ID is used to identify the tag. The app will then use the ID to determine which radio file to play.
 
 I wanted to have a simple-to-use radio that can be used to hear favorite songs or stories without the need for using a screen. NFC tags can be placed in toys or pictures, which can act as a CMI (Child-Machine-Interface) 😉
 
 ## Screenshots
 
-<img src="assets/images/overview2.jpeg" alt="App Screenshot Overview" width="300"/>
+<img src="assets/images/overview2.jpeg" alt="App Screenshot Overview" width="600"/>
 
 App Overview | App Detail | App Lock
 
