@@ -1,0 +1,4 @@
+## Modificato
+- Alcuni miglioramenti dell'interfaccia utente e dell'usabilità, basati sul feedback dei tester
+- Rimuovere il permesso INTERNET dalla versione fdroid. Tutte le varianti funzionano completamente offline, ma github verifica gli aggiornamenti e play per gli acquisti in-app.
+- Aperto il filtro dell'esplora file in modo che non vengano visualizzati solo i file audio, ma possano essere selezionati solo i file audio.

@@ -7,6 +7,7 @@ class MusicPlayer with ChangeNotifier {
   final AudioPlayer _audioPlayer = AudioPlayer();
   PlayerState _currentState = PlayerState.idle;
   String? _currentMusicFilePath;
+  String? _currentSongTitle;
   Duration _savedPosition = Duration.zero;
   Duration _totalDuration = Duration.zero;
 
@@ -15,6 +16,7 @@ class MusicPlayer with ChangeNotifier {
   bool get isPaused => _currentState == PlayerState.paused;
   bool get isStopped => _currentState == PlayerState.stopped;
   String? get currentMusicFilePath => _currentMusicFilePath;
+  String? get currentSongTitle => _currentSongTitle;
   Duration get savedPosition => _savedPosition;
   Duration get totalDuration => _totalDuration;
 
@@ -42,9 +44,10 @@ class MusicPlayer with ChangeNotifier {
     });
   }
 
-  Future<void> playMusic(String musicFilePath) async {
+  Future<void> playMusic(String musicFilePath, {String? songTitle}) async {
     debugPrint('🎵 ===== MUSIC PLAYBACK STARTED =====');
     debugPrint('🎵 Target file: $musicFilePath');
+    debugPrint('🎵 Song title: $songTitle');
     debugPrint('🎵 Current path: $_currentMusicFilePath');
     debugPrint('🎵 Current state: $_currentState');
     debugPrint('🎵 Timestamp: ${DateTime.now()}');
@@ -67,8 +70,9 @@ class MusicPlayer with ChangeNotifier {
     // Note: In a real app, you might want to do more robust file checking
     debugPrint('🔍 File path validation: $musicFilePath');
     
-    // Update current music path
+    // Update current music path and title
     _currentMusicFilePath = musicFilePath;
+    _currentSongTitle = songTitle;
     debugPrint('📍 Updated current path to: $musicFilePath');
     
     // Stop any current playback with error handling
@@ -90,9 +94,13 @@ class MusicPlayer with ChangeNotifier {
     // Attempt to play with retry mechanism
     try {
       debugPrint('▶️ Starting audio playback...');
-      debugPrint('📱 Using DeviceFileSource for: $musicFilePath');
-      
-      await _audioPlayer.play(DeviceFileSource(musicFilePath));
+      if (musicFilePath.startsWith('content://') || musicFilePath.startsWith('http')) {
+        debugPrint('📱 Using UrlSource for: $musicFilePath');
+        await _audioPlayer.play(UrlSource(musicFilePath));
+      } else {
+        debugPrint('📱 Using DeviceFileSource for: $musicFilePath');
+        await _audioPlayer.play(DeviceFileSource(musicFilePath));
+      }
       _currentState = PlayerState.playing;
       debugPrint('✅ SUCCESS: Started playing $musicFilePath');
       debugPrint('📊 New player state: $_currentState');
@@ -227,6 +235,7 @@ class MusicPlayer with ChangeNotifier {
       await _audioPlayer.stop();
       _currentState = PlayerState.stopped;
       _currentMusicFilePath = null;
+      _currentSongTitle = null;
       _savedPosition = Duration.zero;
       debugPrint('MusicPlayer: Stopped playback and cleared state');
     } catch (e) {
@@ -251,10 +260,10 @@ class MusicPlayer with ChangeNotifier {
         await resumeMusic();
       } else if (_currentState == PlayerState.stopped && _currentMusicFilePath != null) {
         debugPrint('🔄 Action: RESTART (currently stopped, have file)');
-        await playMusic(_currentMusicFilePath!);
+        await playMusic(_currentMusicFilePath!, songTitle: _currentSongTitle);
       } else if (_currentState == PlayerState.idle && _currentMusicFilePath != null) {
         debugPrint('🔄 Action: PLAY (currently idle, have file)');
-        await playMusic(_currentMusicFilePath!);
+        await playMusic(_currentMusicFilePath!, songTitle: _currentSongTitle);
       } else {
         debugPrint('❌ No current music to play/resume');
         debugPrint('❌ State: $_currentState, Path: $_currentMusicFilePath');

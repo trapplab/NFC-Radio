@@ -64,7 +64,7 @@ translate_text() {
     -d "{
         \"model\": \"gpt-4.1-mini\",
         \"messages\": [
-        {\"role\": \"system\", \"content\": \"You are a professional translator. Translate the given text to $target_lang. Return ONLY the translation, nothing else. Do not add explanations, questions, or any additional text.\"},
+        {\"role\": \"system\", \"content\": \"You are a professional translator. Translate the given text to $target_lang. Return ONLY the translation, nothing else. Do not add explanations, questions, or any additional text. The hard limit is 500 characters. No trailing empty newlines.\"},
         {\"role\": \"user\", \"content\": \"$text\"}
         ]
     }" | jq -r '.choices[0].message.content'
@@ -84,14 +84,12 @@ for LANG in "${!LANGUAGE_CODES[@]}"; do
         if [ -n "$line" ]; then
             translated_line=$(translate_text "$line" "$TARGET_LANG")
             TRANSLATED_CHANGELOG+="$translated_line\n"
-        else
-            TRANSLATED_CHANGELOG+="\n"
         fi
     done <<< "$ENGLISH_CHANGELOG"
     
     # Write translated changelog
     TRANSLATED_FILE="fastlane/metadata/android/$LANG/changelogs/$VERSION_CODE.txt"
-    echo -e "$TRANSLATED_CHANGELOG" > "$TRANSLATED_FILE"
+    echo -en "$TRANSLATED_CHANGELOG" > "$TRANSLATED_FILE"
     echo "Created $LANG changelog: $TRANSLATED_FILE"
 done
 

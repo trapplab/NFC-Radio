@@ -1,0 +1,4 @@
+## Geändert
+- Einige UI- und Benutzerfreundlichkeitsverbesserungen basierend auf dem Feedback der Tester
+- Entfernen Sie die INTERNET-Berechtigung aus der fdroid-Version. Alle Versionen funktionieren vollständig offline, aber GitHub prüft auf Updates und Play für In-App-Käufe.
+- Den Datei-Explorer-Filter geöffnet, sodass nicht nur Audiodateien angezeigt werden, sondern nur Audiodateien ausgewählt werden können.

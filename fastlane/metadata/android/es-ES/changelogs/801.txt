@@ -1,0 +1,4 @@
+## Cambiado
+- Algunas mejoras en la interfaz y usabilidad, basadas en los comentarios de los evaluadores.
+- Eliminar el permiso de INTERNET en la versión de fdroid. Todos los sabores funcionan completamente sin conexión, pero github verifica actualizaciones y play para compras dentro de la aplicación.
+- Se abrió el filtro del explorador de archivos para que no solo se puedan ver archivos de audio, sino que solo se puedan seleccionar archivos de audio.

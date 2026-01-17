@@ -1,13 +1,27 @@
 # <img src="assets/icon/nrf_radio_icon.png" alt="Triceratops icon" width="17%"/> NFC Radio
 
+## Available on
+[<img src="https://img.shields.io/badge/F--Droid-1976D2?style=for-the-badge&logo=f-droid"
+      alt="Get it on F-Droid"
+      height="50">](https://f-droid.org/packages/com.trapplab.nfc_radio/
+)
+[<img src="https://img.shields.io/badge/GitHub%20Releases-100000?style=for-the-badge&logo=github"
+      alt="Get it on GitHub"
+      height="50">](
+https://github.com/trapplab/NFC-Radio/releases
+)
 
+### Status
+![GitHub Release](https://img.shields.io/github/v/release/trapplab/NFC-Radio)
+
+## Description
 This Flutter project is a music player app (mainly for mobile due to the need for NFC) that can be controlled by any NFC tag. There is no information saved on the tag itself, but the tag's ID is used to identify the tag. The app will then use the ID to determine which radio file to play.
 
 I wanted to have a simple-to-use radio that can be used to hear favorite songs or stories without the need for using a screen. NFC tags can be placed in toys or pictures, which can act as a CMI (Child-Machine-Interface) 😉
 
 ## Screenshots
 
-<img src="assets/images/overview2.jpeg" alt="App Screenshot Overview" width="300"/>
+<img src="assets/images/overview2.jpeg" alt="App Screenshot Overview" width="600"/>
 
 App Overview | App Detail | App Lock
 
@@ -18,6 +32,11 @@ App Overview | App Detail | App Lock
 - **Customizable**: Map NFC tags to play local audio files.
 - **Cross-Platform**: Is tested on Android devices, but might also work on iOS.
 - **Privacy Focused**: No data is collected or stored. Everything is stored locally on the device.
+- **Starter Packs**: Download audio starter packs from GitHub to get started quickly. Like sounds of farm animals, nature, etc.
+
+## Get audio test files
+
+A good source to test some audio files I liked is: [https://freeanimalsounds.org/farm-animals/](https://freeanimalsounds.org/farm-animals/)
 
 ## Technologies Used
 
@@ -55,9 +74,13 @@ To set up the project locally, follow these steps:
 4. **Build the App**:
    Build a App Release with 
    ```bash
-   ./scripts/prepare_flavor.sh fdroid && flutter build apk --flavor fdroid --split-per-abi --target-platform=android-arm64 --no-tree-shake-icons --release  --no-tree-shake-icons
-   ./scripts/prepare_flavor.sh play && flutter build apk --flavor play --split-per-abi --target-platform=android-arm64 --no-tree-shake-icons --release
-   ./scripts/prepare_flavor.sh github && flutter build apk --flavor github --split-per-abi --target-platform=android-arm64 --no-tree-shake-icons --release
+   # single apk
+   ./scripts/prepare_flavor.sh fdroid && flutter build apk --flavor fdroid --split-per-abi --target-platform=android-arm64  --release  
+   ./scripts/prepare_flavor.sh play && flutter build apk --flavor play --split-per-abi --target-platform=android-arm64  --release
+   ./scripts/prepare_flavor.sh github && flutter build apk --flavor github --split-per-abi --target-platform=android-arm64  --release
+   
+   # app bundle
+   ./scripts/prepare_flavor.sh play && flutter build appbundle --flavor play --release
    ```
 
 ## Flavors
@@ -71,12 +94,12 @@ The app can be built with three flavors:
 ## Usage
 
 1. **Setting Up NFC Tags**:
-   - Place an NFC tag near your device.
+   - Place any NFC tag (old cards, dongles, stickers, etc.) near your device.
    - The app will read the tag's ID and map it to a specific radio file or playlist.
 
 2. **Playing Music**:
    - Tap the NFC tag to start playing the associated music.
-   - Use the app's interface to control playback (play, pause, skip, etc.).
+   - Use the app's interface to control playback (play, pause, stop).
 
 ## Contributing
 
@@ -99,6 +122,7 @@ ln -sf scripts/git-hooks/pre-commit .git/hooks/pre-commit
 ```
 
 This will ensure that every commit checks for consistent versions in the pubspec files.
+
 
 ## License
 

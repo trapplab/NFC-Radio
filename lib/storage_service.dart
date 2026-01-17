@@ -10,6 +10,7 @@ class StorageService {
   static const String _songsBoxName = 'songs';
   static const String _mappingsBoxName = 'mappings';
   static const String _foldersBoxName = 'folders';
+  static const String _settingsBoxName = 'settings';
   
   static StorageService? _instance;
   static StorageService get instance => _instance ??= StorageService._();
@@ -19,6 +20,7 @@ class StorageService {
   Box<Song>? _songsBox;
   Box<NFCMusicMapping>? _mappingsBox;
   Box<Folder>? _foldersBox;
+  Box<dynamic>? _settingsBox;
   bool _isInitialized = false;
   
   /// Initialize Hive storage and register adapters
@@ -74,8 +76,10 @@ class StorageService {
       debugPrint('🔧 Opening folders box: $_foldersBoxName');
       _foldersBox = await Hive.openBox<Folder>(_foldersBoxName);
       debugPrint('✅ Folders box opened successfully');
-      debugPrint('📊 Folders box path: ${_foldersBox?.path}');
-      debugPrint('📊 Folders box length: ${_foldersBox?.length ?? 0}');
+      
+      debugPrint('🔧 Opening settings box: $_settingsBoxName');
+      _settingsBox = await Hive.openBox<dynamic>(_settingsBoxName);
+      debugPrint('✅ Settings box opened successfully');
       
       _isInitialized = true;
       debugPrint('✅ ===== HIVE STORAGE INITIALIZATION COMPLETED =====');
@@ -369,6 +373,7 @@ class StorageService {
         clearSongs(),
         clearMappings(),
         clearFolders(),
+        _settingsBox?.clear() ?? Future.value(),
       ]);
       debugPrint('🧹 Cleared all data from storage');
     } catch (e) {
@@ -489,5 +494,17 @@ class StorageService {
         duration: const Duration(seconds: 2),
       ),
     );
+  }
+
+  // ========== SETTINGS OPERATIONS ==========
+  
+  Future<void> saveSetting(String key, dynamic value) async {
+    _checkInitialization();
+    await _settingsBox!.put(key, value);
+  }
+  
+  dynamic getSetting(String key, {dynamic defaultValue}) {
+    _checkInitialization();
+    return _settingsBox!.get(key, defaultValue: defaultValue);
   }
 }

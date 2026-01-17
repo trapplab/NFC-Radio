@@ -13,6 +13,21 @@
 
 # Changelog
 
+xxxxx
+### Added
+- Introduced audio starter packs to include simply basic sounds for children.
+
+## [0.8.1]
+### Changed
+- Some UI and usability improvements, from testers feedback
+- Remove the INTERNET permission from the fdroid version. All flavours work fully offline, but github checks for updates and play for in app purchases.
+- Opened file explorer filter so that not only audio files can be seen, but only audio files can be selected.
+
+## [0.8.0]
+### Changed
+- Use file select to copy over files into apps local storage to make use of androids sandboxed design.
+- Show given song name in the player when playing a song.
+
 ## [0.7.12]
 ### Changed
 - Use fixed timestamps and javaversion in build.gradle to make build reproducible.

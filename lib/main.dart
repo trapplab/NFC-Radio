@@ -6,8 +6,6 @@ import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:uuid/uuid.dart';
 import 'package:hive/hive.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:path/path.dart' as p;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'nfc_music_mapping.dart';
 import 'nfc_service.dart';
@@ -20,12 +18,20 @@ import 'dimmed_mode_wrapper.dart';
 import 'update_service.dart';
 import 'config.dart';
 import 'iap_service.dart';
+import 'services/audio_intent_service.dart';
+import 'services/github_audio_service.dart';
+import 'models/github_audio_folder.dart';
+import 'settings_provider.dart';
+import 'package:path/path.dart' as p;
 import 'tutorial_service.dart';
 import 'tutorial_steps.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await WakelockPlus.enable();
+  
+  // Initialize audio intent service
+  AudioIntentService().initialize();
   
   // Initialize storage service first
   try {
@@ -54,6 +60,8 @@ class NFCJukeboxApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MusicPlayer()),
         ChangeNotifierProvider(create: (_) => DimmedModeService()),
         ChangeNotifierProvider(create: (_) => NFCService()),
+        ChangeNotifierProvider.value(value: IAPService.instance),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
       child: MaterialApp(
         title: 'NFC Radio',
@@ -77,6 +85,8 @@ class NFCJukeboxHomePage extends StatefulWidget {
 class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBindingObserver {
   StreamSubscription<String>? _nfcMessageSubscription;
   String _appVersion = '';
+  List<GitHubAudioFolder>? _githubFolders;
+  bool _isLoadingGithubFolders = false;
 
   // Global keys for tutorial
   final GlobalKey _addFolderButtonKey = GlobalKey();
@@ -103,6 +113,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     // Automatic update check on startup
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForUpdates(manual: false);
+      _fetchGithubFolders();
     });
     
     // Initialize tutorial service and show tutorial if needed
@@ -112,6 +123,155 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     debugPrint('🚀 Timestamp: ${DateTime.now()}');
     
     debugPrint('🚀 ===== APP INITIALIZATION COMPLETED =====');
+  }
+
+  Future<void> _fetchGithubFolders() async {
+    if (_isLoadingGithubFolders) return;
+    setState(() {
+      _isLoadingGithubFolders = true;
+    });
+    try {
+      final folders = await GitHubAudioService.fetchFolders();
+      if (mounted) {
+        setState(() {
+          _githubFolders = folders;
+          _isLoadingGithubFolders = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching GitHub folders: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingGithubFolders = false;
+        });
+      }
+    }
+  }
+
+  void _showImportConfirmation(BuildContext context, GitHubAudioFolder githubFolder) {
+    final locale = Localizations.localeOf(context).toString();
+    final localization = githubFolder.getLocalization(locale);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Import "${localization?.title ?? githubFolder.folderName}"?'),
+        content: Text('This will download ${localization?.files.length ?? 0} audio files and create a new folder.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _importGithubFolder(githubFolder);
+            },
+            child: const Text('Import'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _importGithubFolder(GitHubAudioFolder githubFolder) async {
+    final locale = Localizations.localeOf(context).toString();
+    final localization = githubFolder.getLocalization(locale);
+    if (localization == null) return;
+
+    final folderProvider = Provider.of<FolderProvider>(context, listen: false);
+    final songProvider = Provider.of<SongProvider>(context, listen: false);
+
+    if (folderProvider.isFolderLimitReached()) {
+      folderProvider.showFolderLimitDialog(context);
+      return;
+    }
+
+    // Show progress dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Downloading audio files...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final List<String> songIds = [];
+      final List<String> failedFiles = [];
+
+      for (final githubFile in localization.files) {
+        try {
+          final localPath = await GitHubAudioService.downloadAudioFile(githubFolder.folderName, githubFile.name);
+          
+          final song = Song(
+            id: const Uuid().v4(),
+            title: githubFile.title,
+            filePath: localPath,
+          );
+          songProvider.addSong(song);
+          songIds.add(song.id);
+        } catch (e) {
+          debugPrint('⚠️ Failed to download ${githubFile.name}: $e');
+          failedFiles.add(githubFile.title);
+        }
+      }
+
+      if (songIds.isNotEmpty) {
+        final folder = Folder(
+          id: const Uuid().v4(),
+          name: localization.title,
+          songIds: songIds,
+          isExpanded: true,
+        );
+        folderProvider.addFolder(folder);
+      }
+
+      if (mounted) {
+        Navigator.pop(context); // Close progress dialog
+        
+        if (failedFiles.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Successfully imported "${localization.title}"')),
+          );
+        } else if (songIds.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to import any files from "${localization.title}"'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } else {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Partial Import'),
+              content: Text('Imported ${songIds.length} files, but ${failedFiles.length} files failed to download:\n\n${failedFiles.join(', ')}'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close progress dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to import folder: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
   
   Future<void> _getAppVersion() async {
@@ -148,42 +308,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     }
   }
 
-  /// Initialize tutorial service and show tutorial on first run
-  Future<void> _initializeTutorial() async {
-    try {
-      await TutorialService.instance.initialize();
-      
-      if (mounted && TutorialService.instance.shouldShowTutorial) {
-        // Wait for the first frame to ensure widgets are built
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          _showTutorial();
-        });
-      }
-    } catch (e) {
-      debugPrint('⚠️ Failed to initialize tutorial: $e');
-    }
-  }
-
-  /// Show the tutorial
-  void _showTutorial() {
-    final targets = createTutorialTargets(
-      addFolderButtonKey: _addFolderButtonKey,
-      foldersAreaKey: _foldersAreaKey,
-    );
-    
-    showTutorial(
-      context: context,
-      targets: targets,
-      onFinish: () {
-        TutorialService.instance.markTutorialShown();
-      },
-    );
-  }
-
   /// Check if we're running in a test environment
   bool _isTestEnvironment() {
-    return Platform.environment.containsKey('FLUTTER_TEST') || 
+    return Platform.environment.containsKey('FLUTTER_TEST') ||
            Platform.environment.containsKey('DART_VM_OPTIONS');
   }
 
@@ -216,8 +343,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
         final mappingProvider = Provider.of<NFCMusicMappingProvider>(context, listen: false);
         final musicPlayer = Provider.of<MusicPlayer>(context, listen: false);
         final nfcService = Provider.of<NFCService>(context, listen: false);
+        final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
   
-        if (!songProvider.isInitialized || !folderProvider.isInitialized) {
+        if (!songProvider.isInitialized || !folderProvider.isInitialized || !settingsProvider.isInitialized) {
           debugPrint('🔄 Initializing providers with persisted data...');
   
           // Initialize providers in parallel
@@ -225,6 +353,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             songProvider.initialize(),
             folderProvider.initialize(),
             mappingProvider.initialize(),
+            settingsProvider.initialize(),
           ]);
 
           // Set providers for NFCService after initialization
@@ -295,8 +424,74 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     final nfcService = Provider.of<NFCService>(context);
     final musicPlayer = Provider.of<MusicPlayer>(context);
     final songProvider = Provider.of<SongProvider>(context);
+    final iapService = Provider.of<IAPService>(context);
 
     return Scaffold(
+      endDrawer: Drawer(
+        child: Consumer<SettingsProvider>(
+          builder: (context, settings, child) {
+            return ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                DrawerHeader(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  child: const Text(
+                    'Settings',
+                    style: TextStyle(color: Colors.white, fontSize: 24),
+                  ),
+                ),
+                const Divider(),
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    'Audio Packs',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                if (_isLoadingGithubFolders)
+                  const Center(child: CircularProgressIndicator())
+                else if (_githubFolders == null || _githubFolders!.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Column(
+                      children: [
+                        const Text('Could not load templates.'),
+                        TextButton(
+                          onPressed: _fetchGithubFolders,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  ExpansionTile(
+                    title: const Text('Audio Starter Packs'),
+                    leading: const Icon(Icons.cloud_download),
+                    children: _githubFolders!.map((githubFolder) {
+                      final locale = Localizations.localeOf(context).toString();
+                      final localization = githubFolder.getLocalization(locale);
+                      return ListTile(
+                        title: Text(localization?.title ?? githubFolder.folderName),
+                        subtitle: Text(localization?.description ?? ''),
+                        onTap: () => _showImportConfirmation(context, githubFolder),
+                      );
+                    }).toList(),
+                  ),
+                SwitchListTile(
+                  title: const Text('Browse audio files only'),
+                  subtitle: Text(settings.filterAudioOnly ? 'Filter: audio/*' : 'Filter: */*'),
+                  value: settings.filterAudioOnly,
+                  onChanged: (value) {
+                    settings.setFilterAudioOnly(value);
+                  },
+                ),              
+              ],
+            );
+          },
+        ),
+      ),
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('NFC Radio'),
@@ -322,7 +517,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             ),
           ),
           // Upgrade info button (only for GP flavor when not premium)
-          if (AppConfig.isGooglePlayRelease && !IAPService.instance.isPremium)
+          if (AppConfig.isGooglePlayRelease && !iapService.isPremium)
             IconButton(
               icon: const Icon(Icons.info_outline, color: Colors.blue),
               onPressed: () => _showUpgradeDialog(context),
@@ -342,6 +537,13 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               onPressed: () => _showStorageDebugDialog(context),
               tooltip: 'Storage Debug',
             ),
+          Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () => Scaffold.of(context).openEndDrawer(),
+              tooltip: 'Settings',
+            ),
+          ),
         ],
       ),
       body: Stack(
@@ -457,7 +659,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             ),
           ),
           // Music Player Section - Absolutely positioned at the bottom
-          if (musicPlayer.isPlaying || musicPlayer.isPaused)
+          // Audio player should only be visible when not in "Add New Song" or "Edit Song" mode
+          // Since nfcService.setEditMode is true when in those dialogs, we can use that flag
+          if ((musicPlayer.isPlaying || musicPlayer.isPaused) && !nfcService.isInEditMode)
             Positioned(
               bottom: MediaQuery.of(context).padding.bottom + 16,
               left: 0,
@@ -481,7 +685,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Now Playing: ${musicPlayer.currentMusicFilePath?.split('/').last ?? 'Unknown'}',
+                      'Now Playing: ${musicPlayer.currentSongTitle ?? _getDisplayName(musicPlayer.currentMusicFilePath)}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -658,6 +862,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     
     // Store the listener function so we can remove it later
     late void Function() updateNfcUuid;
+    StreamSubscription? audioSubscription;
 
     showDialog(
       context: context,
@@ -670,12 +875,76 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               nfcService.setEditMode(false);
               return;
             }
-            if (nfcService.currentNfcUuid != null) {
-              setState(() {}); // Trigger rebuild to show "New NFC" button
+            
+            final currentNfcUuid = nfcService.currentNfcUuid;
+            if (currentNfcUuid != null && currentNfcUuid != dialogNfcUuid) {
+              // Check if this NFC is already linked in the same folder
+              Song? existingSong;
+              try {
+                if (currentFolderId != null) {
+                  final currentFolder = folderProvider.folders.firstWhere((f) => f.id == currentFolderId);
+                  existingSong = songProvider.songs.firstWhere(
+                    (s) => s.connectedNfcUuid == currentNfcUuid &&
+                           currentFolder.songIds.contains(s.id) &&
+                           (song == null || s.id != song.id),
+                  );
+                }
+              } catch (_) {
+                existingSong = null;
+              }
+
+              if (existingSong == null) {
+                // Automatically link if not already linked to another song in this folder
+                setState(() {
+                  dialogNfcUuid = currentNfcUuid;
+                });
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(
+                    content: Text('🔗 NFC tag linked automatically'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              } else {
+                // Just trigger rebuild to show the "Use This NFC" button for manual resolution
+                setState(() {});
+              }
             }
           };
           
           nfcService.addListener(updateNfcUuid);
+
+          // Listen for audio picked from external apps
+          audioSubscription ??= AudioIntentService().onAudioPicked.listen((audioFile) {
+            if (dialogState.isOpen) {
+              final path = audioFile.sourceUri.isScheme('file')
+                  ? audioFile.sourceUri.toFilePath()
+                  : audioFile.sourceUri.toString();
+              
+              _isValidAudioFile(path).then((isValid) {
+                if (!isValid) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('❌ Rejected: Selected file is not a valid audio file.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                setState(() {
+                  filePathController.text = path;
+                  
+                  if (titleController.text.isEmpty && audioFile.displayName != null) {
+                    titleController.text = audioFile.displayName!.replaceAll(RegExp(r'\.[^.]+$'), '');
+                  }
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('📥 Audio selected: ${audioFile.displayName ?? "Unknown"}')),
+                );
+              });
+                
+            }
+          });
 
           return AlertDialog(
             title: Text(isEditing ? 'Edit Song' : 'Add New Song'),
@@ -683,58 +952,35 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextField(
-                    controller: titleController,
-                    decoration: const InputDecoration(labelText: 'Song Title'),
-                  ),
-                  const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(
                         child: TextField(
                           controller: filePathController,
-                          decoration: const InputDecoration(labelText: 'File Path'),
+                          decoration: const InputDecoration(labelText: 'Audio Source'),
                           readOnly: true,
                         ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.attach_file),
                         onPressed: () async {
-                          FilePickerResult? result = await FilePicker.platform.pickFiles(
-                            type: FileType.audio,
-                            allowMultiple: false,
+                          final settings = Provider.of<SettingsProvider>(context, listen: false);
+                          final success = await AudioIntentService().pickAudioFromApp(
+                            filterAudioOnly: settings.filterAudioOnly,
                           );
-                          
-                          if (result != null && result.files.isNotEmpty) {
-                            final file = result.files.first;
-                            if (file.path != null) {
-                              final newTitle = p.basenameWithoutExtension(file.path!);
-                              
-                              if (titleController.text.isNotEmpty && titleController.text != newTitle) {
-                                if (!dialogContext.mounted) return;
-                                final shouldUpdateTitle = await showDialog<bool>(
-                                  context: dialogContext,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      title: const Text('Update Title?'),
-                                      content: Text('Do you want to update the title to "$newTitle"?'),
-                                      actions: [
-                                        TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Keep Original')),
-                                        TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Update Title')),
-                                      ],
-                                    );
-                                  },
-                                );
-                                if (shouldUpdateTitle == true) titleController.text = newTitle;
-                              } else if (titleController.text.isEmpty) {
-                                titleController.text = newTitle;
-                              }
-                              filePathController.text = file.path!;
-                            }
+                          if (!success && dialogContext.mounted) {
+                            ScaffoldMessenger.of(dialogContext).showSnackBar(
+                              const SnackBar(content: Text('❌ Failed to launch audio picker')),
+                            );
                           }
                         },
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(labelText: 'Song Title'),
                   ),
                   const SizedBox(height: 16),
                   if (nfcService.isNfcAvailable) ...[
@@ -876,11 +1122,21 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 child: const Text('Cancel'),
               ),
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   if (filePathController.text.isNotEmpty) {
+                    if (!await _isValidAudioFile(filePathController.text)) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        const SnackBar(
+                          content: Text('❌ Cannot save: File is not a valid audio file.'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
                     final String finalTitle = titleController.text.isNotEmpty
                         ? titleController.text
-                        : p.basenameWithoutExtension(filePathController.text);
+                        : _getDisplayName(filePathController.text);
 
                     final newSong = Song(
                       id: song?.id ?? const Uuid().v4(),
@@ -914,6 +1170,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
 
                     dialogState.isOpen = false;
                     nfcService.removeListener(updateNfcUuid);
+                    audioSubscription?.cancel();
                     nfcService.setEditMode(false);
                     Navigator.pop(dialogContext);
                   }
@@ -1087,7 +1344,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                                   if (musicPlayer.isSongPlaying(song.filePath) || musicPlayer.isSongPaused(song.filePath)) {
                                     await musicPlayer.togglePlayPause();
                                   } else {
-                                    await musicPlayer.playMusic(song.filePath);
+                                    await musicPlayer.playMusic(song.filePath, songTitle: song.title);
                                   }
                                 },
                               ),
@@ -1098,8 +1355,6 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                                     _showSongDialog(context, songProvider, song: song);
                                   } else if (value == 'delete') {
                                     _showDeleteSongDialog(context, song, songProvider);
-                                  } else if (value == 'remove_from_folder') {
-                                    _removeSongFromFolder(context, folder, song, folderProvider);
                                   }
                                 },
                                 itemBuilder: (BuildContext context) => [
@@ -1110,16 +1365,6 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                                         Icon(Icons.edit, size: 16),
                                         SizedBox(width: 8),
                                         Text('Edit'),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuItem<String>(
-                                    value: 'remove_from_folder',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.folder_delete, size: 16),
-                                        SizedBox(width: 8),
-                                        Text('Remove from Folder'),
                                       ],
                                     ),
                                   ),
@@ -1194,6 +1439,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   }
 
   void _showDeleteFolderDialog(BuildContext context, Folder folder, FolderProvider folderProvider) {
+    final songProvider = Provider.of<SongProvider>(context, listen: false);
+    final mappingProvider = Provider.of<NFCMusicMappingProvider>(context, listen: false);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1209,8 +1457,8 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             if (folder.songIds.isNotEmpty) ...[
               const SizedBox(height: 8),
               const Text(
-                'Note: Songs in this folder will not be deleted, only removed from the folder.',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+                'Note: All songs in this folder and their audio files will also be deleted.',
+                style: TextStyle(fontSize: 12, color: Colors.red),
               ),
             ],
           ],
@@ -1221,57 +1469,41 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
+              // Delete all songs in the folder
+              for (final songId in folder.songIds) {
+                try {
+                  final song = songProvider.songs.firstWhere((s) => s.id == songId);
+                  
+                  // Remove NFC mapping
+                  mappingProvider.removeMapping(song.id);
+                  
+                  // Delete physical file
+                  if (song.filePath.isNotEmpty) {
+                    final file = File(song.filePath);
+                    if (await file.exists()) {
+                      await file.delete();
+                    }
+                  }
+                  
+                  // Remove from song provider
+                  songProvider.removeSong(song.id);
+                } catch (e) {
+                  debugPrint('⚠️ Error deleting song $songId during folder deletion: $e');
+                }
+              }
+
+              // Finally remove the folder
               folderProvider.removeFolder(folder.id);
               Navigator.pop(context);
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const Text('Delete All', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
   }
 
-
-  void _removeSongFromFolder(
-    BuildContext context,
-    Folder folder,
-    Song song,
-    FolderProvider folderProvider,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Remove Song from Folder'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Are you sure you want to remove this song from the folder?'),
-            const SizedBox(height: 8),
-            Text('Song: ${song.title}', style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text(
-              'Note: The song will not be deleted, only removed from this folder.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              folderProvider.removeSongFromFolder(folder.id, song.id);
-              Navigator.pop(context);
-            },
-            child: const Text('Remove', style: TextStyle(color: Colors.orange)),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showDeleteSongDialog(BuildContext context, Song song, SongProvider songProvider) {
     final mappingProvider = Provider.of<NFCMusicMappingProvider>(context, listen: false);
@@ -1293,6 +1525,11 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 style: TextStyle(color: Colors.red[700]),
               ),
             ],
+            const SizedBox(height: 8),
+            const Text(
+              'The audio file will also be deleted from the app storage.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
           ],
         ),
         actions: [
@@ -1301,9 +1538,23 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               // Remove NFC mapping if it exists
               mappingProvider.removeMapping(song.id);
+              
+              // Delete the physical file if it's in the app's audio directory
+              final filePath = song.filePath;
+              if (filePath.isNotEmpty) {
+                try {
+                  final file = File(filePath);
+                  if (await file.exists()) {
+                    await file.delete();
+                    debugPrint('🗑️ Deleted audio file: $filePath');
+                  }
+                } catch (e) {
+                  debugPrint('⚠️ Failed to delete audio file: $e');
+                }
+              }
               
               // Delete the song
               songProvider.removeSong(song.id);

@@ -1,0 +1,4 @@
+## Changed
+- Some UI and usability improvements, from testers feedback
+- Remove the INTERNET permission from the fdroid version. All flavours work fully offline, but github checks for updates and play for in app purchases.
+- Opened file explorer filter so that not only audio files can be seen, but only audio files can be selected.
