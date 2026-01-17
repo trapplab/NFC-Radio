@@ -4,7 +4,7 @@ import 'storage_service.dart';
 class SettingsProvider with ChangeNotifier {
   static const String _keyFilterAudioOnly = 'filter_audio_only';
   
-  bool _filterAudioOnly = false;
+  bool _filterAudioOnly = true;
   bool _isInitialized = false;
 
   bool get filterAudioOnly => _filterAudioOnly;
@@ -13,7 +13,7 @@ class SettingsProvider with ChangeNotifier {
   Future<void> initialize() async {
     if (_isInitialized) return;
     
-    _filterAudioOnly = StorageService.instance.getSetting(_keyFilterAudioOnly, defaultValue: false);
+    _filterAudioOnly = StorageService.instance.getSetting(_keyFilterAudioOnly, defaultValue: true);
     _isInitialized = true;
     notifyListeners();
   }
