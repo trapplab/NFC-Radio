@@ -5,6 +5,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 class TutorialService {
   static const String _boxName = 'tutorial';
   static const String _tutorialShownKey = 'onboarding_shown';
+  static const String _songDialogTutorialShownKey = 'song_dialog_tutorial_shown';
+  static const String _nfcConnectionTutorialShownKey = 'nfc_connection_tutorial_shown';
 
   static TutorialService? _instance;
   static TutorialService get instance => _instance ??= TutorialService._();
@@ -37,6 +39,38 @@ class TutorialService {
     return !(_box?.get(_tutorialShownKey, defaultValue: false) ?? false);
   }
 
+  /// Check if the song dialog tutorial should be shown
+  bool get shouldShowSongDialogTutorial {
+    if (!_isInitialized || _box == null) return true;
+    return !(_box?.get(_songDialogTutorialShownKey, defaultValue: false) ?? false);
+  }
+
+  /// Mark the song dialog tutorial as shown
+  Future<void> markSongDialogTutorialShown() async {
+    if (!_isInitialized || _box == null) return;
+    try {
+      await _box?.put(_songDialogTutorialShownKey, true);
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Failed to mark song dialog tutorial as shown: $e');
+    }
+  }
+
+  /// Check if the NFC connection tutorial should be shown
+  bool get shouldShowNfcConnectionTutorial {
+    if (!_isInitialized || _box == null) return true;
+    return !(_box?.get(_nfcConnectionTutorialShownKey, defaultValue: false) ?? false);
+  }
+
+  /// Mark the NFC connection tutorial as shown
+  Future<void> markNfcConnectionTutorialShown() async {
+    if (!_isInitialized || _box == null) return;
+    try {
+      await _box?.put(_nfcConnectionTutorialShownKey, true);
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Failed to mark NFC connection tutorial as shown: $e');
+    }
+  }
+
   /// Mark the tutorial as shown
   Future<void> markTutorialShown() async {
     if (!_isInitialized || _box == null) {
@@ -61,6 +95,8 @@ class TutorialService {
 
     try {
       await _box?.put(_tutorialShownKey, false);
+      await _box?.put(_songDialogTutorialShownKey, false);
+      await _box?.put(_nfcConnectionTutorialShownKey, false);
       if (kDebugMode) debugPrint('✅ Tutorial reset');
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Failed to reset tutorial: $e');

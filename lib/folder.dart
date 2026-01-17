@@ -195,15 +195,7 @@ class FolderProvider with ChangeNotifier {
         }
         debugPrint('📁 All folders collapsed by default');
       } else {
-        debugPrint('📁 No folders found in storage, creating default folder');
-        final defaultFolder = Folder(
-          id: const Uuid().v4(),
-          name: 'My Songs',
-          songIds: [],
-          isExpanded: true,
-        );
-        _folders.add(defaultFolder);
-        await _saveFolderToStorage(defaultFolder);
+        debugPrint('📁 No folders found in storage');
       }
 
       debugPrint('✅ FolderProvider initialized with ${_folders.length} folders');

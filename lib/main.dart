@@ -90,7 +90,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
 
   // Global keys for tutorial
   final GlobalKey _addFolderButtonKey = GlobalKey();
-  final GlobalKey _foldersAreaKey = GlobalKey();
+  final GlobalKey _addSongButtonKey = GlobalKey();
+  final GlobalKey _attachFileButtonKey = GlobalKey();
+  final GlobalKey _nfcAreaKey = GlobalKey();
 
   @override
   void initState() {
@@ -232,6 +234,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           isExpanded: true,
         );
         folderProvider.addFolder(folder);
+        _initializeTutorial();
       }
 
       if (mounted) {
@@ -620,7 +623,6 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 
                 // Vertical ListView for folders
                 Consumer<FolderProvider>(
-                  key: _foldersAreaKey,
                   builder: (context, folderProvider, child) {
                     return Column(
                       children: [
@@ -753,7 +755,10 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
 
   Widget _buildAddSongButton(BuildContext context, SongProvider songProvider, {String? folderId}) {
     final folderProvider = Provider.of<FolderProvider>(context, listen: false);
+    final isFirstFolder = folderId != null && folderProvider.folders.isNotEmpty && folderProvider.folders.first.id == folderId;
+    
     return Container(
+      key: isFirstFolder ? _addSongButtonKey : null,
       width: 120,
       margin: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
@@ -813,10 +818,11 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   id: const Uuid().v4(),
                   name: nameController.text,
                   songIds: [],
-                  isExpanded: false,
+                  isExpanded: true,
                 );
                 folderProvider.addFolder(folder);
                 Navigator.pop(context);
+                _initializeTutorial();
               }
             },
             child: const Text('Create'),
@@ -856,6 +862,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
 
     // Create a stateful wrapper to track dialog state
     final dialogState = _DialogState();
+    bool tutorialTriggered = false;
     
     // Enable edit mode to pause player triggering during editing
     nfcService.setEditMode(true);
@@ -868,6 +875,29 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setState) {
+          // Show tutorial if needed (Step 1: Attach File)
+          if (!tutorialTriggered && TutorialService.instance.shouldShowSongDialogTutorial) {
+            tutorialTriggered = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final targets = createTutorialTargets(
+                attachFileButtonKey: _attachFileButtonKey,
+              );
+              
+              if (targets.isNotEmpty) {
+                showTutorial(
+                  context: dialogContext,
+                  targets: targets,
+                  onFinish: () {
+                    TutorialService.instance.markSongDialogTutorialShown();
+                  },
+                  onSkip: () {
+                    TutorialService.instance.markSongDialogTutorialShown();
+                  },
+                );
+              }
+            });
+          }
+
           // Define the listener function
           updateNfcUuid = () {
             if (!dialogState.isOpen) {
@@ -941,6 +971,23 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('📥 Audio selected: ${audioFile.displayName ?? "Unknown"}')),
                 );
+
+                // Show tutorial Step 2: NFC Connection
+                if (TutorialService.instance.shouldShowNfcConnectionTutorial) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    final targets = createTutorialTargets(
+                      nfcAreaKey: _nfcAreaKey,
+                    );
+                    if (targets.isNotEmpty) {
+                      showTutorial(
+                        context: dialogContext,
+                        targets: targets,
+                        onFinish: () => TutorialService.instance.markNfcConnectionTutorialShown(),
+                        onSkip: () => TutorialService.instance.markNfcConnectionTutorialShown(),
+                      );
+                    }
+                  });
+                }
               });
                 
             }
@@ -962,6 +1009,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                         ),
                       ),
                       IconButton(
+                        key: _attachFileButtonKey,
                         icon: const Icon(Icons.attach_file),
                         onPressed: () async {
                           final settings = Provider.of<SettingsProvider>(context, listen: false);
@@ -987,6 +1035,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     const Text('NFC Configuration'),
                     const SizedBox(height: 8),
                     Container(
+                      key: _nfcAreaKey,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         border: Border.all(color: dialogNfcUuid != null ? Colors.green : Colors.grey),
@@ -1858,6 +1907,60 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
         ],
       ),
     );
+  }
+
+  Future<void> _initializeTutorial() async {
+    await TutorialService.instance.initialize();
+    if (TutorialService.instance.shouldShowTutorial) {
+      // Wait for the first frame to be rendered so keys are available
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        
+        final folderProvider = Provider.of<FolderProvider>(context, listen: false);
+        final targets = createTutorialTargets(
+          addFolderButtonKey: folderProvider.folders.isEmpty ? _addFolderButtonKey : null,
+          addSongButtonKey: folderProvider.folders.isNotEmpty ? _addSongButtonKey : null,
+        );
+        
+        if (targets.isNotEmpty) {
+          showTutorial(
+            context: context,
+            targets: targets,
+            onFinish: () {
+              // Only mark as shown if we've shown the add song step
+              if (folderProvider.folders.isNotEmpty) {
+                TutorialService.instance.markTutorialShown();
+              }
+            },
+            onSkip: () {
+              // Mark as shown if they skip
+              TutorialService.instance.markTutorialShown();
+            },
+          );
+        }
+      });
+    }
+  }
+
+  String _getDisplayName(String? path) {
+    if (path == null || path.isEmpty) return 'Unknown';
+    return p.basename(path);
+  }
+
+  Future<bool> _isValidAudioFile(String path) async {
+    if (path.isEmpty) return false;
+
+    // Check if it's a content URI (from Android intent) or a file path
+    if (path.startsWith('content://')) {
+      return true;
+    }
+
+    final file = File(path);
+    if (!await file.exists()) return false;
+
+    final extension = p.extension(path).toLowerCase();
+    final validExtensions = ['.mp3', '.m4a', '.wav', '.ogg', '.flac', '.aac'];
+    return validExtensions.contains(extension);
   }
 
 }
