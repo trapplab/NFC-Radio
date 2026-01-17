@@ -32,6 +32,7 @@ App Overview | App Detail | App Lock
 - **Customizable**: Map NFC tags to play local audio files.
 - **Cross-Platform**: Is tested on Android devices, but might also work on iOS.
 - **Privacy Focused**: No data is collected or stored. Everything is stored locally on the device.
+- **Starter Packs**: Download audio starter packs from GitHub to get started quickly. Like sounds of farm animals, nature, etc.
 
 ## Get audio test files
 
@@ -93,12 +94,12 @@ The app can be built with three flavors:
 ## Usage
 
 1. **Setting Up NFC Tags**:
-   - Place an NFC tag near your device.
+   - Place any NFC tag (old cards, dongles, stickers, etc.) near your device.
    - The app will read the tag's ID and map it to a specific radio file or playlist.
 
 2. **Playing Music**:
    - Tap the NFC tag to start playing the associated music.
-   - Use the app's interface to control playback (play, pause, skip, etc.).
+   - Use the app's interface to control playback (play, pause, stop).
 
 ## Contributing
 
