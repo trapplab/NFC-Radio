@@ -1,10 +1,13 @@
 # <img src="assets/icon/nrf_radio_icon.png" alt="Triceratops icon" width="17%"/> NFC Radio
 
 ## Available on
-[![F-Droid](https://img.shields.io/badge/F-Droid-1976D2?style=for-the-badge&logo=f-droid&logoColor=white)](
-https://f-droid.org/packages/com.trapplab.nfc_radio/
+[<img src="https://img.shields.io/badge/F--Droid-1976D2?style=for-the-badge&logo=f-droid"
+      alt="Get it on F-Droid"
+      height="50">](https://f-droid.org/packages/com.trapplab.nfc_radio/
 )
-[![GitHub Releases](https://img.shields.io/badge/Get%20it%20on-GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](
+[<img src="https://img.shields.io/badge/GitHub%20Releases-100000?style=for-the-badge&logo=github"
+      alt="Get it on GitHub"
+      height="50">](
 https://github.com/trapplab/NFC-Radio/releases
 )
 
