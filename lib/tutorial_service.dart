@@ -7,6 +7,7 @@ class TutorialService {
   static const String _tutorialShownKey = 'onboarding_shown';
   static const String _songDialogTutorialShownKey = 'song_dialog_tutorial_shown';
   static const String _nfcConnectionTutorialShownKey = 'nfc_connection_tutorial_shown';
+  static const String _settingsTutorialShownKey = 'settings_tutorial_shown';
 
   static TutorialService? _instance;
   static TutorialService get instance => _instance ??= TutorialService._();
@@ -71,6 +72,22 @@ class TutorialService {
     }
   }
 
+  /// Check if the settings tutorial should be shown
+  bool get shouldShowSettingsTutorial {
+    if (!_isInitialized || _box == null) return true;
+    return !(_box?.get(_settingsTutorialShownKey, defaultValue: false) ?? false);
+  }
+
+  /// Mark the settings tutorial as shown
+  Future<void> markSettingsTutorialShown() async {
+    if (!_isInitialized || _box == null) return;
+    try {
+      await _box?.put(_settingsTutorialShownKey, true);
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Failed to mark settings tutorial as shown: $e');
+    }
+  }
+
   /// Mark the tutorial as shown
   Future<void> markTutorialShown() async {
     if (!_isInitialized || _box == null) {
@@ -97,6 +114,7 @@ class TutorialService {
       await _box?.put(_tutorialShownKey, false);
       await _box?.put(_songDialogTutorialShownKey, false);
       await _box?.put(_nfcConnectionTutorialShownKey, false);
+      await _box?.put(_settingsTutorialShownKey, false);
       if (kDebugMode) debugPrint('✅ Tutorial reset');
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Failed to reset tutorial: $e');

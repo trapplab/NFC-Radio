@@ -93,6 +93,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   final GlobalKey _addSongButtonKey = GlobalKey();
   final GlobalKey _attachFileButtonKey = GlobalKey();
   final GlobalKey _nfcAreaKey = GlobalKey();
+  final GlobalKey _settingsMenuKey = GlobalKey();
 
   @override
   void initState() {
@@ -542,6 +543,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             ),
           Builder(
             builder: (context) => IconButton(
+              key: _settingsMenuKey,
               icon: const Icon(Icons.menu),
               onPressed: () => Scaffold.of(context).openEndDrawer(),
               tooltip: 'Settings',
@@ -1222,6 +1224,24 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     audioSubscription?.cancel();
                     nfcService.setEditMode(false);
                     Navigator.pop(dialogContext);
+
+                    // Show settings tutorial if a new song was added and it's the first time
+                    if (!isEditing && TutorialService.instance.shouldShowSettingsTutorial) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        final targets = createTutorialTargets(
+                          settingsMenuKey: _settingsMenuKey,
+                        );
+                        if (targets.isNotEmpty) {
+                          showTutorial(
+                            context: context,
+                            targets: targets,
+                            onFinish: () => TutorialService.instance.markSettingsTutorialShown(),
+                            onSkip: () => TutorialService.instance.markSettingsTutorialShown(),
+                          );
+                        }
+                      });
+                    }
                   }
                 },
                 child: Text(isEditing ? 'Save' : 'Add'),

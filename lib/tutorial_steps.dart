@@ -7,11 +7,13 @@ import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 /// [addSongButtonKey] - Key for the "Add Song" button
 /// [attachFileButtonKey] - Key for the "Attach File" button in song dialog
 /// [nfcAreaKey] - Key for the NFC configuration area in song dialog
+/// [settingsMenuKey] - Key for the settings menu button
 List<TargetFocus> createTutorialTargets({
   GlobalKey? addFolderButtonKey,
   GlobalKey? addSongButtonKey,
   GlobalKey? attachFileButtonKey,
   GlobalKey? nfcAreaKey,
+  GlobalKey? settingsMenuKey,
 }) {
   List<TargetFocus> targets = [];
 
@@ -174,6 +176,46 @@ List<TargetFocus> createTutorialTargets({
         ],
         shape: ShapeLightFocus.RRect,
         radius: 8,
+      ),
+    );
+  }
+
+  if (settingsMenuKey != null) {
+    targets.add(
+      TargetFocus(
+        identify: 'settings_menu',
+        keyTarget: settingsMenuKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Settings & Starter Packs',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Open the settings menu to find audio starter packs and other options.',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+        shape: ShapeLightFocus.Circle,
       ),
     );
   }
