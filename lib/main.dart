@@ -19,7 +19,10 @@ import 'update_service.dart';
 import 'config.dart';
 import 'iap_service.dart';
 import 'services/audio_intent_service.dart';
+import 'services/github_audio_service.dart';
+import 'models/github_audio_folder.dart';
 import 'settings_provider.dart';
+import 'package:path/path.dart' as p;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -80,6 +83,8 @@ class NFCJukeboxHomePage extends StatefulWidget {
 class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBindingObserver {
   StreamSubscription<String>? _nfcMessageSubscription;
   String _appVersion = '';
+  List<GitHubAudioFolder>? _githubFolders;
+  bool _isLoadingGithubFolders = false;
 
   @override
   void initState() {
@@ -102,12 +107,162 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     // Automatic update check on startup
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForUpdates(manual: false);
+      _fetchGithubFolders();
     });
     
     debugPrint('🚀 ===== APP INITIALIZATION STARTED =====');
     debugPrint('🚀 Timestamp: ${DateTime.now()}');
     
     debugPrint('🚀 ===== APP INITIALIZATION COMPLETED =====');
+  }
+
+  Future<void> _fetchGithubFolders() async {
+    if (_isLoadingGithubFolders) return;
+    setState(() {
+      _isLoadingGithubFolders = true;
+    });
+    try {
+      final folders = await GitHubAudioService.fetchFolders();
+      if (mounted) {
+        setState(() {
+          _githubFolders = folders;
+          _isLoadingGithubFolders = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching GitHub folders: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingGithubFolders = false;
+        });
+      }
+    }
+  }
+
+  void _showImportConfirmation(BuildContext context, GitHubAudioFolder githubFolder) {
+    final locale = Localizations.localeOf(context).toString();
+    final localization = githubFolder.getLocalization(locale);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Import "${localization?.title ?? githubFolder.folderName}"?'),
+        content: Text('This will download ${localization?.files.length ?? 0} audio files and create a new folder.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _importGithubFolder(githubFolder);
+            },
+            child: const Text('Import'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _importGithubFolder(GitHubAudioFolder githubFolder) async {
+    final locale = Localizations.localeOf(context).toString();
+    final localization = githubFolder.getLocalization(locale);
+    if (localization == null) return;
+
+    final folderProvider = Provider.of<FolderProvider>(context, listen: false);
+    final songProvider = Provider.of<SongProvider>(context, listen: false);
+
+    if (folderProvider.isFolderLimitReached()) {
+      folderProvider.showFolderLimitDialog(context);
+      return;
+    }
+
+    // Show progress dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Downloading audio files...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final List<String> songIds = [];
+      final List<String> failedFiles = [];
+
+      for (final githubFile in localization.files) {
+        try {
+          final localPath = await GitHubAudioService.downloadAudioFile(githubFolder.folderName, githubFile.name);
+          
+          final song = Song(
+            id: const Uuid().v4(),
+            title: githubFile.title,
+            filePath: localPath,
+          );
+          songProvider.addSong(song);
+          songIds.add(song.id);
+        } catch (e) {
+          debugPrint('⚠️ Failed to download ${githubFile.name}: $e');
+          failedFiles.add(githubFile.title);
+        }
+      }
+
+      if (songIds.isNotEmpty) {
+        final folder = Folder(
+          id: const Uuid().v4(),
+          name: localization.title,
+          songIds: songIds,
+          isExpanded: true,
+        );
+        folderProvider.addFolder(folder);
+      }
+
+      if (mounted) {
+        Navigator.pop(context); // Close progress dialog
+        
+        if (failedFiles.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Successfully imported "${localization.title}"')),
+          );
+        } else if (songIds.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to import any files from "${localization.title}"'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } else {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Partial Import'),
+              content: Text('Imported ${songIds.length} files, but ${failedFiles.length} files failed to download:\n\n${failedFiles.join(', ')}'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close progress dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to import folder: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
   
   Future<void> _getAppVersion() async {
@@ -343,6 +498,43 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     style: TextStyle(color: Colors.white, fontSize: 24),
                   ),
                 ),
+                const Divider(),
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    'Audio Packs',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                if (_isLoadingGithubFolders)
+                  const Center(child: CircularProgressIndicator())
+                else if (_githubFolders == null || _githubFolders!.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Column(
+                      children: [
+                        const Text('Could not load templates.'),
+                        TextButton(
+                          onPressed: _fetchGithubFolders,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  ExpansionTile(
+                    title: const Text('Audio Starter Packs'),
+                    leading: const Icon(Icons.cloud_download),
+                    children: _githubFolders!.map((githubFolder) {
+                      final locale = Localizations.localeOf(context).toString();
+                      final localization = githubFolder.getLocalization(locale);
+                      return ListTile(
+                        title: Text(localization?.title ?? githubFolder.folderName),
+                        subtitle: Text(localization?.description ?? ''),
+                        onTap: () => _showImportConfirmation(context, githubFolder),
+                      );
+                    }).toList(),
+                  ),
                 SwitchListTile(
                   title: const Text('Browse audio files only'),
                   subtitle: Text(settings.filterAudioOnly ? 'Filter: audio/*' : 'Filter: */*'),
@@ -350,7 +542,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   onChanged: (value) {
                     settings.setFilterAudioOnly(value);
                   },
-                ),
+                ),              
               ],
             );
           },
