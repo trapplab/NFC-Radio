@@ -13,6 +13,10 @@
 
 # Changelog
 
+xxxxx
+### Added
+- Introduced audio starter packs to include simply basic sounds for children.
+
 ## [0.8.1]
 ### Changed
 - Some UI and usability improvements, from testers feedback
