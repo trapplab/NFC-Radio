@@ -25,6 +25,6 @@ void main() {
     
     // Additional checks for core app elements
     expect(find.byType(ListView), findsOneWidget);
-    expect(find.text('Add Song'), findsOneWidget);
+    expect(find.text('Add Audio File'), findsOneWidget);
   });
 }

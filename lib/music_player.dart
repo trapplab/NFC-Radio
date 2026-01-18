@@ -47,7 +47,7 @@ class MusicPlayer with ChangeNotifier {
   Future<void> playMusic(String musicFilePath, {String? songTitle}) async {
     debugPrint('🎵 ===== MUSIC PLAYBACK STARTED =====');
     debugPrint('🎵 Target file: $musicFilePath');
-    debugPrint('🎵 Song title: $songTitle');
+    debugPrint('🎵 Title: $songTitle');
     debugPrint('🎵 Current path: $_currentMusicFilePath');
     debugPrint('🎵 Current state: $_currentState');
     debugPrint('🎵 Timestamp: ${DateTime.now()}');

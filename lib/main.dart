@@ -236,6 +236,24 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
         );
         folderProvider.addFolder(folder);
         _initializeTutorial();
+
+        // Show settings tutorial after import if it's the first time
+        if (TutorialService.instance.shouldShowSettingsTutorial) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            final targets = createTutorialTargets(
+              settingsMenuKey: _settingsMenuKey,
+            );
+            if (targets.isNotEmpty) {
+              showTutorial(
+                context: context,
+                targets: targets,
+                onFinish: () => TutorialService.instance.markSettingsTutorialShown(),
+                onSkip: () => TutorialService.instance.markSettingsTutorialShown(),
+              );
+            }
+          });
+        }
       }
 
       if (mounted) {
@@ -782,7 +800,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             Icon(Icons.add, size: 40, color: Colors.grey),
             SizedBox(height: 8),
             Text(
-              'Add Song',
+              'Add Audio File',
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
@@ -1030,7 +1048,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   const SizedBox(height: 16),
                   TextField(
                     controller: titleController,
-                    decoration: const InputDecoration(labelText: 'Song Title'),
+                    decoration: const InputDecoration(labelText: 'Title'),
                   ),
                   const SizedBox(height: 16),
                   if (nfcService.isNfcAvailable) ...[
@@ -1947,7 +1965,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             context: context,
             targets: targets,
             onFinish: () {
-              // Only mark as shown if we've shown the add song step
+              // Only mark as shown if we've shown the Add Audio File step
               if (folderProvider.folders.isNotEmpty) {
                 TutorialService.instance.markTutorialShown();
               }

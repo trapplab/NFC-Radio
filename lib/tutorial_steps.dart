@@ -4,7 +4,7 @@ import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 /// Create tutorial targets for the coach marks tutorial
 ///
 /// [addFolderButtonKey] - Key for the "Add New Folder" button
-/// [addSongButtonKey] - Key for the "Add Song" button
+/// [addSongButtonKey] - Key for the "Add Audio File" button
 /// [attachFileButtonKey] - Key for the "Attach File" button in song dialog
 /// [nfcAreaKey] - Key for the NFC configuration area in song dialog
 /// [settingsMenuKey] - Key for the settings menu button
@@ -41,7 +41,7 @@ List<TargetFocus> createTutorialTargets({
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Tap "Add New Folder" to create folders and organize your music collection.',
+                    'Tap "Add New Folder" to create folders and organize your audio files collection.',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -82,7 +82,7 @@ List<TargetFocus> createTutorialTargets({
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Once a folder is created, tap "Add Song" to select audio files from your device.',
+                    'Once a folder is created, tap "Add Audio File" to select audio files from your device.',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
