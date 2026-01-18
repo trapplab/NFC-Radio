@@ -1,0 +1,3 @@
+## Hinzugefügt
+- Einführung von Audio-Starterpaketen mit einfachen Grundgeräuschen für Kinder.
+- Tutorial für Erstbenutzer hinzugefügt, um den Einstieg zu erleichtern.

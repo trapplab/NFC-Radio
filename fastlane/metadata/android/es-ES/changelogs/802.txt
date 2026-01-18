@@ -1,0 +1,3 @@
+## Agregado
+- Introducción de paquetes de inicio de audio que incluyen sonidos básicos simples para niños.
+- Añadido tutorial para nuevos usuarios para ayudarles a comenzar.

@@ -1,0 +1,3 @@
+## Added
+- Introduced audio starter packs to include simply basic sounds for children.
+- Added tutorial for first time users to help them get started.

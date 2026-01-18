@@ -1,0 +1,3 @@
+## Aggiunto
+- Introdotti pacchetti audio di base con suoni semplici per bambini.
+- Aggiunto un tutorial per i nuovi utenti per aiutarli a iniziare.

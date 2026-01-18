@@ -1,0 +1,3 @@
+## Ajouté
+- Introduction de packs de démarrage audio comprenant des sons simples et basiques pour les enfants.
+- Ajout d'un tutoriel pour les nouveaux utilisateurs afin de les aider à démarrer.
