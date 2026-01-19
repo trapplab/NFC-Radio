@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 class DimmedOverlay extends StatefulWidget {
   final bool isActive;
   final double opacity;
+  final VoidCallback onLockScreen;
   
   const DimmedOverlay({
     required this.isActive,
     this.opacity = 0.9,
+    required this.onLockScreen,
     super.key,
   });
   

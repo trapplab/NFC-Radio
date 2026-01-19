@@ -508,6 +508,14 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   onChanged: (value) {
                     settings.setFilterAudioOnly(value);
                   },
+                ),
+                SwitchListTile(
+                  title: const Text('Use system-wide overlay'),
+                  subtitle: const Text('Requires SYSTEM_ALERT_WINDOW permission'),
+                  value: settings.useSystemOverlay,
+                  onChanged: (value) {
+                    settings.setUseSystemOverlay(value);
+                  },
                 ),              
               ],
             );
@@ -685,7 +693,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           // Since nfcService.setEditMode is true when in those dialogs, we can use that flag
           if ((musicPlayer.isPlaying || musicPlayer.isPaused) && !nfcService.isInEditMode)
             Positioned(
-              bottom: MediaQuery.of(context).padding.bottom + 16,
+              bottom: 16,
               left: 0,
               right: 0,
               child: Container(

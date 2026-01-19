@@ -47,12 +47,13 @@ dependencies:
   version: ^3.0.0
   url_launcher: ^6.3.1
   tutorial_coach_mark: ^1.2.0
+  kiosk_mode: ^0.8.0
 
   # Splash screen: to update run `dart run flutter_native_splash:create`
   flutter_native_splash: ^2.4.7
   package_info_plus: ^9.0.0
   http: ^1.6.0
-  in_app_purchase: ^3.2.0
+  # in_app_purchase removed for F-Droid compliance
 
 dev_dependencies:
   flutter_test:

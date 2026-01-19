@@ -11,6 +11,7 @@
 
     <!-- NFC permission -->
     <uses-permission android:name="android.permission.NFC" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     
     <!-- For Android 13+ NFC nearby devices permission -->
     <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES"

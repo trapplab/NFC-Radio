@@ -40,7 +40,10 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: DimmedOverlay(isActive: false),
+            body: DimmedOverlay(
+              isActive: false,
+              onLockScreen: () {},
+            ),
           ),
         ),
       );
@@ -54,13 +57,16 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: DimmedOverlay(isActive: true),
+            body: DimmedOverlay(
+              isActive: true,
+              onLockScreen: () {},
+            ),
           ),
         ),
       );
 
       expect(find.text('Screen Dimmed'), findsOneWidget);
-      expect(find.text('Swipe Up to Unlock'), findsOneWidget);
+      expect(find.text('3-Finger Swipe Up to Unlock'), findsOneWidget);
       expect(find.byIcon(Icons.lock_outline), findsOneWidget);
     });
   });
