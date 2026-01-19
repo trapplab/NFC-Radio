@@ -104,7 +104,12 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> {
     } else {
       // Restore screen brightness
       if (_originalBrightness != null) {
-        ScreenBrightness().setScreenBrightness(_originalBrightness!);
+        ScreenBrightness().setScreenBrightness(_originalBrightness!).then((_) {
+          // Reset to system control after a short delay to ensure the set value is applied
+          Future.delayed(const Duration(milliseconds: 500), () {
+            ScreenBrightness().resetScreenBrightness();
+          });
+        });
       } else {
         ScreenBrightness().resetScreenBrightness();
       }
@@ -129,6 +134,7 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> {
       debugPrint('DimmedModeWrapper: Creating new OverlayEntry');
       _overlayEntry = OverlayEntry(
         builder: (overlayContext) => BlockOverlay(
+          swipeThreshold: -350, // Set the 3-finger slide length here (negative for upward)
           onUnlock: () {
             debugPrint('DimmedModeWrapper: Overlay unlock triggered');
             if (!mounted) return;
@@ -169,6 +175,7 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> {
                 // App-wide overlay (used when system overlay is disabled)
                 if (dimmedModeService.isDimmed && !settings.useSystemOverlay)
                   BlockOverlay(
+                    swipeThreshold: -350, // Set the 3-finger slide length here (negative for upward)
                     onUnlock: () => dimmedModeService.disableDimmedMode(),
                   ),
               ],
@@ -293,8 +300,13 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> {
 
 class BlockOverlay extends StatefulWidget {
   final VoidCallback onUnlock;
+  final double swipeThreshold;
   
-  const BlockOverlay({required this.onUnlock, super.key});
+  const BlockOverlay({
+    required this.onUnlock, 
+    this.swipeThreshold = -350, 
+    super.key,
+  });
   
   @override
   State<BlockOverlay> createState() => _BlockOverlayState();
@@ -321,7 +333,7 @@ class _BlockOverlayState extends State<BlockOverlay> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Screen Dimmed',
+                    'Screen Locked',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 24,
@@ -355,7 +367,7 @@ class _BlockOverlayState extends State<BlockOverlay> {
                     final deltaY = event.position.dy - _initialPosition!.dy;
                     
                     // Three-finger swipe up to disable dimmed mode
-                    if (deltaY < -250) {
+                    if (deltaY < widget.swipeThreshold) {
                       widget.onUnlock();
                       _resetTracking();
                     }

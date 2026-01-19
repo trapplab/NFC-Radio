@@ -510,7 +510,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   },
                 ),
                 SwitchListTile(
-                  title: const Text('Use system-wide overlay'),
+                  title: const Text('Use kiosk mode'),
                   subtitle: const Text('Requires SYSTEM_ALERT_WINDOW permission'),
                   value: settings.useSystemOverlay,
                   onChanged: (value) {
