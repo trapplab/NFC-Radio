@@ -15,14 +15,25 @@ class DimmedModeWrapper extends StatefulWidget {
   State<DimmedModeWrapper> createState() => _DimmedModeWrapperState();
 }
 
-class _DimmedModeWrapperState extends State<DimmedModeWrapper> {
-  double _sliderValue = 0.0;
+class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProviderStateMixin {
+  late AnimationController _thumbAnimationController;
+  late Animation<double> _thumbAnimation;
+  double _dragOffset = 0.0;
   OverlayEntry? _overlayEntry;
   double? _originalBrightness;
   
   @override
   void initState() {
     super.initState();
+    
+    _thumbAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    
+    _thumbAnimation = Tween<double>(begin: 0.0, end: 0.0).animate(
+      CurvedAnimation(parent: _thumbAnimationController, curve: Curves.easeOut),
+    );
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -64,6 +75,7 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> {
   
   @override
   void dispose() {
+    _thumbAnimationController.dispose();
     final dimmedModeService = Provider.of<DimmedModeService>(context, listen: false);
     dimmedModeService.removeListener(_onDimmedModeChanged);
     final settings = Provider.of<SettingsProvider>(context, listen: false);
@@ -154,125 +166,134 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> {
     }
   }
   
+  Widget _buildSlideToLockFooter(DimmedModeService dimmedModeService) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const double thumbSize = 52;
+        final double availableWidth = constraints.maxWidth - thumbSize - 8;
+        
+        return GestureDetector(
+          onHorizontalDragUpdate: (details) {
+            setState(() {
+              _dragOffset += details.delta.dx;
+              _dragOffset = _dragOffset.clamp(0.0, availableWidth);
+            });
+            
+            // Trigger lock when dragged to 90% of available width
+            if (_dragOffset >= availableWidth * 0.9) {
+              dimmedModeService.enableDimmedMode();
+              setState(() {
+                _dragOffset = 0.0;
+              });
+            }
+          },
+          onHorizontalDragEnd: (_) {
+            // Animate thumb back to start if not locked
+            _animateThumbToPosition(0.0);
+          },
+          onHorizontalDragCancel: () {
+            _animateThumbToPosition(0.0);
+          },
+          child: Container(
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
+            ),
+            child: Stack(
+              clipBehavior: Clip.hardEdge,
+              children: [
+                // Center text label
+                Center(
+                  child: Text(
+                    'Slide to Lock',
+                    style: TextStyle(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+                // Draggable thumb with animation
+                AnimatedBuilder(
+                  animation: _thumbAnimation,
+                  builder: (context, child) {
+                    final animatedOffset = _dragOffset > 0
+                      ? _dragOffset
+                      : _thumbAnimation.value;
+                    
+                    return Positioned(
+                      left: 4 + animatedOffset,
+                      top: 4,
+                      child: Container(
+                        width: thumbSize,
+                        height: thumbSize,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.black54,
+                          size: 20,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+  
+  void _animateThumbToPosition(double targetPosition) {
+    _thumbAnimation = Tween<double>(begin: _dragOffset, end: targetPosition).animate(
+      CurvedAnimation(parent: _thumbAnimationController, curve: Curves.easeOut),
+    );
+    _thumbAnimationController.forward(from: 0.0);
+    setState(() {
+      _dragOffset = 0.0;
+    });
+  }
+  
   @override
   Widget build(BuildContext context) {
     final dimmedModeService = Provider.of<DimmedModeService>(context);
     final settings = Provider.of<SettingsProvider>(context);
     
     return Material(
+      color: Colors.white, // solid base
       child: Column(
         children: [
           Expanded(
             child: Stack(
               children: [
-                // Main content
                 widget.child,
-                
-                // App-wide overlay (used when system overlay is disabled)
                 if (dimmedModeService.isDimmed && !settings.useSystemOverlay)
-                  BlockOverlay(
-                    swipeThreshold: -350, // Set the 3-finger slide length here (negative for upward)
-                    onUnlock: () => dimmedModeService.disableDimmedMode(),
-                  ),
+                   BlockOverlay(
+                     swipeThreshold: -350,
+                     onUnlock: () => dimmedModeService.disableDimmedMode(),
+                   ),
               ],
             ),
           ),
-          
-          // Always visible lock slider at bottom (Footer)
+
+          // Footer - Slide to Lock
           if (!dimmedModeService.isDimmed)
-            Container(
+            Padding(
               padding: EdgeInsets.fromLTRB(40, 10, 40, 20 + MediaQuery.of(context).padding.bottom),
-              decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
-              ),
-              child: Container(
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
-                ),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    // Shimmering text effect (simplified)
-                    Center(
-                      child: Text(
-                        'Slide to Lock',
-                        style: TextStyle(
-                          color: Colors.black.withValues(alpha: 0.3),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
-                    ),
-                    
-                    // Gesture-based slider
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        const double thumbSize = 52;
-                        final double availableWidth = constraints.maxWidth - thumbSize - 8;
-                        
-                        return Positioned.fill(
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onHorizontalDragUpdate: (details) {
-                              setState(() {
-                                _sliderValue += details.delta.dx / availableWidth;
-                                _sliderValue = _sliderValue.clamp(0.0, 1.0);
-                              });
-                              
-                              if (_sliderValue >= 0.9) {
-                                dimmedModeService.enableDimmedMode();
-                                setState(() {
-                                  _sliderValue = 0.0;
-                                });
-                              }
-                            },
-                            onHorizontalDragEnd: (details) {
-                              if (_sliderValue < 0.9) {
-                                setState(() {
-                                  _sliderValue = 0.0;
-                                });
-                              }
-                            },
-                            child: Stack(
-                              children: [
-                                Positioned(
-                                  left: 4 + (_sliderValue * availableWidth),
-                                  top: 4,
-                                  child: Container(
-                                    width: thumbSize,
-                                    height: thumbSize,
-                                    decoration: const BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black26,
-                                          blurRadius: 4,
-                                          offset: Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: const Icon(
-                                      Icons.arrow_forward_ios,
-                                      color: Colors.black54,
-                                      size: 20,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
+              child: _buildSlideToLockFooter(dimmedModeService),
             ),
         ],
       ),
