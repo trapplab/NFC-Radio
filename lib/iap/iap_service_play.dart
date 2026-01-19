@@ -27,7 +27,7 @@ class IAPService with ChangeNotifier {
   StreamSubscription<List<PurchaseDetails>>? _subscription;
   bool _isAvailable = false;
   bool _isPremium = false;
-  bool _isLoading = false;
+  final bool _isLoading = false;
 
   // Getters
   bool get isAvailable => _isAvailable;

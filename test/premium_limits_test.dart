@@ -1,9 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nfc_radio/folder.dart';
-import 'package:nfc_radio/song.dart';
-import 'package:nfc_radio/config.dart';
-import 'package:nfc_radio/iap_service.dart';
-import 'package:flutter/foundation.dart';
 
 void main() {
   group('Premium Limits Test', () {

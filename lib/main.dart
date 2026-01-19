@@ -316,6 +316,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     }
     
     try {
+      if (!mounted) return;
       await UpdateService.checkGithubUpdate(context, 'trapplab', 'NFC-Radio', manual: manual);
     } catch (e) {
       debugPrint('⚠️ Update check failed: $e');
@@ -972,52 +973,52 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           nfcService.addListener(updateNfcUuid);
 
           // Listen for audio picked from external apps
-          audioSubscription ??= AudioIntentService().onAudioPicked.listen((audioFile) {
+          audioSubscription ??= AudioIntentService().onAudioPicked.listen((audioFile) async {
             if (dialogState.isOpen) {
               final path = audioFile.sourceUri.isScheme('file')
                   ? audioFile.sourceUri.toFilePath()
                   : audioFile.sourceUri.toString();
               
-              _isValidAudioFile(path).then((isValid) {
-                if (!isValid) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('❌ Rejected: Selected file is not a valid audio file.'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return;
-                }
-
-                setState(() {
-                  filePathController.text = path;
-                  
-                  if (titleController.text.isEmpty && audioFile.displayName != null) {
-                    titleController.text = audioFile.displayName!.replaceAll(RegExp(r'\.[^.]+$'), '');
-                  }
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('📥 Audio selected: ${audioFile.displayName ?? "Unknown"}')),
+              final isValid = await _isValidAudioFile(path);
+              if (!isValid) {
+                if (!dialogContext.mounted) return;
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(
+                    content: Text('❌ Rejected: Selected file is not a valid audio file.'),
+                    backgroundColor: Colors.red,
+                  ),
                 );
+                return;
+              }
 
-                // Show tutorial Step 2: NFC Connection
-                if (TutorialService.instance.shouldShowNfcConnectionTutorial) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    final targets = createTutorialTargets(
-                      nfcAreaKey: _nfcAreaKey,
-                    );
-                    if (targets.isNotEmpty) {
-                      showTutorial(
-                        context: dialogContext,
-                        targets: targets,
-                        onFinish: () => TutorialService.instance.markNfcConnectionTutorialShown(),
-                        onSkip: () => TutorialService.instance.markNfcConnectionTutorialShown(),
-                      );
-                    }
-                  });
+              setState(() {
+                filePathController.text = path;
+                
+                if (titleController.text.isEmpty && audioFile.displayName != null) {
+                  titleController.text = audioFile.displayName!.replaceAll(RegExp(r'\.[^.]+$'), '');
                 }
               });
-                
+              if (!dialogContext.mounted) return;
+              ScaffoldMessenger.of(dialogContext).showSnackBar(
+                SnackBar(content: Text('📥 Audio selected: ${audioFile.displayName ?? "Unknown"}')),
+              );
+
+              // Show tutorial Step 2: NFC Connection
+              if (TutorialService.instance.shouldShowNfcConnectionTutorial) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  final targets = createTutorialTargets(
+                    nfcAreaKey: _nfcAreaKey,
+                  );
+                  if (targets.isNotEmpty) {
+                    showTutorial(
+                      context: dialogContext,
+                      targets: targets,
+                      onFinish: () => TutorialService.instance.markNfcConnectionTutorialShown(),
+                      onSkip: () => TutorialService.instance.markNfcConnectionTutorialShown(),
+                    );
+                  }
+                });
+              }
             }
           });
 
@@ -1201,7 +1202,10 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               TextButton(
                 onPressed: () async {
                   if (filePathController.text.isNotEmpty) {
-                    if (!await _isValidAudioFile(filePathController.text)) {
+                    if (!dialogContext.mounted) return;
+                    final isValid = await _isValidAudioFile(filePathController.text);
+                    if (!isValid) {
+                      if (!dialogContext.mounted) return;
                       ScaffoldMessenger.of(dialogContext).showSnackBar(
                         const SnackBar(
                           content: Text('❌ Cannot save: File is not a valid audio file.'),
@@ -1249,6 +1253,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     nfcService.removeListener(updateNfcUuid);
                     audioSubscription?.cancel();
                     nfcService.setEditMode(false);
+                    if (!dialogContext.mounted) return;
                     Navigator.pop(dialogContext);
 
                     // Show settings tutorial if a new song was added and it's the first time
@@ -1590,7 +1595,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
 
               // Finally remove the folder
               folderProvider.removeFolder(folder.id);
-              Navigator.pop(context);
+              if (!context.mounted) return;
+              final navigator = Navigator.of(context);
+              navigator.pop();
             },
             child: const Text('Delete All', style: TextStyle(color: Colors.red)),
           ),
@@ -1653,7 +1660,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               
               // Delete the song
               songProvider.removeSong(song.id);
-              Navigator.pop(context);
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -1688,8 +1697,11 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context);
               await IAPService.instance.buyPremium();
+              if (!mounted) return;
+              if (context.mounted) {
+                Navigator.of(context).pop();
+              }
             },
             child: const Text('Upgrade'),
           ),
@@ -1737,6 +1749,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   ElevatedButton(
                     onPressed: () {
                       storageService.debugStorageStatus();
+                      if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Storage debug info logged to console')),
                       );
@@ -1745,40 +1758,38 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   ),
                   ElevatedButton(
                     onPressed: () async {
+                      if (!context.mounted) return;
                       final messenger = ScaffoldMessenger.of(context);
                       try {
                         await storageService.forceReinitialize();
-                        if (mounted) {
-                          messenger.showSnackBar(
-                            const SnackBar(content: Text('Storage reinitialized'), backgroundColor: Colors.green),
-                          );
-                        }
+                        if (!context.mounted) return;
+                        messenger.showSnackBar(
+                          const SnackBar(content: Text('Storage reinitialized'), backgroundColor: Colors.green),
+                        );
                       } catch (e) {
-                        if (mounted) {
-                          messenger.showSnackBar(
-                            SnackBar(content: Text('Reinitialization failed: $e'), backgroundColor: Colors.red),
-                          );
-                        }
+                        if (!context.mounted) return;
+                        messenger.showSnackBar(
+                          SnackBar(content: Text('Reinitialization failed: $e'), backgroundColor: Colors.red),
+                        );
                       }
                     },
                     child: const Text('Force Reinitialize'),
                   ),
                   ElevatedButton(
                     onPressed: () async {
+                      if (!context.mounted) return;
                       final messenger = ScaffoldMessenger.of(context);
                       try {
                         await storageService.clearAllData();
-                        if (mounted) {
-                          messenger.showSnackBar(
-                            const SnackBar(content: Text('All storage data cleared'), backgroundColor: Colors.orange),
-                          );
-                        }
+                        if (!context.mounted) return;
+                        messenger.showSnackBar(
+                          const SnackBar(content: Text('All storage data cleared'), backgroundColor: Colors.orange),
+                        );
                       } catch (e) {
-                        if (mounted) {
-                          messenger.showSnackBar(
-                            SnackBar(content: Text('Clear failed: $e'), backgroundColor: Colors.red),
-                          );
-                        }
+                        if (!context.mounted) return;
+                        messenger.showSnackBar(
+                          SnackBar(content: Text('Clear failed: $e'), backgroundColor: Colors.red),
+                        );
                       }
                     },
                     child: const Text('Clear All Data'),
@@ -1795,6 +1806,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     ),
                     ElevatedButton(
                       onPressed: () async {
+                        if (!mounted) return;
                         final messenger = ScaffoldMessenger.of(context);
                         try {
                           final box = await Hive.openBox('premium_status');
@@ -1802,17 +1814,15 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                           debugPrint('🗑️ Premium status cleared');
                           // Refresh the IAP service to get the new value
                           await IAPService.instance.refreshPremiumStatus();
-                          if (mounted) {
-                            messenger.showSnackBar(
-                              const SnackBar(content: Text('Premium status cleared'), backgroundColor: Colors.orange),
-                            );
-                          }
+                          if (!mounted) return;
+                          messenger.showSnackBar(
+                            const SnackBar(content: Text('Premium status cleared'), backgroundColor: Colors.orange),
+                          );
                         } catch (e) {
-                          if (mounted) {
-                            messenger.showSnackBar(
-                              SnackBar(content: Text('Clear failed: $e'), backgroundColor: Colors.red),
-                            );
-                          }
+                          if (!mounted) return;
+                          messenger.showSnackBar(
+                            SnackBar(content: Text('Clear failed: $e'), backgroundColor: Colors.red),
+                          );
                         }
                       },
                       child: const Text('Clear Premium Status'),
@@ -1899,6 +1909,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   ),
                   ElevatedButton(
                     onPressed: () async {
+                      if (!context.mounted) return;
                       final messenger = ScaffoldMessenger.of(context);
                       try {
                         if (nfcService.isScanning) {
@@ -1906,17 +1917,15 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                         } else {
                           await nfcService.startNfcSession();
                         }
-                        if (mounted) {
-                          messenger.showSnackBar(
-                            SnackBar(content: Text(nfcService.isScanning ? 'NFC scanning started' : 'NFC scanning stopped')),
-                          );
-                        }
+                        if (!context.mounted) return;
+                        messenger.showSnackBar(
+                          SnackBar(content: Text(nfcService.isScanning ? 'NFC scanning started' : 'NFC scanning stopped')),
+                        );
                       } catch (e) {
-                        if (mounted) {
-                          messenger.showSnackBar(
-                            SnackBar(content: Text('NFC operation failed: $e')),
-                          );
-                        }
+                        if (!context.mounted) return;
+                        messenger.showSnackBar(
+                          SnackBar(content: Text('NFC operation failed: $e')),
+                        );
                       }
                     },
                     child: Text(nfcService.isScanning ? 'Stop NFC' : 'Start NFC'),
@@ -1934,9 +1943,12 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     ElevatedButton(
                       onPressed: () async {
                         await TutorialService.instance.resetTutorial();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Tutorial reset - will show on next restart')),
-                        );
+                        if (!mounted) return;
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Tutorial reset - will show on next restart')),
+                          );
+                        }
                       },
                       child: const Text('Reset Tutorial'),
                     ),

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import 'package:uuid/uuid.dart';
 import 'storage_service.dart';
 import 'config.dart';
 import 'iap_service.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 part 'folder.g.dart';
 

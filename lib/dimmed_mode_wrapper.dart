@@ -4,7 +4,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:kiosk_mode/kiosk_mode.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'dimmed_mode_service.dart';
-import 'dimmed_overlay.dart';
 import 'settings_provider.dart';
 
 class DimmedModeWrapper extends StatefulWidget {
@@ -17,9 +16,6 @@ class DimmedModeWrapper extends StatefulWidget {
 }
 
 class _DimmedModeWrapperState extends State<DimmedModeWrapper> {
-  int _touchCount = 0;
-  Offset? _initialPosition;
-  bool _isTrackingSwipe = false;
   double _sliderValue = 0.0;
   OverlayEntry? _overlayEntry;
   double? _originalBrightness;
@@ -188,23 +184,24 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> {
               padding: EdgeInsets.fromLTRB(40, 10, 40, 20 + MediaQuery.of(context).padding.bottom),
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
-                border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.2))),
+                border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
               ),
               child: Container(
                 height: 60,
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.black.withOpacity(0.1)),
+                  border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
                 ),
                 child: Stack(
+                  clipBehavior: Clip.none,
                   children: [
                     // Shimmering text effect (simplified)
                     Center(
                       child: Text(
                         'Slide to Lock',
                         style: TextStyle(
-                          color: Colors.black.withOpacity(0.5),
+                          color: Colors.black.withValues(alpha: 0.3),
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
                           decoration: TextDecoration.none,
@@ -213,44 +210,46 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> {
                     ),
                     
                     // The actual slider
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        sliderTheme: SliderThemeData(
-                          trackHeight: 60,
-                          activeTrackColor: Colors.transparent,
-                          inactiveTrackColor: Colors.transparent,
-                          thumbColor: Colors.transparent, // Hide default thumb
-                          overlayColor: Colors.transparent,
-                          thumbShape: const RoundSliderThumbShape(
-                            enabledThumbRadius: 26,
-                            elevation: 0,
+                    Positioned.fill(
+                      child: Theme(
+                        data: Theme.of(context).copyWith(
+                          sliderTheme: SliderThemeData(
+                            trackHeight: 60,
+                            activeTrackColor: Colors.transparent,
+                            inactiveTrackColor: Colors.transparent,
+                            thumbColor: Colors.transparent, // Hide default thumb
+                            overlayColor: Colors.transparent,
+                            thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 26,
+                              elevation: 0,
+                            ),
                           ),
                         ),
-                      ),
-                      child: Material(
-                        type: MaterialType.transparency,
-                        child: Slider(
-                          value: _sliderValue,
-                          onChanged: (value) {
-                            setState(() {
-                              _sliderValue = value;
-                            });
-                            if (value >= 0.9) {
-                              dimmedModeService.enableDimmedMode();
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: Slider(
+                            value: _sliderValue,
+                            onChanged: (value) {
                               setState(() {
-                                _sliderValue = 0.0;
+                                _sliderValue = value;
                               });
-                            }
-                          },
-                          onChangeEnd: (value) {
-                            if (value < 0.9) {
-                              setState(() {
-                                _sliderValue = 0.0;
-                              });
-                            }
-                          },
-                          min: 0.0,
-                          max: 1.0,
+                              if (value >= 0.9) {
+                                dimmedModeService.enableDimmedMode();
+                                setState(() {
+                                  _sliderValue = 0.0;
+                                });
+                              }
+                            },
+                            onChangeEnd: (value) {
+                              if (value < 0.9) {
+                                setState(() {
+                                  _sliderValue = 0.0;
+                                });
+                              }
+                            },
+                            min: 0.0,
+                            max: 1.0,
+                          ),
                         ),
                       ),
                     ),
@@ -258,7 +257,7 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> {
                     // Arrow icon on the thumb
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final double thumbSize = 52;
+                        const double thumbSize = 52;
                         final double availableWidth = constraints.maxWidth - thumbSize - 8;
                         return Positioned(
                           left: 4 + (_sliderValue * availableWidth),
@@ -324,7 +323,7 @@ class _BlockOverlayState extends State<BlockOverlay> {
       child: Container(
         width: double.infinity,
         height: double.infinity,
-        color: Colors.black.withOpacity(0.9),
+        color: Colors.black.withValues(alpha: 0.9),
         child: Stack(
           children: [
             // Center instruction
@@ -332,7 +331,7 @@ class _BlockOverlayState extends State<BlockOverlay> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
+                  const Text(
                     'Screen Locked',
                     style: TextStyle(
                       color: Colors.white,
@@ -341,7 +340,7 @@ class _BlockOverlayState extends State<BlockOverlay> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(
+                  const Text(
                     '3-Finger Swipe Up to Unlock',
                     style: TextStyle(
                       color: Colors.white70,
