@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:kiosk_mode/kiosk_mode.dart';
+import 'package:screen_brightness/screen_brightness.dart';
 import 'dimmed_mode_service.dart';
 import 'dimmed_overlay.dart';
 import 'settings_provider.dart';
@@ -21,6 +22,7 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> {
   bool _isTrackingSwipe = false;
   double _sliderValue = 0.0;
   OverlayEntry? _overlayEntry;
+  double? _originalBrightness;
   
   @override
   void initState() {
@@ -82,6 +84,12 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> {
     debugPrint('DimmedModeWrapper: _onDimmedModeChanged - isDimmed: ${dimmedModeService.isDimmed}, useSystemOverlay: ${settings.useSystemOverlay}');
 
     if (dimmedModeService.isDimmed) {
+      // Save current brightness and dim screen
+      ScreenBrightness().current.then((brightness) {
+        _originalBrightness = brightness;
+        ScreenBrightness().setScreenBrightness(0.0);
+      });
+
       if (settings.useSystemOverlay) {
         _showOverlay();
         // Start kiosk mode if system overlay is enabled
@@ -94,6 +102,13 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> {
         _removeOverlay();
       }
     } else {
+      // Restore screen brightness
+      if (_originalBrightness != null) {
+        ScreenBrightness().setScreenBrightness(_originalBrightness!);
+      } else {
+        ScreenBrightness().resetScreenBrightness();
+      }
+
       _removeOverlay();
       // Stop kiosk mode when deactivating
       getKioskMode().then((state) {

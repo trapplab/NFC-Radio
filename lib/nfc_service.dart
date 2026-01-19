@@ -312,15 +312,12 @@ class NFCService with ChangeNotifier {
       if (isCurrentlyPlayingThisSong) {
         debugPrint('⏸️ Action: PAUSE current song');
         await _executeWithRetry('pause', () => _musicPlayer!.pauseMusic(), 2);
-        _notifyUser('Paused: ${song.title}');
       } else if (isCurrentlyPausedOnThisSong) {
         debugPrint('▶️ Action: RESUME paused song');
         await _executeWithRetry('resume', () => _musicPlayer!.resumeMusic(), 2);
-        _notifyUser('Resumed: ${song.title}');
       } else {
         debugPrint('🎵 Action: START NEW SONG');
         await _executeWithRetry('play', () => _musicPlayer!.playMusic(song.filePath, songTitle: song.title), 3);
-        _notifyUser('Playing: ${song.title}');
       }
     } catch (e, s) {
       debugPrint('❌ CRITICAL ERROR in music execution: $e');

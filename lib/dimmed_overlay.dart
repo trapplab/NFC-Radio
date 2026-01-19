@@ -87,7 +87,7 @@ class _DimmedOverlayState extends State<DimmedOverlay> with SingleTickerProvider
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'Screen Dimmed',
+                  'Screen Locked',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 24,

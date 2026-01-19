@@ -50,7 +50,7 @@ void main() {
 
       // Should be an empty container when not active
       expect(find.byType(Container), findsOneWidget);
-      expect(find.text('Screen Dimmed'), findsNothing);
+      expect(find.text('Screen Locked'), findsNothing);
     });
 
     testWidgets('DimmedOverlay should show content when active', (WidgetTester tester) async {
@@ -65,7 +65,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Screen Dimmed'), findsOneWidget);
+      expect(find.text('Screen Locked'), findsOneWidget);
       expect(find.text('3-Finger Swipe Up to Unlock'), findsOneWidget);
       expect(find.byIcon(Icons.lock_outline), findsOneWidget);
     });
