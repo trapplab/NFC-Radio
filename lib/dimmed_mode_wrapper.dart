@@ -209,79 +209,62 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> {
                       ),
                     ),
                     
-                    // The actual slider
-                    Positioned.fill(
-                      child: Theme(
-                        data: Theme.of(context).copyWith(
-                          sliderTheme: SliderThemeData(
-                            trackHeight: 60,
-                            activeTrackColor: Colors.transparent,
-                            inactiveTrackColor: Colors.transparent,
-                            thumbColor: Colors.transparent, // Hide default thumb
-                            overlayColor: Colors.transparent,
-                            thumbShape: const RoundSliderThumbShape(
-                              enabledThumbRadius: 26,
-                              elevation: 0,
-                            ),
-                          ),
-                        ),
-                        child: Material(
-                          type: MaterialType.transparency,
-                          child: Slider(
-                            value: _sliderValue,
-                            onChanged: (value) {
+                    // Gesture-based slider
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        const double thumbSize = 52;
+                        final double availableWidth = constraints.maxWidth - thumbSize - 8;
+                        
+                        return Positioned.fill(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onHorizontalDragUpdate: (details) {
                               setState(() {
-                                _sliderValue = value;
+                                _sliderValue += details.delta.dx / availableWidth;
+                                _sliderValue = _sliderValue.clamp(0.0, 1.0);
                               });
-                              if (value >= 0.9) {
+                              
+                              if (_sliderValue >= 0.9) {
                                 dimmedModeService.enableDimmedMode();
                                 setState(() {
                                   _sliderValue = 0.0;
                                 });
                               }
                             },
-                            onChangeEnd: (value) {
-                              if (value < 0.9) {
+                            onHorizontalDragEnd: (details) {
+                              if (_sliderValue < 0.9) {
                                 setState(() {
                                   _sliderValue = 0.0;
                                 });
                               }
                             },
-                            min: 0.0,
-                            max: 1.0,
-                          ),
-                        ),
-                      ),
-                    ),
-                    
-                    // Arrow icon on the thumb
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        const double thumbSize = 52;
-                        final double availableWidth = constraints.maxWidth - thumbSize - 8;
-                        return Positioned(
-                          left: 4 + (_sliderValue * availableWidth),
-                          top: 4,
-                          child: IgnorePointer(
-                            child: Container(
-                              width: thumbSize,
-                              height: thumbSize,
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black26,
-                                    blurRadius: 4,
-                                    offset: Offset(0, 2),
+                            child: Stack(
+                              children: [
+                                Positioned(
+                                  left: 4 + (_sliderValue * availableWidth),
+                                  top: 4,
+                                  child: Container(
+                                    width: thumbSize,
+                                    height: thumbSize,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black26,
+                                          blurRadius: 4,
+                                          offset: Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: Colors.black54,
+                                      size: 20,
+                                    ),
                                   ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.arrow_forward_ios,
-                                color: Colors.black54,
-                                size: 20,
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         );
