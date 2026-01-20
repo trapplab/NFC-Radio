@@ -5,6 +5,7 @@ import 'package:kiosk_mode/kiosk_mode.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'dimmed_mode_service.dart';
 import 'settings_provider.dart';
+import 'theme_provider.dart';
 
 class DimmedModeWrapper extends StatefulWidget {
   final Widget child;
@@ -197,9 +198,9 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
           child: Container(
             height: 60,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Provider.of<ThemeProvider>(context).footerColor,
               borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
+              border: Border.all(color: Provider.of<ThemeProvider>(context).bannerColor.withValues(alpha: 0.1)),
             ),
             child: Stack(
               clipBehavior: Clip.hardEdge,
@@ -209,7 +210,7 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
                   child: Text(
                     'Slide to Lock',
                     style: TextStyle(
-                      color: Colors.black.withValues(alpha: 0.3),
+                      color: Provider.of<ThemeProvider>(context).bannerColor.withValues(alpha: 0.3),
                       fontSize: 16,
                       fontWeight: FontWeight.w400,
                     ),
@@ -229,10 +230,10 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
                       child: Container(
                         width: thumbSize,
                         height: thumbSize,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
+                        decoration: BoxDecoration(
+                          color: Provider.of<ThemeProvider>(context).bannerColor,
                           shape: BoxShape.circle,
-                          boxShadow: [
+                          boxShadow: const [
                             BoxShadow(
                               color: Colors.black26,
                               blurRadius: 4,
@@ -240,9 +241,9 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
                             ),
                           ],
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.arrow_forward_ios,
-                          color: Colors.black54,
+                          color: Provider.of<ThemeProvider>(context).footerColor,
                           size: 20,
                         ),
                       ),
@@ -273,7 +274,7 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
     final settings = Provider.of<SettingsProvider>(context);
     
     return Material(
-      color: Colors.white, // solid base
+      color: Provider.of<ThemeProvider>(context).currentColor, // solid base
       child: Column(
         children: [
           Expanded(

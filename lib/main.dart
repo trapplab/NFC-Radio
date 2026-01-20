@@ -22,6 +22,8 @@ import 'services/audio_intent_service.dart';
 import 'services/github_audio_service.dart';
 import 'models/github_audio_folder.dart';
 import 'settings_provider.dart';
+import 'theme_provider.dart';
+import 'color_chooser.dart';
 import 'package:path/path.dart' as p;
 import 'tutorial_service.dart';
 import 'tutorial_steps.dart';
@@ -62,14 +64,24 @@ class NFCJukeboxApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => NFCService()),
         ChangeNotifierProvider.value(value: IAPService.instance),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: MaterialApp(
-        title: 'NFC Radio',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-          useMaterial3: true,
-        ),
-        home: DimmedModeWrapper(child: const NFCJukeboxHomePage()),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'NFC Radio',
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: themeProvider.currentColor,
+                brightness: themeProvider.currentColor == Colors.black
+                    ? Brightness.dark
+                    : Brightness.light,
+              ),
+              useMaterial3: true,
+            ),
+            home: DimmedModeWrapper(child: const NFCJukeboxHomePage()),
+          );
+        },
       ),
     );
   }
@@ -517,14 +529,16 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   onChanged: (value) {
                     settings.setUseSystemOverlay(value);
                   },
-                ),              
+                ),
+                const Divider(),
+                const ColorChooser(),
               ],
             );
           },
         ),
       ),
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Provider.of<ThemeProvider>(context).bannerColor,
         title: const Text('NFC Radio'),
         actions: [
           // App version display (visible in all flavors, clickable for GitHub flavor)
@@ -701,8 +715,8 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.95),
-                  border: Border.all(color: Colors.blue[300]!),
+                  color: Provider.of<ThemeProvider>(context).footerColor,
+                  border: Border.all(color: Provider.of<ThemeProvider>(context).bannerColor),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
@@ -1301,9 +1315,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: Provider.of<ThemeProvider>(context).footerColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Provider.of<ThemeProvider>(context).bannerColor.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -1313,14 +1327,14 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: folder.isExpanded ? Colors.blue[50] : Colors.transparent,
+                color: folder.isExpanded ? Provider.of<ThemeProvider>(context).bannerColor.withValues(alpha: 0.1) : Colors.transparent,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
               ),
               child: Row(
                 children: [
                   Icon(
                     folder.isExpanded ? Icons.folder_open : Icons.folder,
-                    color: Colors.blue[700],
+                    color: Provider.of<ThemeProvider>(context).bannerColor,
                     size: 30,
                   ),
                   const SizedBox(width: 12),
@@ -1330,13 +1344,13 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue[800],
+                        color: Provider.of<ThemeProvider>(context).bannerColor,
                       ),
                     ),
                   ),
                   Icon(
                     folder.isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: Colors.blue[700],
+                    color: Provider.of<ThemeProvider>(context).bannerColor,
                   ),
                   const SizedBox(width: 8),
                   PopupMenuButton<String>(
@@ -1392,7 +1406,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                       width: 120,
                       margin: const EdgeInsets.symmetric(horizontal: 8),
                       decoration: BoxDecoration(
-                        color: Colors.blueGrey[100],
+                        color: Provider.of<ThemeProvider>(context).bannerColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: song.connectedNfcUuid != null
                             ? Border.all(color: Colors.green, width: 2)
