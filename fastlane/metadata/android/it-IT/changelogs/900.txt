@@ -1,0 +1,3 @@
+## Modificato
+- Funzionalità di blocco schermo aggiornata per essere più visibile e con un'opzione per eseguire in modalità kiosk per migliorare il blocco degli input indesiderati.
+- Aggiunta la funzione slide-to-lock per proteggere facilmente le impostazioni dalle mani curiose dei bambini.

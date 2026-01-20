@@ -13,6 +13,11 @@
 
 # Changelog
 
+## [0.9.0]
+### Changed
+- Updated screen lock functionality to be easier visible and have a option to run in kiosk mode for better blocking of unwanted inputs.
+- Added slide-to-lock to keep settings easily from children curios hands.
+
 ## [0.8.2]
 ### Added
 - Introduced audio starter packs to include simply basic sounds for children.

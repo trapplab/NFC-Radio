@@ -1,0 +1,3 @@
+## Geändert
+- Aktualisierte Bildschirmsperrfunktion, um besser sichtbar zu sein, und eine Option zum Ausführen im Kioskmodus zur besseren Blockierung unerwünschter Eingaben.
+- Slide-to-Lock hinzugefügt, um die Einstellungen vor neugierigen Kinderhänden zu schützen.

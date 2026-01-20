@@ -1,0 +1,3 @@
+## Modifié
+- Fonctionnalité de verrouillage d'écran mise à jour pour être plus visible et inclure une option de mode kiosque afin de mieux bloquer les entrées indésirables.
+- Ajout du glissement pour verrouiller afin de protéger facilement les réglages des mains curieuses des enfants.

@@ -1,0 +1,3 @@
+## Cambiado
+- Funcionalidad de bloqueo de pantalla actualizada para ser más visible y contar con una opción para ejecutarse en modo kiosco, mejorando el bloqueo de entradas no deseadas.
+- Se añadió el deslizamiento para bloquear y proteger fácilmente la configuración de las manos curiosas de los niños.
