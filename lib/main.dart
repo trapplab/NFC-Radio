@@ -682,20 +682,21 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                             // Add button when no folders exist
                             _buildAddFolderButton(context, folderProvider),
                           ] else ...[
-                            ListView.builder(
+                            ReorderableListView.builder(
+                              buildDefaultDragHandles: false,
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              itemCount: folderProvider.folders.length + 1, // +1 for the add button
+                              itemCount: folderProvider.folders.length,
                               itemBuilder: (context, index) {
-                                if (index < folderProvider.folders.length) {
-                                  final folder = folderProvider.folders[index];
-                                  return _buildFolderWidget(context, folder, folderProvider, songProvider, musicPlayer);
-                                } else {
-                                  // Last item is the "Add New Folder" button
-                                  return _buildAddFolderButton(context, folderProvider);
-                                }
+                                final folder = folderProvider.folders[index];
+                                return _buildDraggableFolderWidget(context, folder, folderProvider, songProvider, musicPlayer, index);
+                              },
+                              onReorder: (oldIndex, newIndex) {
+                                folderProvider.reorderFolders(oldIndex, newIndex);
                               },
                             ),
+                            // Add button at the end (not reorderable)
+                            _buildAddFolderButton(context, folderProvider),
                           ],
                         ],
                       );
@@ -1305,6 +1306,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     FolderProvider folderProvider,
     SongProvider songProvider,
     MusicPlayer musicPlayer,
+    int index,
   ) {
     // Get songs in this folder
     final folderSongs = songProvider.songs.where((song) => folder.songIds.contains(song.id)).toList();
@@ -1349,9 +1351,10 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     folder.isExpanded ? Icons.expand_less : Icons.expand_more,
                     color: Provider.of<ThemeProvider>(context).bannerColor,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                   PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert, size: 20),
+                    icon: const Icon(Icons.more_vert, size: 18),
+                    padding: EdgeInsets.zero,
                     onSelected: (value) {
                       if (value == 'edit') {
                         _showEditFolderDialog(context, folder, folderProvider);
@@ -1381,6 +1384,16 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(width: 4),
+                  ReorderableDragStartListener(
+                    index: index,
+                    child: IconButton(
+                      icon: const Icon(Icons.drag_handle, size: 18),
+                      onPressed: () {},
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
                   ),
                 ],
               ),
@@ -1504,6 +1517,20 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildDraggableFolderWidget(
+    BuildContext context,
+    Folder folder,
+    FolderProvider folderProvider,
+    SongProvider songProvider,
+    MusicPlayer musicPlayer,
+    int index,
+  ) {
+    return Container(
+      key: Key('folder_${folder.id}'),
+      child: _buildFolderWidget(context, folder, folderProvider, songProvider, musicPlayer, index),
     );
   }
 

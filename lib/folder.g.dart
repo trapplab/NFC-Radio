@@ -21,13 +21,14 @@ class FolderAdapter extends TypeAdapter<Folder> {
       name: fields[1] as String,
       songIds: (fields[2] as List).cast<String>(),
       isExpanded: fields[3] as bool,
+      position: (fields[4] as int?) ?? 0,
     );
   }
 
   @override
   void write(BinaryWriter writer, Folder obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -35,7 +36,9 @@ class FolderAdapter extends TypeAdapter<Folder> {
       ..writeByte(2)
       ..write(obj.songIds)
       ..writeByte(3)
-      ..write(obj.isExpanded);
+      ..write(obj.isExpanded)
+      ..writeByte(4)
+      ..write(obj.position);
   }
 
   @override

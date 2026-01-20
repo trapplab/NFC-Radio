@@ -20,11 +20,15 @@ class Folder extends HiveObject {
   @HiveField(3)
   bool isExpanded;
 
+  @HiveField(4)
+  int position;
+
   Folder({
     required this.id,
     required this.name,
     this.songIds = const [],
     this.isExpanded = false,
+    this.position = 0,
   });
 
   // Convert the folder to a JSON map
@@ -33,6 +37,7 @@ class Folder extends HiveObject {
     'name': name,
     'songIds': songIds,
     'isExpanded': isExpanded,
+    'position': position,
   };
 
   // Create a folder from a JSON map
@@ -41,6 +46,7 @@ class Folder extends HiveObject {
     name: json['name'],
     songIds: List<String>.from(json['songIds'] ?? []),
     isExpanded: json['isExpanded'] ?? false,
+    position: json['position'] ?? 0,
   );
 }
 
@@ -165,6 +171,9 @@ class FolderProvider with ChangeNotifier {
       final storedFolders = _storageService.getAllFolders();
       debugPrint('📁 Loaded ${storedFolders.length} folders from storage');
 
+      // Sort folders by position
+      storedFolders.sort((a, b) => a.position.compareTo(b.position));
+
       _folders.clear();
       _folders.addAll(storedFolders);
 
@@ -173,7 +182,7 @@ class FolderProvider with ChangeNotifier {
         debugPrint('📁 Folders in provider:');
         for (int i = 0; i < _folders.length; i++) {
           final folder = _folders[i];
-          debugPrint('📁   $i: "${folder.name}" (ID: ${folder.id}) - Songs: ${folder.songIds.length} - Expanded: ${folder.isExpanded}');
+          debugPrint('📁   $i: "${folder.name}" (ID: ${folder.id}) - Songs: ${folder.songIds.length} - Expanded: ${folder.isExpanded} - Position: ${folder.position}');
         }
       } else {
         debugPrint('📁 No folders found in storage');
@@ -189,6 +198,7 @@ class FolderProvider with ChangeNotifier {
             name: _folders[i].name,
             songIds: _folders[i].songIds,
             isExpanded: false,
+            position: _folders[i].position,
           );
         }
         debugPrint('📁 All folders collapsed by default');
@@ -219,16 +229,28 @@ class FolderProvider with ChangeNotifier {
       return;
     }
 
-    _folders.add(folder);
-    _saveFolderToStorage(folder);
+    // Set position to the end of the list
+    final newFolder = Folder(
+      id: folder.id,
+      name: folder.name,
+      songIds: folder.songIds,
+      isExpanded: folder.isExpanded,
+      position: _folders.length,
+    );
+    
+    _folders.add(newFolder);
+    _saveFolderToStorage(newFolder);
     notifyListeners();
   }
 
-  void removeFolder(String folderId) {
+  Future<void> removeFolder(String folderId) async {
     final index = _folders.indexWhere((f) => f.id == folderId);
     if (index != -1) {
       _folders.removeAt(index);
-      _deleteFolderFromStorage(folderId);
+      await _deleteFolderFromStorage(folderId);
+      
+      // Update positions of remaining folders
+      await _updateFolderPositions();
       
       notifyListeners();
     }
@@ -237,8 +259,15 @@ class FolderProvider with ChangeNotifier {
   void updateFolder(Folder updatedFolder) {
     final folderIndex = _folders.indexWhere((folder) => folder.id == updatedFolder.id);
     if (folderIndex != -1) {
-      _folders[folderIndex] = updatedFolder;
-      _saveFolderToStorage(updatedFolder);
+      final updated = Folder(
+        id: updatedFolder.id,
+        name: updatedFolder.name,
+        songIds: updatedFolder.songIds,
+        isExpanded: updatedFolder.isExpanded,
+        position: _folders[folderIndex].position, // Preserve position
+      );
+      _folders[folderIndex] = updated;
+      _saveFolderToStorage(updated);
       notifyListeners();
     }
   }
@@ -256,6 +285,7 @@ class FolderProvider with ChangeNotifier {
         name: _folders[folderIndex].name,
         songIds: [..._folders[folderIndex].songIds, songId],
         isExpanded: _folders[folderIndex].isExpanded,
+        position: _folders[folderIndex].position,
       );
       _folders[folderIndex] = updatedFolder;
       _saveFolderToStorage(updatedFolder);
@@ -271,6 +301,7 @@ class FolderProvider with ChangeNotifier {
         name: _folders[folderIndex].name,
         songIds: _folders[folderIndex].songIds.where((id) => id != songId).toList(),
         isExpanded: _folders[folderIndex].isExpanded,
+        position: _folders[folderIndex].position,
       );
       _folders[folderIndex] = updatedFolder;
       _saveFolderToStorage(updatedFolder);
@@ -291,6 +322,7 @@ class FolderProvider with ChangeNotifier {
           name: _folders[i].name,
           songIds: _folders[i].songIds,
           isExpanded: false,
+          position: _folders[i].position,
         );
       }
 
@@ -302,9 +334,10 @@ class FolderProvider with ChangeNotifier {
           name: _folders[folderIndex].name,
           songIds: _folders[folderIndex].songIds,
           isExpanded: true,
+          position: _folders[folderIndex].position,
         );
       }
-      
+       
       // Notify listeners - expansion state is kept in memory only
       notifyListeners();
     }
@@ -321,6 +354,20 @@ class FolderProvider with ChangeNotifier {
     } catch (e) {
       debugPrint('⚠️ Failed to save folder to storage: $e');
       // Continue without storage - data will be lost on app restart
+    }
+  }
+
+  /// Update positions of all folders after reordering or removal
+  Future<void> _updateFolderPositions() async {
+    for (int i = 0; i < _folders.length; i++) {
+      _folders[i] = Folder(
+        id: _folders[i].id,
+        name: _folders[i].name,
+        songIds: _folders[i].songIds,
+        isExpanded: _folders[i].isExpanded,
+        position: i,
+      );
+      await _saveFolderToStorage(_folders[i]);
     }
   }
 
@@ -341,10 +388,26 @@ class FolderProvider with ChangeNotifier {
   Future<void> clearAllFolders() async {
     try {
       await _storageService.clearFolders();
+      _folders.clear();
       debugPrint('🧹 Cleared all folders from storage');
     } catch (e) {
       debugPrint('❌ Failed to clear folders from storage: $e');
     }
+  }
+
+  /// Reorder folders and update their positions
+  Future<void> reorderFolders(int oldIndex, int newIndex) async {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    
+    final folder = _folders.removeAt(oldIndex);
+    _folders.insert(newIndex, folder);
+    
+    // Update positions
+    await _updateFolderPositions();
+    
+    notifyListeners();
   }
 
   /// Get storage statistics
