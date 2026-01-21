@@ -2,6 +2,7 @@ package com.trapplab.nfc_radio
 
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
@@ -30,8 +31,43 @@ class MainActivity : FlutterActivity() {
                     pickAudio(filterAudioOnly)
                     result.success("started")
                 }
+                "openApp" -> {
+                    val packageName = call.argument<String>("packageName")
+                    if (packageName != null) {
+                        val success = openApp(packageName)
+                        result.success(success)
+                    } else {
+                        result.error("INVALID_ARGUMENT", "Package name is null", null)
+                    }
+                }
                 else -> result.notImplemented()
             }
+        }
+    }
+
+    private fun openApp(packageName: String): Boolean {
+        return try {
+            val pm = packageManager
+            
+            // Check if package is installed first
+            try {
+                pm.getPackageInfo(packageName, 0)
+            } catch (e: PackageManager.NameNotFoundException) {
+                return false
+            }
+
+            // Try to get launch intent
+            val launchIntent = pm.getLaunchIntentForPackage(packageName)
+            
+            if (launchIntent != null) {
+                startActivity(launchIntent)
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error opening app: $packageName", e)
+            false
         }
     }
 

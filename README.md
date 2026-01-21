@@ -60,27 +60,27 @@ To set up the project locally, follow these steps:
 
 3. **Install Dependencies**:
    ```bash
-   flutter pub get
+   flutter/bin/flutter pub get
    ```
 
 4. **Run the App**:
    Running the App
    ```bash
-   ./scripts/prepare_flavor.sh fdroid && flutter run --flavor fdroid
-   ./scripts/prepare_flavor.sh play && flutter run --flavor play
-   ./scripts/prepare_flavor.sh github && flutter run --flavor github 
+   ./scripts/prepare_flavor.sh fdroid && flutter/bin/flutter run --flavor fdroid
+   ./scripts/prepare_flavor.sh play && flutter/bin/flutter run --flavor play
+   ./scripts/prepare_flavor.sh github && flutter/bin/flutter run --flavor github 
    ```
 
 4. **Build the App**:
    Build a App Release with 
    ```bash
    # single apk
-   ./scripts/prepare_flavor.sh fdroid && flutter build apk --flavor fdroid --split-per-abi --target-platform=android-arm64  --release  
-   ./scripts/prepare_flavor.sh play && flutter build apk --flavor play --split-per-abi --target-platform=android-arm64  --release
-   ./scripts/prepare_flavor.sh github && flutter build apk --flavor github --split-per-abi --target-platform=android-arm64  --release
+   ./scripts/prepare_flavor.sh fdroid && flutter/bin/flutter build apk --flavor fdroid --split-per-abi --target-platform=android-arm64 --release  
+   ./scripts/prepare_flavor.sh play && flutter/bin/flutter build apk --flavor play --split-per-abi --target-platform=android-arm64 --release
+   ./scripts/prepare_flavor.sh github && flutter/bin/flutter build apk --flavor github --split-per-abi --target-platform=android-arm64 --release
    
    # app bundle
-   ./scripts/prepare_flavor.sh play && flutter build appbundle --flavor play --release
+   ./scripts/prepare_flavor.sh play && flutter/bin/flutter build appbundle --flavor play --release
    ```
 
 ## Flavors

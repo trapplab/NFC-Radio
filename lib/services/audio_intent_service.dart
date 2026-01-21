@@ -59,6 +59,22 @@ class AudioIntentService {
     }
   }
 
+  Future<bool> openApp(String packageName) async {
+    if (!_isInitialized) {
+      initialize();
+    }
+    
+    try {
+      final bool? success = await _channel?.invokeMethod<bool>('openApp', {
+        'packageName': packageName,
+      });
+      return success ?? false;
+    } catch (e) {
+      debugPrint('AudioIntentService: Error opening app $packageName: $e');
+      return false;
+    }
+  }
+
   void dispose() {
     _audioPickedController.close();
     _channel?.setMethodCallHandler(null);

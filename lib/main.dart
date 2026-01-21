@@ -25,6 +25,7 @@ import 'settings_provider.dart';
 import 'theme_provider.dart';
 import 'color_chooser.dart';
 import 'package:path/path.dart' as p;
+import 'package:url_launcher/url_launcher.dart';
 import 'tutorial_service.dart';
 import 'tutorial_steps.dart';
 
@@ -1064,6 +1065,13 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                           }
                         },
                       ),
+                      IconButton(
+                        icon: const Icon(Icons.mic),
+                        tooltip: 'Record Audio',
+                        onPressed: () {
+                          _openVoiceRecorderApp(context);
+                        },
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -2057,6 +2065,39 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     final extension = p.extension(path).toLowerCase();
     final validExtensions = ['.mp3', '.m4a', '.wav', '.ogg', '.flac', '.aac'];
     return validExtensions.contains(extension);
+  }
+
+  void _openVoiceRecorderApp(BuildContext context) async {
+    const packageName = 'org.fossify.voicerecorder';
+    
+    // Try to open the app first
+    final appOpened = await AudioIntentService().openApp(packageName);
+    if (appOpened) return;
+
+    // If app not found, open the store/github URL
+    String url;
+    if (AppConfig.isGooglePlayRelease) {
+      url = 'https://play.google.com/store/apps/details?id=$packageName';
+    } else if (AppConfig.isFdroidRelease) {
+      url = 'https://f-droid.org/en/packages/$packageName/';
+    } else {
+      url = 'https://github.com/FossifyOrg/Voice-Recorder/releases';
+    }
+
+    final uri = Uri.parse(url);
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        throw 'Could not launch $url';
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Failed to open link: $e')),
+        );
+      }
+    }
   }
 
 }
