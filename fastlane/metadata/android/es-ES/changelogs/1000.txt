@@ -1,0 +1,5 @@
+## Añadido
+- Se agregó un cambiador de color en la configuración.
+- Hacer las carpetas ordenables
+- Abra org.fossify.voicerecorder para grabar archivos de audio.
+null

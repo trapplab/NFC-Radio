@@ -1,0 +1,5 @@
+## Aggiunto
+- Aggiunto un selettore di colori nelle impostazioni.
+- Rendi le cartelle ordinabili
+- Apri org.fossify.voicerecorder per registrare file audio.
+null

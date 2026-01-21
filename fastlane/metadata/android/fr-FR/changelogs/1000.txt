@@ -1,0 +1,5 @@
+## Ajouté
+- Ajout d'un changement de couleur dans les paramètres.
+- Rendre les dossiers triables
+- Ouvrez org.fossify.voicerecorder pour enregistrer des fichiers audio.
+null

@@ -1,0 +1,5 @@
+## Hinzugefügt
+- Einen Farbwechseler in den Einstellungen hinzugefügt.
+- Ordner sortierbar machen
+- Öffnen Sie org.fossify.voicerecorder, um Audiodateien aufzunehmen.
+null

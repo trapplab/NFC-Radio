@@ -13,6 +13,13 @@
 
 # Changelog
 
+## [0.10.0]
+### Added
+- Added a color changer in the settings.
+- Make Folders sortable
+- Open org.fossify.voicerecorder to record audio files.
+- added loop and save position to "add song" menu.
+
 ## [0.9.0]
 ### Changed
 - Updated screen lock functionality to be easier visible and have a option to run in kiosk mode for better blocking of unwanted inputs.

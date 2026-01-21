@@ -1,0 +1,5 @@
+## Added
+- Added a color changer in the settings.
+- Make Folders sortable
+- Open org.fossify.voicerecorder to record audio files.
+- added loop and save position to "add song" menu.
