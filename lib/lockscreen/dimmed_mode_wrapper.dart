@@ -4,8 +4,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:kiosk_mode/kiosk_mode.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'dimmed_mode_service.dart';
-import 'settings_provider.dart';
-import 'theme_provider.dart';
+import '../config/settings_provider.dart';
+import '../config/theme_provider.dart';
 
 class DimmedModeWrapper extends StatefulWidget {
   final Widget child;

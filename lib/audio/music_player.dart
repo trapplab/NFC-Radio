@@ -1,6 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'song.dart';
+import '../storage/song.dart';
 
 enum PlayerState { idle, playing, paused, stopped }
 

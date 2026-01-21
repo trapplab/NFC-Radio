@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'storage_service.dart';
+import '../storage/storage_service.dart';
 
 class SettingsProvider with ChangeNotifier {
   static const String _keyFilterAudioOnly = 'filter_audio_only';

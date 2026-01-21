@@ -4,9 +4,9 @@ import 'package:nfc_manager/nfc_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'nfc_music_mapping.dart';
-import 'song.dart';
-import 'folder.dart';
-import 'music_player.dart';
+import '../storage/song.dart';
+import '../storage/folder.dart';
+import '../audio/music_player.dart';
 
 class NFCService with ChangeNotifier {
   bool _isNfcAvailable = false;

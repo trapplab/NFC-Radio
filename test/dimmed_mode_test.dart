@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nfc_radio/dimmed_mode_service.dart';
-import 'package:nfc_radio/dimmed_overlay.dart';
+import 'package:nfc_radio/lockscreen/dimmed_mode_service.dart';
+import 'package:nfc_radio/lockscreen/dimmed_overlay.dart';
 import 'package:flutter/material.dart';
 
 void main() {

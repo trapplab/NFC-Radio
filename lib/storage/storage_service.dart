@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/material.dart';
 import 'song.dart';
-import 'nfc_music_mapping.dart';
+import '../nfc/nfc_music_mapping.dart';
 import 'folder.dart';
 
 /// Service class to handle all persistence operations using Hive storage

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import 'storage_service.dart';
-import 'song.dart';
+import '../storage/storage_service.dart';
+import '../storage/song.dart';
 
 part 'nfc_music_mapping.g.dart';
 

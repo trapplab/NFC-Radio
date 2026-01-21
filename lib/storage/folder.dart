@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'storage_service.dart';
-import 'config.dart';
-import 'iap_service.dart';
+import '../config/config.dart';
+import '../iap/iap_service.dart';
 
 part 'folder.g.dart';
 
