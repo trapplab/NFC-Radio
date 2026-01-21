@@ -100,6 +100,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   String _appVersion = '';
   List<GitHubAudioFolder>? _githubFolders;
   bool _isLoadingGithubFolders = false;
+  bool _initializationStarted = false;
 
   // Global keys for tutorial
   final GlobalKey _addFolderButtonKey = GlobalKey();
@@ -370,74 +371,94 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     });
 
     // Initialize providers after first frame to ensure context is available
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-  
-      try {
-        final songProvider = Provider.of<SongProvider>(context, listen: false);
-        final folderProvider = Provider.of<FolderProvider>(context, listen: false);
-        final mappingProvider = Provider.of<NFCMusicMappingProvider>(context, listen: false);
-        final musicPlayer = Provider.of<MusicPlayer>(context, listen: false);
-        final nfcService = Provider.of<NFCService>(context, listen: false);
-        final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
-  
-        if (!songProvider.isInitialized || !folderProvider.isInitialized || !settingsProvider.isInitialized) {
-          debugPrint('🔄 Initializing providers with persisted data...');
-  
-          // Initialize providers in parallel
-          await Future.wait([
-            songProvider.initialize(),
-            folderProvider.initialize(),
-            mappingProvider.initialize(),
-            settingsProvider.initialize(),
-          ]);
+    if (!_initializationStarted) {
+      _initializationStarted = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+    
+        try {
+          final songProvider = Provider.of<SongProvider>(context, listen: false);
+          final folderProvider = Provider.of<FolderProvider>(context, listen: false);
+          final mappingProvider = Provider.of<NFCMusicMappingProvider>(context, listen: false);
+          final musicPlayer = Provider.of<MusicPlayer>(context, listen: false);
+          final nfcService = Provider.of<NFCService>(context, listen: false);
+          final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
 
-          // Set providers for NFCService after initialization
-          nfcService.setProviders(
-            mappingProvider: mappingProvider,
-            songProvider: songProvider,
-            folderProvider: folderProvider,
-            musicPlayer: musicPlayer,
-          );
-  
-          debugPrint('✅ All providers initialized successfully');
-          debugPrint('📊 Songs loaded: ${songProvider.songs.length}');
-          debugPrint('📊 Folders loaded: ${folderProvider.folders.length}');
-          debugPrint('📊 Mappings loaded: ${mappingProvider.mappings.length}');
-  
-          // Show success message if we loaded existing data
-          if (mounted && (songProvider.songs.isNotEmpty || folderProvider.folders.isNotEmpty || mappingProvider.mappings.isNotEmpty)) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('🎵 Loaded your saved songs, folders, and NFC mappings!'),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 3),
-              ),
+          // Set callback for position changes to persist in song
+          musicPlayer.onPositionChangedCallback = (position) {
+            if (musicPlayer.currentSong != null) {
+              songProvider.updateSongPosition(musicPlayer.currentSong!.id, position.inMilliseconds);
+            }
+          };
+    
+          if (!songProvider.isInitialized || !folderProvider.isInitialized || !settingsProvider.isInitialized) {
+            debugPrint('🔄 Initializing providers with persisted data...');
+
+            // Ensure StorageService is initialized before initializing providers
+            if (!StorageService.instance.isInitialized) {
+              debugPrint('⏳ StorageService not ready yet, waiting...');
+              await StorageService.instance.initialize();
+              debugPrint('✅ StorageService now ready');
+            }
+
+            // Initialize providers in parallel
+            await Future.wait([
+              songProvider.initialize(),
+              folderProvider.initialize(),
+              mappingProvider.initialize(),
+              settingsProvider.initialize(),
+            ]);
+
+            // Sync mappings with songs to ensure consistency
+            mappingProvider.syncWithSongs(songProvider.songs);
+
+            // Set providers for NFCService after initialization
+            nfcService.setProviders(
+              mappingProvider: mappingProvider,
+              songProvider: songProvider,
+              folderProvider: folderProvider,
+              musicPlayer: musicPlayer,
             );
-          } else if (mounted) {
-            debugPrint('ℹ️ No existing data found. A default folder should have been created.');
+    
+            debugPrint('✅ All providers initialized successfully');
+            debugPrint('📊 Songs loaded: ${songProvider.songs.length}');
+            debugPrint('📊 Folders loaded: ${folderProvider.folders.length}');
+            debugPrint('📊 Mappings loaded: ${mappingProvider.mappings.length}');
+    
+            // Show success message if we loaded existing data
+            if (mounted && (songProvider.songs.isNotEmpty || folderProvider.folders.isNotEmpty || mappingProvider.mappings.isNotEmpty)) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('🎵 Loaded your saved songs, folders, and NFC mappings!'),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            } else if (mounted) {
+              debugPrint('ℹ️ No existing data found. A default folder should have been created.');
+            }
+          }
+        } catch (e, stackTrace) {
+          debugPrint('❌ Failed to initialize providers: $e');
+          debugPrint('❌ Stack trace: $stackTrace');
+    
+          // Show error message to user (only in non-test environments)
+          if (mounted && !_isTestEnvironment()) {
+            try {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('⚠️ Failed to load saved data. App will work with empty data.'),
+                  backgroundColor: Colors.orange,
+                  duration: Duration(seconds: 5),
+                ),
+              );
+            } catch (contextError) {
+              debugPrint('⚠️ Could not show error message: $contextError');
+            }
           }
         }
-      } catch (e, stackTrace) {
-        debugPrint('❌ Failed to initialize providers: $e');
-        debugPrint('❌ Stack trace: $stackTrace');
-  
-        // Show error message to user (only in non-test environments)
-        if (mounted && !_isTestEnvironment()) {
-          try {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('⚠️ Failed to load saved data. App will work with empty data.'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 5),
-              ),
-            );
-          } catch (contextError) {
-            debugPrint('⚠️ Could not show error message: $contextError');
-          }
-        }
-      }
-    });
+      });
+    }
   }
 
   @override
@@ -450,8 +471,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
-      // Hide UI when the app is in the background or screen is locked
-      // This is handled by the Wakelock package to keep the screen awake
+      // Save current playback position when app goes to background
+      final musicPlayer = Provider.of<MusicPlayer>(context, listen: false);
+      musicPlayer.saveCurrentPosition();
     }
   }
 
@@ -759,8 +781,15 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                             value: musicPlayer.savedPosition.inSeconds.toDouble(),
                             min: 0,
                             max: musicPlayer.totalDuration.inSeconds.toDouble(),
+                            onChangeStart: (_) {
+                              musicPlayer.setSeeking(true);
+                            },
                             onChanged: (value) {
                               musicPlayer.seekTo(Duration(seconds: value.toInt()));
+                            },
+                            onChangeEnd: (value) {
+                              musicPlayer.seekTo(Duration(seconds: value.toInt()), persist: true);
+                              musicPlayer.setSeeking(false);
                             },
                           ),
                         ),
@@ -905,10 +934,14 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     // Create a stateful wrapper to track dialog state
     final dialogState = _DialogState();
     bool tutorialTriggered = false;
-    
+
+    // Playback options
+    bool isLoopEnabled = song?.isLoopEnabled ?? false;
+    bool rememberPosition = song?.rememberPosition ?? false;
+
     // Enable edit mode to pause player triggering during editing
     nfcService.setEditMode(true);
-    
+
     // Store the listener function so we can remove it later
     late void Function() updateNfcUuid;
     StreamSubscription? audioSubscription;
@@ -1080,6 +1113,41 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     decoration: const InputDecoration(labelText: 'Title'),
                   ),
                   const SizedBox(height: 16),
+                  const Text('Playback Options', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.repeat),
+                      const SizedBox(width: 12),
+                      const Text('Loop playback'),
+                      const Spacer(),
+                      Switch(
+                        value: isLoopEnabled,
+                        onChanged: (value) {
+                          setState(() {
+                            isLoopEnabled = value;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Icon(Icons.restore),
+                      const SizedBox(width: 12),
+                      const Text('Remember position'),
+                      const Spacer(),
+                      Switch(
+                        value: rememberPosition,
+                        onChanged: (value) {
+                          setState(() {
+                            rememberPosition = value;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   if (nfcService.isNfcAvailable) ...[
                     const Text('NFC Configuration'),
                     const SizedBox(height: 8),
@@ -1180,7 +1248,11 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                                               title: s.title,
                                               filePath: s.filePath,
                                               connectedNfcUuid: null,
+                                              isLoopEnabled: s.isLoopEnabled,
+                                              rememberPosition: s.rememberPosition,
+                                              savedPositionMs: s.savedPositionMs,
                                             ));
+                                            mappingProvider.removeMapping(s.id);
                                           }
                                         }
                                         setState(() {
@@ -1244,6 +1316,8 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                       title: finalTitle,
                       filePath: filePathController.text,
                       connectedNfcUuid: dialogNfcUuid,
+                      isLoopEnabled: isLoopEnabled,
+                      rememberPosition: rememberPosition,
                     );
 
                     if (isEditing) {
@@ -1476,7 +1550,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                                   if (musicPlayer.isSongPlaying(song.filePath) || musicPlayer.isSongPaused(song.filePath)) {
                                     await musicPlayer.togglePlayPause();
                                   } else {
-                                    await musicPlayer.playMusic(song.filePath, songTitle: song.title);
+                                    await musicPlayer.playMusic(song);
                                   }
                                 },
                               ),

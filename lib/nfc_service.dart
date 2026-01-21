@@ -317,7 +317,7 @@ class NFCService with ChangeNotifier {
         await _executeWithRetry('resume', () => _musicPlayer!.resumeMusic(), 2);
       } else {
         debugPrint('🎵 Action: START NEW SONG');
-        await _executeWithRetry('play', () => _musicPlayer!.playMusic(song.filePath, songTitle: song.title), 3);
+        await _executeWithRetry('play', () => _musicPlayer!.playMusic(song), 3);
       }
     } catch (e, s) {
       debugPrint('❌ CRITICAL ERROR in music execution: $e');

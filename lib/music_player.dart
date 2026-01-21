@@ -1,22 +1,28 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'song.dart';
 
 enum PlayerState { idle, playing, paused, stopped }
 
 class MusicPlayer with ChangeNotifier {
   final AudioPlayer _audioPlayer = AudioPlayer();
   PlayerState _currentState = PlayerState.idle;
-  String? _currentMusicFilePath;
-  String? _currentSongTitle;
+  Song? _currentSong;
   Duration _savedPosition = Duration.zero;
+  bool _isSeeking = false;
   Duration _totalDuration = Duration.zero;
+
+  // Callback to notify when position changes (for persisting to song)
+  void Function(Duration)? onPositionChangedCallback;
 
   PlayerState get currentState => _currentState;
   bool get isPlaying => _currentState == PlayerState.playing;
   bool get isPaused => _currentState == PlayerState.paused;
   bool get isStopped => _currentState == PlayerState.stopped;
-  String? get currentMusicFilePath => _currentMusicFilePath;
-  String? get currentSongTitle => _currentSongTitle;
+  bool get isSeeking => _isSeeking;
+  String? get currentMusicFilePath => _currentSong?.filePath;
+  String? get currentSongTitle => _currentSong?.title;
+  Song? get currentSong => _currentSong;
   Duration get savedPosition => _savedPosition;
   Duration get totalDuration => _totalDuration;
 
@@ -24,10 +30,31 @@ class MusicPlayer with ChangeNotifier {
     _setupAudioPlayerListeners();
   }
 
+  void setSeeking(bool seeking) {
+    _isSeeking = seeking;
+    if (!seeking) {
+      // Small delay after seeking to allow the player to catch up 
+      // and avoid jumping back to the old position
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _isSeeking = false;
+        notifyListeners();
+      });
+    } else {
+      notifyListeners();
+    }
+  }
+
   void _setupAudioPlayerListeners() {
     _audioPlayer.onPlayerComplete.listen((_) {
       _currentState = PlayerState.stopped;
       _savedPosition = Duration.zero;
+      
+      // Reset song's saved position when finished
+      if (_currentSong != null) {
+        _currentSong!.savedPosition = Duration.zero;
+        onPositionChangedCallback?.call(Duration.zero);
+      }
+      
       notifyListeners();
     });
 
@@ -37,21 +64,24 @@ class MusicPlayer with ChangeNotifier {
     });
 
     _audioPlayer.onPositionChanged.listen((position) {
-      if (_currentState == PlayerState.playing) {
+      // Only update position if not currently seeking to avoid slider jumping
+      if (_currentState == PlayerState.playing && !_isSeeking) {
         _savedPosition = position;
         notifyListeners();
       }
     });
   }
 
-  Future<void> playMusic(String musicFilePath, {String? songTitle}) async {
+  Future<void> playMusic(Song song) async {
+    final musicFilePath = song.filePath;
+    final songTitle = song.title;
     debugPrint('🎵 ===== MUSIC PLAYBACK STARTED =====');
     debugPrint('🎵 Target file: $musicFilePath');
     debugPrint('🎵 Title: $songTitle');
-    debugPrint('🎵 Current path: $_currentMusicFilePath');
+    debugPrint('🎵 Current path: ${_currentSong?.filePath}');
     debugPrint('🎵 Current state: $_currentState');
     debugPrint('🎵 Timestamp: ${DateTime.now()}');
-    
+
     // Validate file path
     if (musicFilePath.isEmpty) {
       debugPrint('❌ ERROR: Empty file path provided');
@@ -59,21 +89,34 @@ class MusicPlayer with ChangeNotifier {
       notifyListeners();
       return;
     }
-    
+
     // Check if already playing this song
-    if (_currentMusicFilePath == musicFilePath && _currentState == PlayerState.playing) {
+    if (_currentSong?.filePath == musicFilePath && _currentState == PlayerState.playing) {
       debugPrint('⏭️ Already playing this song, skipping');
       return;
+    }
+
+    // Save position of previous song if needed before switching
+    if (_currentSong != null && _currentState == PlayerState.playing && _currentSong!.rememberPosition) {
+      try {
+        final pos = await _audioPlayer.getCurrentPosition();
+        if (pos != null) {
+          _currentSong!.savedPosition = pos;
+          onPositionChangedCallback?.call(pos);
+          debugPrint('💾 Saved previous song position: $pos');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to save previous song position: $e');
+      }
     }
 
     // Check if file exists (basic check)
     // Note: In a real app, you might want to do more robust file checking
     debugPrint('🔍 File path validation: $musicFilePath');
-    
-    // Update current music path and title
-    _currentMusicFilePath = musicFilePath;
-    _currentSongTitle = songTitle;
-    debugPrint('📍 Updated current path to: $musicFilePath');
+
+    // Update current song
+    _currentSong = song;
+    debugPrint('📍 Updated current song to: $songTitle');
     
     // Stop any current playback with error handling
     if (_currentState != PlayerState.idle) {
@@ -87,21 +130,41 @@ class MusicPlayer with ChangeNotifier {
       }
     }
     
-    // Reset position when starting new song
-    _savedPosition = Duration.zero;
-    debugPrint('🔄 Reset playback position to zero');
+    // Handle position remembering
+    if (!song.rememberPosition) {
+      _savedPosition = Duration.zero;
+      debugPrint('🔄 Reset playback position to zero (position remembering disabled)');
+    } else {
+      // Use song's saved position if available, otherwise default to zero
+      _savedPosition = song.savedPosition ?? Duration.zero;
+      debugPrint('🔄 Using saved position: $_savedPosition (from song: ${song.savedPosition != null})');
+    }
     
     // Attempt to play with retry mechanism
     try {
       debugPrint('▶️ Starting audio playback...');
-      if (musicFilePath.startsWith('content://') || musicFilePath.startsWith('http')) {
-        debugPrint('📱 Using UrlSource for: $musicFilePath');
-        await _audioPlayer.play(UrlSource(musicFilePath));
-      } else {
-        debugPrint('📱 Using DeviceFileSource for: $musicFilePath');
-        await _audioPlayer.play(DeviceFileSource(musicFilePath));
+      final Source source = musicFilePath.startsWith('content://') || musicFilePath.startsWith('http')
+          ? UrlSource(musicFilePath)
+          : DeviceFileSource(musicFilePath);
+      
+      debugPrint('📱 Setting source: $musicFilePath');
+      await _audioPlayer.setSource(source);
+
+      // Seek to saved position if needed before starting playback
+      if (_savedPosition > Duration.zero) {
+        debugPrint('🔍 Seeking to saved position: $_savedPosition');
+        await _audioPlayer.seek(_savedPosition);
       }
+
+      debugPrint('▶️ Resuming audio playback...');
+      await _audioPlayer.resume();
       _currentState = PlayerState.playing;
+
+      // Set loop mode based on song settings
+      final releaseMode = song.isLoopEnabled ? ReleaseMode.loop : ReleaseMode.release;
+      await _audioPlayer.setReleaseMode(releaseMode);
+      debugPrint('🔄 Set release mode to: $releaseMode');
+
       debugPrint('✅ SUCCESS: Started playing $musicFilePath');
       debugPrint('📊 New player state: $_currentState');
       
@@ -112,7 +175,7 @@ class MusicPlayer with ChangeNotifier {
       
       // Set to idle state on failure
       _currentState = PlayerState.idle;
-      _currentMusicFilePath = null;
+      _currentSong = null;
       
       // Provide specific error messages based on common issues
       if (e.toString().contains('Permission') || e.toString().contains('permission')) {
@@ -132,12 +195,12 @@ class MusicPlayer with ChangeNotifier {
 
   Future<void> resumeMusic() async {
     debugPrint('▶️ ===== MUSIC RESUME STARTED =====');
-    debugPrint('▶️ Current path: $_currentMusicFilePath');
+    debugPrint('▶️ Current path: ${_currentSong?.filePath}');
     debugPrint('▶️ Current state: $_currentState');
     debugPrint('▶️ Saved position: $_savedPosition');
     debugPrint('▶️ Timestamp: ${DateTime.now()}');
-    
-    if (_currentMusicFilePath == null) {
+
+    if (_currentSong == null) {
       debugPrint('❌ ERROR: No current music to resume');
       return;
     }
@@ -162,12 +225,12 @@ class MusicPlayer with ChangeNotifier {
     } catch (e, stackTrace) {
       debugPrint('❌ CRITICAL ERROR resuming music: $e');
       debugPrint('❌ Stack trace: $stackTrace');
-      debugPrint('❌ Current path: $_currentMusicFilePath');
+      debugPrint('❌ Current path: ${_currentSong?.filePath}');
       debugPrint('❌ Attempted position: $_savedPosition');
       
       // Set to paused state on failure (safer than idle)
       _currentState = PlayerState.paused;
-      
+
       // Provide specific error messages
       if (e.toString().contains('not prepared')) {
         debugPrint('🚨 PREPARATION ERROR: Audio player not prepared for this file');
@@ -185,7 +248,7 @@ class MusicPlayer with ChangeNotifier {
   Future<void> pauseMusic() async {
     debugPrint('⏸️ ===== MUSIC PAUSE STARTED =====');
     debugPrint('⏸️ Current state: $_currentState');
-    debugPrint('⏸️ Current path: $_currentMusicFilePath');
+    debugPrint('⏸️ Current path: ${_currentSong?.filePath}');
     debugPrint('⏸️ Timestamp: ${DateTime.now()}');
     
     if (_currentState != PlayerState.playing) {
@@ -200,6 +263,12 @@ class MusicPlayer with ChangeNotifier {
       if (currentPosition != null) {
         _savedPosition = currentPosition;
         debugPrint('💾 Saved position: $_savedPosition');
+        
+        // Save to song if rememberPosition is enabled
+        if (_currentSong != null && _currentSong!.rememberPosition) {
+          _currentSong!.savedPosition = currentPosition;
+          onPositionChangedCallback?.call(currentPosition);
+        }
       } else {
         debugPrint('⚠️ Warning: Could not get current position, using saved position: $_savedPosition');
       }
@@ -214,7 +283,7 @@ class MusicPlayer with ChangeNotifier {
     } catch (e, stackTrace) {
       debugPrint('❌ CRITICAL ERROR pausing music: $e');
       debugPrint('❌ Stack trace: $stackTrace');
-      debugPrint('❌ Current path: $_currentMusicFilePath');
+      debugPrint('❌ Current path: ${_currentSong?.filePath}');
       
       // Keep current state on pause failure (don't change state if pause fails)
       debugPrint('⚠️ Keeping current state $_currentState due to pause failure');
@@ -232,10 +301,15 @@ class MusicPlayer with ChangeNotifier {
 
   Future<void> stopMusic() async {
     try {
+      // Reset song's saved position in storage when manually stopped
+      if (_currentSong != null) {
+        _currentSong!.savedPosition = Duration.zero;
+        onPositionChangedCallback?.call(Duration.zero);
+      }
+      
       await _audioPlayer.stop();
       _currentState = PlayerState.stopped;
-      _currentMusicFilePath = null;
-      _currentSongTitle = null;
+      _currentSong = null;
       _savedPosition = Duration.zero;
       debugPrint('MusicPlayer: Stopped playback and cleared state');
     } catch (e) {
@@ -247,10 +321,10 @@ class MusicPlayer with ChangeNotifier {
   Future<void> togglePlayPause() async {
     debugPrint('🔄 ===== MUSIC TOGGLE STARTED =====');
     debugPrint('🔄 Current state: $_currentState');
-    debugPrint('🔄 Current path: $_currentMusicFilePath');
+    debugPrint('🔄 Current path: ${_currentSong?.filePath}');
     debugPrint('🔄 Saved position: $_savedPosition');
     debugPrint('🔄 Timestamp: ${DateTime.now()}');
-    
+
     try {
       if (_currentState == PlayerState.playing) {
         debugPrint('🔄 Action: PAUSE (currently playing)');
@@ -258,21 +332,21 @@ class MusicPlayer with ChangeNotifier {
       } else if (_currentState == PlayerState.paused) {
         debugPrint('🔄 Action: RESUME (currently paused)');
         await resumeMusic();
-      } else if (_currentState == PlayerState.stopped && _currentMusicFilePath != null) {
-        debugPrint('🔄 Action: RESTART (currently stopped, have file)');
-        await playMusic(_currentMusicFilePath!, songTitle: _currentSongTitle);
-      } else if (_currentState == PlayerState.idle && _currentMusicFilePath != null) {
-        debugPrint('🔄 Action: PLAY (currently idle, have file)');
-        await playMusic(_currentMusicFilePath!, songTitle: _currentSongTitle);
+      } else if (_currentState == PlayerState.stopped && _currentSong != null) {
+        debugPrint('🔄 Action: RESTART (currently stopped, have song)');
+        await playMusic(_currentSong!);
+      } else if (_currentState == PlayerState.idle && _currentSong != null) {
+        debugPrint('🔄 Action: PLAY (currently idle, have song)');
+        await playMusic(_currentSong!);
       } else {
         debugPrint('❌ No current music to play/resume');
-        debugPrint('❌ State: $_currentState, Path: $_currentMusicFilePath');
+        debugPrint('❌ State: $_currentState, Song: ${_currentSong?.title}');
       }
     } catch (e, stackTrace) {
       debugPrint('❌ CRITICAL ERROR in togglePlayPause: $e');
       debugPrint('❌ Stack trace: $stackTrace');
     }
-    
+
     debugPrint('🔄 ===== MUSIC TOGGLE COMPLETED =====');
   }
 
@@ -280,7 +354,8 @@ class MusicPlayer with ChangeNotifier {
   Map<String, dynamic> getDetailedStatus() {
     return {
       'currentState': _currentState.toString(),
-      'currentMusicFilePath': _currentMusicFilePath,
+      'currentMusicFilePath': _currentSong?.filePath,
+      'currentSongTitle': _currentSong?.title,
       'isPlaying': isPlaying,
       'isPaused': isPaused,
       'isStopped': isStopped,
@@ -299,25 +374,25 @@ class MusicPlayer with ChangeNotifier {
     debugPrint('🧪 - Is song playing (null path): ${isSongPlaying('null')}');
     debugPrint('🧪 - Is song paused (null path): ${isSongPaused('null')}');
     debugPrint('🧪 - Is song stopped (null path): ${isSongStopped('null')}');
-    if (_currentMusicFilePath != null) {
-      debugPrint('🧪 - Is current song playing: ${isSongPlaying(_currentMusicFilePath!)}');
-      debugPrint('🧪 - Is current song paused: ${isSongPaused(_currentMusicFilePath!)}');
-      debugPrint('🧪 - Is current song stopped: ${isSongStopped(_currentMusicFilePath!)}');
+    if (_currentSong != null) {
+      debugPrint('🧪 - Is current song playing: ${isSongPlaying(_currentSong!.filePath)}');
+      debugPrint('🧪 - Is current song paused: ${isSongPaused(_currentSong!.filePath)}');
+      debugPrint('🧪 - Is current song stopped: ${isSongStopped(_currentSong!.filePath)}');
     }
     debugPrint('🧪 ===== END STATE TEST =====');
   }
 
   bool isSongPlaying(String songFilePath) {
-    return _currentState == PlayerState.playing && _currentMusicFilePath == songFilePath;
+    return _currentState == PlayerState.playing && _currentSong?.filePath == songFilePath;
   }
 
   bool isSongPaused(String songFilePath) {
-    return _currentState == PlayerState.paused && _currentMusicFilePath == songFilePath;
+    return _currentState == PlayerState.paused && _currentSong?.filePath == songFilePath;
   }
 
   bool isSongStopped(String songFilePath) {
-    return (_currentState == PlayerState.stopped || _currentState == PlayerState.idle) && 
-           _currentMusicFilePath == songFilePath;
+    return (_currentState == PlayerState.stopped || _currentState == PlayerState.idle) &&
+           _currentSong?.filePath == songFilePath;
   }
 
   // Get formatted duration string
@@ -344,6 +419,23 @@ class MusicPlayer with ChangeNotifier {
     return formatDuration(_totalDuration);
   }
 
+  // Save current position to the song object and storage
+  Future<void> saveCurrentPosition() async {
+    if (_currentSong != null && _currentState == PlayerState.playing && _currentSong!.rememberPosition) {
+      try {
+        final pos = await _audioPlayer.getCurrentPosition();
+        if (pos != null) {
+          _savedPosition = pos;
+          _currentSong!.savedPosition = pos;
+          onPositionChangedCallback?.call(pos);
+          debugPrint('💾 Manually saved current position: $pos');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to manually save current position: $e');
+      }
+    }
+  }
+
   @override
   void dispose() {
     _audioPlayer.dispose();
@@ -351,11 +443,17 @@ class MusicPlayer with ChangeNotifier {
   }
 
   // Seek to specific position
-  Future<void> seekTo(Duration position) async {
+  Future<void> seekTo(Duration position, {bool persist = false}) async {
     try {
       await _audioPlayer.seek(position);
       _savedPosition = position;
-      debugPrint('MusicPlayer: Seeked to position $position');
+      
+      if (persist && _currentSong != null && _currentSong!.rememberPosition) {
+        _currentSong!.savedPosition = position;
+        onPositionChangedCallback?.call(position);
+      }
+      
+      debugPrint('MusicPlayer: Seeked to position $position (persist: $persist)');
       notifyListeners();
     } catch (e) {
       debugPrint('MusicPlayer: Error seeking: $e');
