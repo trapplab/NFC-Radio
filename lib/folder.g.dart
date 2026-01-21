@@ -21,7 +21,7 @@ class FolderAdapter extends TypeAdapter<Folder> {
       name: fields[1] as String,
       songIds: (fields[2] as List).cast<String>(),
       isExpanded: fields[3] as bool,
-      position: (fields[4] as int?) ?? 0,
+      position: fields[4] as int,
     );
   }
 

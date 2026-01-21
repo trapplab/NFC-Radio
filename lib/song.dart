@@ -14,13 +14,30 @@ class Song extends HiveObject {
   String filePath;
   @HiveField(3)
   String? connectedNfcUuid;
+  @HiveField(4)
+  bool isLoopEnabled;
+  @HiveField(5)
+  bool rememberPosition;
+  @HiveField(6)
+  int? savedPositionMs;
 
   Song({
     required this.id,
     required this.title,
     required this.filePath,
     this.connectedNfcUuid,
+    this.isLoopEnabled = false,
+    this.rememberPosition = false,
+    this.savedPositionMs,
   });
+
+  // Get saved position as Duration
+  Duration? get savedPosition => savedPositionMs != null ? Duration(milliseconds: savedPositionMs!) : null;
+
+  // Set saved position from Duration
+  set savedPosition(Duration? duration) {
+    savedPositionMs = duration?.inMilliseconds;
+  }
 
   // Convert the song to a JSON map
   Map<String, dynamic> toJson() => {
@@ -28,6 +45,9 @@ class Song extends HiveObject {
     'title': title,
     'filePath': filePath,
     'connectedNfcUuid': connectedNfcUuid,
+    'isLoopEnabled': isLoopEnabled,
+    'rememberPosition': rememberPosition,
+    'savedPositionMs': savedPositionMs,
   };
 
   // Create a song from a JSON map
@@ -36,6 +56,9 @@ class Song extends HiveObject {
     title: json['title'],
     filePath: json['filePath'],
     connectedNfcUuid: json['connectedNfcUuid'],
+    isLoopEnabled: json['isLoopEnabled'] ?? false,
+    rememberPosition: json['rememberPosition'] ?? false,
+    savedPositionMs: json['savedPositionMs'],
   );
 }
 
@@ -112,6 +135,15 @@ class SongProvider with ChangeNotifier {
     }
   }
 
+  /// Update only the song position without notifying listeners to avoid UI flicker
+  void updateSongPosition(String songId, int positionMs) {
+    final songIndex = _songs.indexWhere((song) => song.id == songId);
+    if (songIndex != -1) {
+      _songs[songIndex].savedPositionMs = positionMs;
+      _saveSongToStorage(_songs[songIndex]);
+    }
+  }
+
   void connectSongToNfc(String songId, String nfcUuid) {
     final songIndex = _songs.indexWhere((song) => song.id == songId);
     if (songIndex != -1) {
@@ -120,6 +152,9 @@ class SongProvider with ChangeNotifier {
         title: _songs[songIndex].title,
         filePath: _songs[songIndex].filePath,
         connectedNfcUuid: nfcUuid,
+        isLoopEnabled: _songs[songIndex].isLoopEnabled,
+        rememberPosition: _songs[songIndex].rememberPosition,
+        savedPositionMs: _songs[songIndex].savedPositionMs,
       );
       _songs[songIndex] = updatedSong;
       _saveSongToStorage(updatedSong);
@@ -135,6 +170,9 @@ class SongProvider with ChangeNotifier {
         title: _songs[songIndex].title,
         filePath: _songs[songIndex].filePath,
         connectedNfcUuid: null,
+        isLoopEnabled: _songs[songIndex].isLoopEnabled,
+        rememberPosition: _songs[songIndex].rememberPosition,
+        savedPositionMs: _songs[songIndex].savedPositionMs,
       );
       _songs[songIndex] = updatedSong;
       _saveSongToStorage(updatedSong);

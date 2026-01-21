@@ -21,13 +21,16 @@ class SongAdapter extends TypeAdapter<Song> {
       title: fields[1] as String,
       filePath: fields[2] as String,
       connectedNfcUuid: fields[3] as String?,
+      isLoopEnabled: fields[4] as bool? ?? false,
+      rememberPosition: fields[5] as bool? ?? false,
+      savedPositionMs: fields[6] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Song obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -35,7 +38,13 @@ class SongAdapter extends TypeAdapter<Song> {
       ..writeByte(2)
       ..write(obj.filePath)
       ..writeByte(3)
-      ..write(obj.connectedNfcUuid);
+      ..write(obj.connectedNfcUuid)
+      ..writeByte(4)
+      ..write(obj.isLoopEnabled)
+      ..writeByte(5)
+      ..write(obj.rememberPosition)
+      ..writeByte(6)
+      ..write(obj.savedPositionMs);
   }
 
   @override
