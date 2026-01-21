@@ -214,7 +214,7 @@ class StorageService {
     _checkInitialization();
     
     try {
-      final Map<String, NFCMusicMapping> mappingsMap = {for (var mapping in mappings) mapping.nfcUuid: mapping};
+      final Map<String, NFCMusicMapping> mappingsMap = {for (var mapping in mappings) mapping.songId: mapping};
       await _mappingsBox!.putAll(mappingsMap);
       debugPrint('💾 Saved ${mappings.length} mappings to storage');
     } catch (e) {
@@ -237,22 +237,16 @@ class StorageService {
     }
   }
   
-  /// Get a mapping by NFC UUID
-  NFCMusicMapping? getMapping(String nfcUuid) {
+  /// Get a mapping by song ID
+  NFCMusicMapping? getMapping(String songId) {
     _checkInitialization();
     
     try {
-      return _mappingsBox!.get(nfcUuid);
+      return _mappingsBox!.get(songId);
     } catch (e) {
-      debugPrint('❌ Failed to get mapping for $nfcUuid: $e');
+      debugPrint('❌ Failed to get mapping for song $songId: $e');
       return null;
     }
-  }
-  
-  /// Get song ID by NFC UUID
-  String? getSongIdByNfcUuid(String nfcUuid) {
-    final mapping = getMapping(nfcUuid);
-    return mapping?.songId;
   }
   
   /// Delete a mapping from storage

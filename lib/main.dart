@@ -409,6 +409,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               settingsProvider.initialize(),
             ]);
 
+            // Sync mappings with songs to ensure consistency
+            mappingProvider.syncWithSongs(songProvider.songs);
+
             // Set providers for NFCService after initialization
             nfcService.setProviders(
               mappingProvider: mappingProvider,
@@ -1245,7 +1248,11 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                                               title: s.title,
                                               filePath: s.filePath,
                                               connectedNfcUuid: null,
+                                              isLoopEnabled: s.isLoopEnabled,
+                                              rememberPosition: s.rememberPosition,
+                                              savedPositionMs: s.savedPositionMs,
                                             ));
+                                            mappingProvider.removeMapping(s.id);
                                           }
                                         }
                                         setState(() {

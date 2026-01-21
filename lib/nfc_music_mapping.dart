@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'storage_service.dart';
+import 'song.dart';
 
 part 'nfc_music_mapping.g.dart';
 
@@ -98,6 +99,62 @@ class NFCMusicMappingProvider with ChangeNotifier {
         .where((mapping) => mapping.nfcUuid == nfcUuid)
         .map((mapping) => mapping.songId)
         .toList();
+  }
+
+  /// Sync mappings with songs to ensure consistency
+  void syncWithSongs(List<Song> songs) {
+    final songIds = songs.map((s) => s.id).toSet();
+    final songIdToUuid = {for (var s in songs) if (s.connectedNfcUuid != null) s.id: s.connectedNfcUuid};
+    
+    bool changed = false;
+    
+    // 1. Remove mappings for songs that don't exist anymore
+    final toRemove = _mappings.where((m) => !songIds.contains(m.songId)).toList();
+    if (toRemove.isNotEmpty) {
+      debugPrint('🧹 Sync: Removing ${toRemove.length} mappings for non-existent songs');
+      for (var m in toRemove) {
+        _mappings.remove(m);
+        _deleteMappingFromStorage(m.songId);
+        changed = true;
+      }
+    }
+    
+    // 2. Remove mappings that don't match the song's connectedNfcUuid
+    final toRemoveMismatch = _mappings.where((m) {
+      final songUuid = songIdToUuid[m.songId];
+      return songUuid != m.nfcUuid;
+    }).toList();
+    
+    if (toRemoveMismatch.isNotEmpty) {
+      debugPrint('🧹 Sync: Removing ${toRemoveMismatch.length} mismatched mappings');
+      for (var m in toRemoveMismatch) {
+        _mappings.remove(m);
+        _deleteMappingFromStorage(m.songId);
+        changed = true;
+      }
+    }
+    
+    // 3. Add missing mappings from songs
+    int addedCount = 0;
+    for (var song in songs) {
+      if (song.connectedNfcUuid != null) {
+        final hasMapping = _mappings.any((m) => m.songId == song.id && m.nfcUuid == song.connectedNfcUuid);
+        if (!hasMapping) {
+          final newMapping = NFCMusicMapping(nfcUuid: song.connectedNfcUuid!, songId: song.id);
+          _mappings.add(newMapping);
+          _saveMappingToStorage(newMapping);
+          addedCount++;
+          changed = true;
+        }
+      }
+    }
+    if (addedCount > 0) {
+      debugPrint('🧹 Sync: Added $addedCount missing mappings from songs');
+    }
+    
+    if (changed) {
+      notifyListeners();
+    }
   }
 
   // ========== STORAGE OPERATIONS ==========
