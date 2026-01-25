@@ -1,0 +1,2 @@
+## Added
+- Added internationalization on ui for German, English, Spanish, French, and Italian.

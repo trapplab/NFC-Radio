@@ -1,0 +1,2 @@
+## Ajouté
+- Ajout de l'internationalisation de l'interface utilisateur pour l'allemand, l'anglais, l'espagnol, le français et l'italien.

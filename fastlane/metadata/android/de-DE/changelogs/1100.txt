@@ -1,0 +1,2 @@
+## Hinzugefügt
+- Internationale Anpassung der Benutzeroberfläche für Deutsch, Englisch, Spanisch, Französisch und Italienisch hinzugefügt.

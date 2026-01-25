@@ -13,6 +13,10 @@
 
 # Changelog
 
+## [0.11.0]
+### Added
+- Added internationalization on ui for German, English, Spanish, French, and Italian.
+
 ## [0.10.0]
 ### Added
 - Added a color changer in the settings.
