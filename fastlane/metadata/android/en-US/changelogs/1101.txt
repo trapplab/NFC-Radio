@@ -1,0 +1,4 @@
+## Fixed
+- fixed github check for updates
+- register android app as multilingual
+- translated slider

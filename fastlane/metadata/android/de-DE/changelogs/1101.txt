@@ -1,0 +1,4 @@
+## Behoben
+- Fehlerbehebung bei der GitHub-Aktualisierungsprüfung
+- Android-App als mehrsprachig registrieren
+- übersetzter Schieberegler

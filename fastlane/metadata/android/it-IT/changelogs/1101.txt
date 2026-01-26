@@ -1,0 +1,4 @@
+## Corretto
+- corretto controllo aggiornamenti su GitHub
+- registrare l'app Android come multilingue
+- cursore tradotto

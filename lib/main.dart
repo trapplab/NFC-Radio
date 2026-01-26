@@ -1923,6 +1923,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                       onPressed: () async {
                         if (!mounted) return;
                         final messenger = ScaffoldMessenger.of(context);
+                        final localizations = AppLocalizations.of(context)!;
                         try {
                           final box = await Hive.openBox('premium_status');
                           await box.delete('is_premium');
@@ -1931,12 +1932,12 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                           await IAPService.instance.refreshPremiumStatus();
                           if (!mounted) return;
                           messenger.showSnackBar(
-                            SnackBar(content: Text(AppLocalizations.of(context)!.clearPremiumStatus), backgroundColor: Colors.orange),
+                            SnackBar(content: Text(localizations.clearPremiumStatus), backgroundColor: Colors.orange),
                           );
                         } catch (e) {
                           if (!mounted) return;
                           messenger.showSnackBar(
-                            SnackBar(content: Text(AppLocalizations.of(context)!.clearFailed(e)), backgroundColor: Colors.red),
+                            SnackBar(content: Text(localizations.clearFailed(e)), backgroundColor: Colors.red),
                           );
                         }
                       },

@@ -1,0 +1,4 @@
+## Corregido
+- corregida la verificación de actualizaciones en GitHub
+- registrar la aplicación de Android como multilingüe
+- control deslizante traducido

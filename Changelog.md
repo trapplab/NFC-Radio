@@ -13,6 +13,12 @@
 
 # Changelog
 
+## [0.11.1]
+### Fixed
+- fixed github check for updates
+- register android app as multilingual
+- translated slider
+
 ## [0.11.0]
 ### Added
 - Added internationalization on ui for German, English, Spanish, French, and Italian.

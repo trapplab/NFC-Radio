@@ -1,0 +1,4 @@
+## Corrigé
+- correction de la vérification des mises à jour sur GitHub
+- enregistrer une application Android comme multilingue
+- curseur traduit
