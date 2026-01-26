@@ -107,6 +107,12 @@ abstract class AppLocalizations {
   /// **'NFC Radio'**
   String get appTitle;
 
+  /// No description provided for @appVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'App Version'**
+  String get appVersion;
+
   /// No description provided for @settingsTitle.
   ///
   /// In en, this message translates to:
@@ -901,6 +907,12 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
     case 'es': return AppLocalizationsEs();
     case 'fr': return AppLocalizationsFr();
     case 'it': return AppLocalizationsIt();
-    default: return AppLocalizationsEn();
   }
+
+  throw FlutterError(
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.'
+  );
 }

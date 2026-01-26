@@ -12,6 +12,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get appTitle => 'NFC Radio';
 
   @override
+  String get appVersion => 'Versión de la aplicación';
+
+  @override
   String get settingsTitle => 'Configuración';
 
   @override

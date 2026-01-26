@@ -16,7 +16,7 @@ class FlavorConfig {
   static bool get isFdroid => flavor == 'fdroid';
   static bool get isGithub => flavor == 'github';
   static bool get isPlay => flavor == 'play';
-}" > lib/flavor_config.dart
+}" > lib/config/flavor_config.dart
 
 if [ "$FLAVOR" == "fdroid" ] || [ "$FLAVOR" == "github" ]; then
     echo "Using F-Droid/GitHub configuration (no IAP)"
@@ -25,11 +25,11 @@ if [ "$FLAVOR" == "fdroid" ] || [ "$FLAVOR" == "github" ]; then
         echo "ERROR: in_app_purchase still present in pubspec.yaml!"
         exit 1
     fi
-    cp lib/iap/iap_service_stub.dart lib/iap_service.dart
+    cp lib/iap/iap_service_stub.dart lib/iap/iap_service.dart
 else
     echo "Using Play Store configuration (with IAP)"
     cp pubspec.play.yaml pubspec.yaml
-    cp lib/iap/iap_service_play.dart lib/iap_service.dart
+    cp lib/iap/iap_service_play.dart lib/iap/iap_service.dart
 fi
 
 # Determine flutter command - use local submodule if available, otherwise from PATH

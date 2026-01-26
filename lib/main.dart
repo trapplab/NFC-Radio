@@ -561,6 +561,13 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 ),
                 const Divider(),
                 const ColorChooser(),
+                const Divider(),
+                ListTile(
+                  title: Text(AppLocalizations.of(context)!.appVersion),
+                  subtitle: Text(_appVersion.isNotEmpty ? 'v$_appVersion' : 'Loading...'),
+                  trailing: AppConfig.isGitHubRelease ? const Icon(Icons.refresh) : null,
+                  onTap: AppConfig.isGitHubRelease ? () => _checkForUpdates(manual: true) : null,
+                ),
               ],
             );
           },
@@ -570,26 +577,6 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
         backgroundColor: Provider.of<ThemeProvider>(context).bannerColor,
         title: Text(AppLocalizations.of(context)!.appTitle),
         actions: [
-          // App version display (visible in all flavors, clickable for GitHub flavor)
-          GestureDetector(
-            onTap: AppConfig.isGitHubRelease ? _checkForUpdates : null,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: AppConfig.isGitHubRelease ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                _appVersion.isNotEmpty ? 'v$_appVersion' : 'Loading...',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppConfig.isGitHubRelease ? Colors.white : Theme.of(context).colorScheme.onPrimary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
           // Upgrade info button (only for GP flavor when not premium)
           if (AppConfig.isGooglePlayRelease && !iapService.isPremium)
             IconButton(

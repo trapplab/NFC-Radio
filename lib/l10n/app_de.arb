@@ -1,6 +1,7 @@
 {
   "@@locale": "de",
   "appTitle": "NFC Radio",
+  "appVersion": "App-Version",
   "settingsTitle": "Einstellungen",
   "audioPacksTitle": "Audio-Pakete",
   "audioStarterPacks": "Audio-Starterpakete",
