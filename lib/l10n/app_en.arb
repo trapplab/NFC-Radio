@@ -129,5 +129,6 @@
   "nfcOperationFailed": "NFC operation failed: {error}",
   "forceProcessedUuid": "Force processed current UUID",
   "tutorialReset": "Tutorial reset - will show on next restart",
-  "failedToOpenLink": "❌ Failed to open link: {error}"
+  "failedToOpenLink": "❌ Failed to open link: {error}",
+  "slideToLock": "Slide to lock"
 }

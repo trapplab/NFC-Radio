@@ -129,5 +129,6 @@
   "nfcOperationFailed": "Opération NFC échouée: {error}",
   "forceProcessedUuid": "UUID actuel traité de force",
   "tutorialReset": "Didacticiel réinitialisé - s'affichera au prochain redémarrage",
-  "failedToOpenLink": "❌ Échec de l'ouverture du lien: {error}"
+  "failedToOpenLink": "❌ Échec de l'ouverture du lien: {error}",
+  "slideToLock": "Faire glisser pour verrouiller"
 }

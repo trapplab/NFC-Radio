@@ -129,5 +129,6 @@
   "nfcOperationFailed": "NFC-Operation fehlgeschlagen: {error}",
   "forceProcessedUuid": "Aktuelle UUID erzwungen verarbeitet",
   "tutorialReset": "Tutorial zurückgesetzt - wird beim nächsten Neustart angezeigt",
-  "failedToOpenLink": "❌ Fehler beim Öffnen des Links: {error}"
+  "failedToOpenLink": "❌ Fehler beim Öffnen des Links: {error}",
+  "slideToLock": "Schieben zum Sperren"
 }

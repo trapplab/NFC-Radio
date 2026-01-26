@@ -461,4 +461,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String failedToOpenLink(Object error) {
     return '❌ Fehler beim Öffnen des Links: $error';
   }
+
+  @override
+  String get slideToLock => 'Schieben zum Sperren';
 }

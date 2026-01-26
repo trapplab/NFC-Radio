@@ -129,5 +129,6 @@
   "nfcOperationFailed": "Operazione NFC fallita: {error}",
   "forceProcessedUuid": "UUID corrente elaborato forzatamente",
   "tutorialReset": "Tutorial reimpostato - verrà mostrato al prossimo riavvio",
-  "failedToOpenLink": "❌ Impossibile aprire il link: {error}"
+  "failedToOpenLink": "❌ Impossibile aprire il link: {error}",
+  "slideToLock": "Scorri per bloccare"
 }

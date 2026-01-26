@@ -6,6 +6,7 @@ import 'package:screen_brightness/screen_brightness.dart';
 import 'dimmed_mode_service.dart';
 import '../config/settings_provider.dart';
 import '../config/theme_provider.dart';
+import '../l10n/app_localizations.dart';
 
 class DimmedModeWrapper extends StatefulWidget {
   final Widget child;
@@ -208,7 +209,7 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
                 // Center text label
                 Center(
                   child: Text(
-                    'Slide to Lock',
+                    AppLocalizations.of(context)!.slideToLock,
                     style: TextStyle(
                       color: Provider.of<ThemeProvider>(context).bannerColor.withValues(alpha: 0.3),
                       fontSize: 16,

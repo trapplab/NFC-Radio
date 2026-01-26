@@ -880,6 +880,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'❌ Failed to open link: {error}'**
   String failedToOpenLink(Object error);
+
+  /// No description provided for @slideToLock.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide to lock'**
+  String get slideToLock;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
