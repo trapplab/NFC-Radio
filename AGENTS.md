@@ -44,3 +44,4 @@ To bump the version, do the following:
 The app is translated into multiple languages. To add a new language, do the following:
 1. add the app_[lang].arb file to the lib/l10n folder
 2. run `flutter gen-l10n` to generate the translations
+3. add the new language to `android/app/src/main/res/xml/locales_config.xml`

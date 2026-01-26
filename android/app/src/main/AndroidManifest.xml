@@ -24,7 +24,8 @@
     <application
         android:label="NFC Radio"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:localeConfig="@xml/locales_config">
         <activity
             android:name="com.trapplab.nfc_radio.MainActivity"
             android:exported="true"
