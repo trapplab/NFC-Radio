@@ -17,11 +17,11 @@ class FolderAdapter extends TypeAdapter<Folder> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Folder(
-      id: fields[0] as String,
-      name: fields[1] as String,
-      songIds: (fields[2] as List).cast<String>(),
-      isExpanded: fields[3] as bool,
-      position: fields[4] as int,
+      id: (fields[0] ?? '') as String,
+      name: (fields[1] ?? 'New Folder') as String,
+      songIds: (fields[2] as List?)?.cast<String>() ?? [],
+      isExpanded: fields[3] as bool? ?? false,
+      position: fields[4] as int? ?? 0,
     );
   }
 

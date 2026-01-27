@@ -17,9 +17,9 @@ class SongAdapter extends TypeAdapter<Song> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Song(
-      id: fields[0] as String,
-      title: fields[1] as String,
-      filePath: fields[2] as String,
+      id: (fields[0] ?? '') as String,
+      title: (fields[1] ?? 'Unknown') as String,
+      filePath: (fields[2] ?? '') as String,
       connectedNfcUuid: fields[3] as String?,
       isLoopEnabled: fields[4] as bool? ?? false,
       rememberPosition: fields[5] as bool? ?? false,

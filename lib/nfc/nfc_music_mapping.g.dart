@@ -17,8 +17,8 @@ class NFCMusicMappingAdapter extends TypeAdapter<NFCMusicMapping> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return NFCMusicMapping(
-      nfcUuid: fields[0] as String,
-      songId: fields[1] as String,
+      nfcUuid: (fields[0] ?? '') as String,
+      songId: (fields[1] ?? '') as String,
     );
   }
 

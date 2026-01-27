@@ -846,6 +846,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             const SizedBox(height: 8),
             Text(
               AppLocalizations.of(context)!.addAudioFile,
+              textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
