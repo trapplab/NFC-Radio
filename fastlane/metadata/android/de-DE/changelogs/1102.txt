@@ -1,0 +1,4 @@
+## Behoben
+- Fehlende UI-Strings übersetzen
+- Info-Schaltfläche in der Playstore-Version anzeigen
+- Ältere Version aus Hivedb mit Standardwerten laden

@@ -1,0 +1,4 @@
+## Corrigé
+- traduire les chaînes UI manquantes
+- afficher le bouton d'information dans la version Play Store
+- charger une version antérieure depuis hivedb avec les valeurs par défaut

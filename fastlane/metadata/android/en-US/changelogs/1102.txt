@@ -1,0 +1,4 @@
+## Fixed
+- translate missing ui strings
+- show info button in playstore version
+- load older version from hivedb with default values

@@ -1,0 +1,4 @@
+## Arreglado
+- traducir cadenas de interfaz faltantes
+- mostrar botón de información en la versión de Playstore
+- cargar versión antigua desde hivedb con valores predeterminados

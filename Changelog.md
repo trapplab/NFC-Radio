@@ -13,6 +13,12 @@
 
 # Changelog
 
+## [0.11.2]
+### Fixed
+- translate missing ui strings
+- show info button in playstore version
+- load older version from hivedb with default values
+
 ## [0.11.1]
 ### Fixed
 - fixed github check for updates

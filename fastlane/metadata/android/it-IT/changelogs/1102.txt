@@ -1,0 +1,4 @@
+## Corretto
+- tradurre stringhe UI mancanti
+- mostra pulsante info nella versione Play Store
+- carica versione precedente da hivedb con valori predefiniti
