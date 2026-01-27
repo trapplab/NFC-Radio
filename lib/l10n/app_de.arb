@@ -130,5 +130,17 @@
   "forceProcessedUuid": "Aktuelle UUID erzwungen verarbeitet",
   "tutorialReset": "Tutorial zurückgesetzt - wird beim nächsten Neustart angezeigt",
   "failedToOpenLink": "❌ Fehler beim Öffnen des Links: {error}",
-  "slideToLock": "Schieben zum Sperren"
+  "slideToLock": "Schieben zum Sperren",
+  "screenLocked": "Bildschirm gesperrt",
+  "swipeUpToUnlock": "Mit 3 Fingern nach oben wischen zum Entsperren",
+  "tutorialAddFolderTitle": "Musiksammlungen erstellen",
+  "tutorialAddFolderDesc": "Tippen Sie auf \"Neuen Ordner hinzufügen\", um Ordner zu erstellen und Ihre Audiodateisammlung zu organisieren.",
+  "tutorialAddSongTitle": "Ihre Lieder hinzufügen",
+  "tutorialAddSongDesc": "Sobald ein Ordner erstellt wurde, tippen Sie auf \"Audiodatei hinzufügen\", um Audiodateien von Ihrem Gerät auszuwählen.",
+  "tutorialAttachFileTitle": "Audiodatei auswählen",
+  "tutorialAttachFileDesc": "Tippen Sie auf das Büroklammer-Symbol, um eine Audiodatei von Ihrem Gerät auszuwählen.",
+  "tutorialConnectNfcTitle": "NFC-Tag verbinden",
+  "tutorialConnectNfcDesc": "Halten Sie einen beliebigen NFC-Tag an die Rückseite Ihres Telefons, bis es vibriert, um den Tag mit der Audiodatei für die Wiedergabe zu verbinden.",
+  "tutorialSettingsTitle": "Einstellungen & Starter-Pakete",
+  "tutorialSettingsDesc": "Öffnen Sie das Einstellungsmenü, um Audio-Starterpakete und andere Optionen zu finden."
 }

@@ -337,18 +337,18 @@ class _BlockOverlayState extends State<BlockOverlay> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    'Screen Locked',
-                    style: TextStyle(
+                  Text(
+                    AppLocalizations.of(context)!.screenLocked,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    '3-Finger Swipe Up to Unlock',
-                    style: TextStyle(
+                  Text(
+                    AppLocalizations.of(context)!.swipeUpToUnlock,
+                    style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 18,
                     ),

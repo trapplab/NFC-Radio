@@ -886,6 +886,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Slide to lock'**
   String get slideToLock;
+
+  /// No description provided for @screenLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Screen Locked'**
+  String get screenLocked;
+
+  /// No description provided for @swipeUpToUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'3-Finger Swipe Up to Unlock'**
+  String get swipeUpToUnlock;
+
+  /// No description provided for @tutorialAddFolderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Music Collections'**
+  String get tutorialAddFolderTitle;
+
+  /// No description provided for @tutorialAddFolderDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap \"Add New Folder\" to create folders and organize your audio files collection.'**
+  String get tutorialAddFolderDesc;
+
+  /// No description provided for @tutorialAddSongTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Your Songs'**
+  String get tutorialAddSongTitle;
+
+  /// No description provided for @tutorialAddSongDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Once a folder is created, tap \"Add Audio File\" to select audio files from your device.'**
+  String get tutorialAddSongDesc;
+
+  /// No description provided for @tutorialAttachFileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Audio File'**
+  String get tutorialAttachFileTitle;
+
+  /// No description provided for @tutorialAttachFileDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the paperclip icon to select an audio file from your device.'**
+  String get tutorialAttachFileDesc;
+
+  /// No description provided for @tutorialConnectNfcTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect NFC Tag'**
+  String get tutorialConnectNfcTitle;
+
+  /// No description provided for @tutorialConnectNfcDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Near any NFC tag to the back of your phone until it vibrates to connect the tag to the audio file for playback.'**
+  String get tutorialConnectNfcDesc;
+
+  /// No description provided for @tutorialSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings & Starter Packs'**
+  String get tutorialSettingsTitle;
+
+  /// No description provided for @tutorialSettingsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the settings menu to find audio starter packs and other options.'**
+  String get tutorialSettingsDesc;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

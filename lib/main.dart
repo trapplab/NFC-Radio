@@ -260,6 +260,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
             final targets = createTutorialTargets(
+              context: context,
               settingsMenuKey: _settingsMenuKey,
             );
             if (targets.isNotEmpty) {
@@ -580,7 +581,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           // Upgrade info button (only for GP flavor when not premium)
           if (AppConfig.isGooglePlayRelease && !iapService.isPremium)
             IconButton(
-              icon: const Icon(Icons.info_outline, color: Colors.blue),
+              icon: Icon(Icons.info_outline, color: Theme.of(context).colorScheme.onPrimary),
               onPressed: () => _showUpgradeDialog(context),
               tooltip: AppLocalizations.of(context)!.upgradeToPremium,
             ),
@@ -948,8 +949,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             tutorialTriggered = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               final targets = createTutorialTargets(
-                attachFileButtonKey: _attachFileButtonKey,
-              );
+              context: dialogContext,
+              attachFileButtonKey: _attachFileButtonKey,
+            );
               
               if (targets.isNotEmpty) {
                 showTutorial(
@@ -1046,6 +1048,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               if (TutorialService.instance.shouldShowNfcConnectionTutorial) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   final targets = createTutorialTargets(
+                    context: dialogContext,
                     nfcAreaKey: _nfcAreaKey,
                   );
                   if (targets.isNotEmpty) {
@@ -1348,6 +1351,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (!mounted) return;
                         final targets = createTutorialTargets(
+                          context: context,
                           settingsMenuKey: _settingsMenuKey,
                         );
                         if (targets.isNotEmpty) {
@@ -2092,6 +2096,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
         
         final folderProvider = Provider.of<FolderProvider>(context, listen: false);
         final targets = createTutorialTargets(
+          context: context,
           addFolderButtonKey: folderProvider.folders.isEmpty ? _addFolderButtonKey : null,
           addSongButtonKey: folderProvider.folders.isNotEmpty ? _addSongButtonKey : null,
         );

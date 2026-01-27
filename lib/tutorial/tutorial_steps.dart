@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import '../l10n/app_localizations.dart';
 
 /// Create tutorial targets for the coach marks tutorial
 ///
@@ -9,6 +10,7 @@ import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 /// [nfcAreaKey] - Key for the NFC configuration area in song dialog
 /// [settingsMenuKey] - Key for the settings menu button
 List<TargetFocus> createTutorialTargets({
+  required BuildContext context,
   GlobalKey? addFolderButtonKey,
   GlobalKey? addSongButtonKey,
   GlobalKey? attachFileButtonKey,
@@ -16,6 +18,7 @@ List<TargetFocus> createTutorialTargets({
   GlobalKey? settingsMenuKey,
 }) {
   List<TargetFocus> targets = [];
+  final l10n = AppLocalizations.of(context)!;
 
   if (addFolderButtonKey != null) {
     targets.add(
@@ -32,8 +35,8 @@ List<TargetFocus> createTutorialTargets({
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Create Music Collections',
-                    style: TextStyle(
+                    l10n.tutorialAddFolderTitle,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -41,8 +44,8 @@ List<TargetFocus> createTutorialTargets({
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Tap "Add New Folder" to create folders and organize your audio files collection.',
-                    style: TextStyle(
+                    l10n.tutorialAddFolderDesc,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                     ),
@@ -73,8 +76,8 @@ List<TargetFocus> createTutorialTargets({
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Add Your Songs',
-                    style: TextStyle(
+                    l10n.tutorialAddSongTitle,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -82,8 +85,8 @@ List<TargetFocus> createTutorialTargets({
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Once a folder is created, tap "Add Audio File" to select audio files from your device.',
-                    style: TextStyle(
+                    l10n.tutorialAddSongDesc,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                     ),
@@ -114,8 +117,8 @@ List<TargetFocus> createTutorialTargets({
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Select Audio File',
-                    style: TextStyle(
+                    l10n.tutorialAttachFileTitle,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -123,8 +126,8 @@ List<TargetFocus> createTutorialTargets({
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Tap the paperclip icon to select an audio file from your device.',
-                    style: TextStyle(
+                    l10n.tutorialAttachFileDesc,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                     ),
@@ -154,8 +157,8 @@ List<TargetFocus> createTutorialTargets({
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Connect NFC Tag',
-                    style: TextStyle(
+                    l10n.tutorialConnectNfcTitle,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -163,8 +166,8 @@ List<TargetFocus> createTutorialTargets({
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Near any NFC tag to the back of your phone until it vibrates to connect the tag to the audio file for playback.',
-                    style: TextStyle(
+                    l10n.tutorialConnectNfcDesc,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                     ),
@@ -195,8 +198,8 @@ List<TargetFocus> createTutorialTargets({
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Settings & Starter Packs',
-                    style: TextStyle(
+                    l10n.tutorialSettingsTitle,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -204,8 +207,8 @@ List<TargetFocus> createTutorialTargets({
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Open the settings menu to find audio starter packs and other options.',
-                    style: TextStyle(
+                    l10n.tutorialSettingsDesc,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                     ),

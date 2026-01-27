@@ -130,5 +130,17 @@
   "forceProcessedUuid": "Force processed current UUID",
   "tutorialReset": "Tutorial reset - will show on next restart",
   "failedToOpenLink": "❌ Failed to open link: {error}",
-  "slideToLock": "Slide to lock"
+  "slideToLock": "Slide to lock",
+  "screenLocked": "Screen Locked",
+  "swipeUpToUnlock": "3-Finger Swipe Up to Unlock",
+  "tutorialAddFolderTitle": "Create Music Collections",
+  "tutorialAddFolderDesc": "Tap \"Add New Folder\" to create folders and organize your audio files collection.",
+  "tutorialAddSongTitle": "Add Your Songs",
+  "tutorialAddSongDesc": "Once a folder is created, tap \"Add Audio File\" to select audio files from your device.",
+  "tutorialAttachFileTitle": "Select Audio File",
+  "tutorialAttachFileDesc": "Tap the paperclip icon to select an audio file from your device.",
+  "tutorialConnectNfcTitle": "Connect NFC Tag",
+  "tutorialConnectNfcDesc": "Near any NFC tag to the back of your phone until it vibrates to connect the tag to the audio file for playback.",
+  "tutorialSettingsTitle": "Settings & Starter Packs",
+  "tutorialSettingsDesc": "Open the settings menu to find audio starter packs and other options."
 }

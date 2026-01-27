@@ -464,4 +464,40 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get slideToLock => 'Schieben zum Sperren';
+
+  @override
+  String get screenLocked => 'Bildschirm gesperrt';
+
+  @override
+  String get swipeUpToUnlock => 'Mit 3 Fingern nach oben wischen zum Entsperren';
+
+  @override
+  String get tutorialAddFolderTitle => 'Musiksammlungen erstellen';
+
+  @override
+  String get tutorialAddFolderDesc => 'Tippen Sie auf \"Neuen Ordner hinzufügen\", um Ordner zu erstellen und Ihre Audiodateisammlung zu organisieren.';
+
+  @override
+  String get tutorialAddSongTitle => 'Ihre Lieder hinzufügen';
+
+  @override
+  String get tutorialAddSongDesc => 'Sobald ein Ordner erstellt wurde, tippen Sie auf \"Audiodatei hinzufügen\", um Audiodateien von Ihrem Gerät auszuwählen.';
+
+  @override
+  String get tutorialAttachFileTitle => 'Audiodatei auswählen';
+
+  @override
+  String get tutorialAttachFileDesc => 'Tippen Sie auf das Büroklammer-Symbol, um eine Audiodatei von Ihrem Gerät auszuwählen.';
+
+  @override
+  String get tutorialConnectNfcTitle => 'NFC-Tag verbinden';
+
+  @override
+  String get tutorialConnectNfcDesc => 'Halten Sie einen beliebigen NFC-Tag an die Rückseite Ihres Telefons, bis es vibriert, um den Tag mit der Audiodatei für die Wiedergabe zu verbinden.';
+
+  @override
+  String get tutorialSettingsTitle => 'Einstellungen & Starter-Pakete';
+
+  @override
+  String get tutorialSettingsDesc => 'Öffnen Sie das Einstellungsmenü, um Audio-Starterpakete und andere Optionen zu finden.';
 }

@@ -130,5 +130,17 @@
   "forceProcessedUuid": "UUID actual procesado forzadamente",
   "tutorialReset": "Tutorial reiniciado: se mostrará en el próximo reinicio",
   "failedToOpenLink": "❌ Error al abrir el enlace: {error}",
-  "slideToLock": "Deslizar para bloquear"
+  "slideToLock": "Deslizar para bloquear",
+  "screenLocked": "Pantalla bloqueada",
+  "swipeUpToUnlock": "Desliza 3 dedos hacia arriba para desbloquear",
+  "tutorialAddFolderTitle": "Crear colecciones de música",
+  "tutorialAddFolderDesc": "Toca \"Agregar nueva carpeta\" para crear carpetas y organizar tu colección de archivos de audio.",
+  "tutorialAddSongTitle": "Agrega tus canciones",
+  "tutorialAddSongDesc": "Una vez creada una carpeta, toca \"Agregar archivo de audio\" para seleccionar archivos de audio de tu dispositivo.",
+  "tutorialAttachFileTitle": "Seleccionar archivo de audio",
+  "tutorialAttachFileDesc": "Toca el icono del clip para seleccionar un archivo de audio de tu dispositivo.",
+  "tutorialConnectNfcTitle": "Conectar etiqueta NFC",
+  "tutorialConnectNfcDesc": "Acerca cualquier etiqueta NFC a la parte posterior de tu teléfono hasta que vibre para conectar la etiqueta al archivo de audio para su reproducción.",
+  "tutorialSettingsTitle": "Configuración y paquetes de inicio",
+  "tutorialSettingsDesc": "Abre el menú de configuración para encontrar paquetes de inicio de audio y otras opciones."
 }

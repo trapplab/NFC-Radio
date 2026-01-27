@@ -464,4 +464,40 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get slideToLock => 'Faire glisser pour verrouiller';
+
+  @override
+  String get screenLocked => 'Écran verrouillé';
+
+  @override
+  String get swipeUpToUnlock => 'Faites glisser 3 doigts vers le haut pour déverrouiller';
+
+  @override
+  String get tutorialAddFolderTitle => 'Créer des collections musicales';
+
+  @override
+  String get tutorialAddFolderDesc => 'Appuyez sur \"Ajouter un nouveau dossier\" pour créer des dossiers et organiser votre collection de fichiers audio.';
+
+  @override
+  String get tutorialAddSongTitle => 'Ajoutez vos chansons';
+
+  @override
+  String get tutorialAddSongDesc => 'Une fois qu\'un dossier est créé, appuyez sur \"Ajouter un fichier audio\" pour sélectionner des fichiers audio sur votre appareil.';
+
+  @override
+  String get tutorialAttachFileTitle => 'Sélectionner un fichier audio';
+
+  @override
+  String get tutorialAttachFileDesc => 'Appuyez sur l\'icône du trombone pour sélectionner un fichier audio sur votre appareil.';
+
+  @override
+  String get tutorialConnectNfcTitle => 'Connecter un tag NFC';
+
+  @override
+  String get tutorialConnectNfcDesc => 'Approchez n\'importe quel tag NFC de l\'arrière de votre téléphone jusqu\'à ce qu\'il vibre pour connecter le tag au fichier audio pour la lecture.';
+
+  @override
+  String get tutorialSettingsTitle => 'Paramètres et packs de démarrage';
+
+  @override
+  String get tutorialSettingsDesc => 'Ouvrez le menu des paramètres pour trouver des packs de démarrage audio et d\'autres options.';
 }

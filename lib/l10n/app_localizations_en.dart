@@ -464,4 +464,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get slideToLock => 'Slide to lock';
+
+  @override
+  String get screenLocked => 'Screen Locked';
+
+  @override
+  String get swipeUpToUnlock => '3-Finger Swipe Up to Unlock';
+
+  @override
+  String get tutorialAddFolderTitle => 'Create Music Collections';
+
+  @override
+  String get tutorialAddFolderDesc => 'Tap \"Add New Folder\" to create folders and organize your audio files collection.';
+
+  @override
+  String get tutorialAddSongTitle => 'Add Your Songs';
+
+  @override
+  String get tutorialAddSongDesc => 'Once a folder is created, tap \"Add Audio File\" to select audio files from your device.';
+
+  @override
+  String get tutorialAttachFileTitle => 'Select Audio File';
+
+  @override
+  String get tutorialAttachFileDesc => 'Tap the paperclip icon to select an audio file from your device.';
+
+  @override
+  String get tutorialConnectNfcTitle => 'Connect NFC Tag';
+
+  @override
+  String get tutorialConnectNfcDesc => 'Near any NFC tag to the back of your phone until it vibrates to connect the tag to the audio file for playback.';
+
+  @override
+  String get tutorialSettingsTitle => 'Settings & Starter Packs';
+
+  @override
+  String get tutorialSettingsDesc => 'Open the settings menu to find audio starter packs and other options.';
 }

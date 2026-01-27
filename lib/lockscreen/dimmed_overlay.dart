@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 class DimmedOverlay extends StatefulWidget {
   final bool isActive;
@@ -87,8 +88,8 @@ class _DimmedOverlayState extends State<DimmedOverlay> with SingleTickerProvider
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'Screen Locked',
-                  style: TextStyle(
+                  AppLocalizations.of(context)!.screenLocked,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -96,8 +97,8 @@ class _DimmedOverlayState extends State<DimmedOverlay> with SingleTickerProvider
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  '3-Finger Swipe Up to Unlock',
-                  style: TextStyle(
+                  AppLocalizations.of(context)!.swipeUpToUnlock,
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 18,
                   ),

@@ -130,5 +130,17 @@
   "forceProcessedUuid": "UUID actuel traité de force",
   "tutorialReset": "Didacticiel réinitialisé - s'affichera au prochain redémarrage",
   "failedToOpenLink": "❌ Échec de l'ouverture du lien: {error}",
-  "slideToLock": "Faire glisser pour verrouiller"
+  "slideToLock": "Faire glisser pour verrouiller",
+  "screenLocked": "Écran verrouillé",
+  "swipeUpToUnlock": "Faites glisser 3 doigts vers le haut pour déverrouiller",
+  "tutorialAddFolderTitle": "Créer des collections musicales",
+  "tutorialAddFolderDesc": "Appuyez sur \"Ajouter un nouveau dossier\" pour créer des dossiers et organiser votre collection de fichiers audio.",
+  "tutorialAddSongTitle": "Ajoutez vos chansons",
+  "tutorialAddSongDesc": "Une fois qu'un dossier est créé, appuyez sur \"Ajouter un fichier audio\" pour sélectionner des fichiers audio sur votre appareil.",
+  "tutorialAttachFileTitle": "Sélectionner un fichier audio",
+  "tutorialAttachFileDesc": "Appuyez sur l'icône du trombone pour sélectionner un fichier audio sur votre appareil.",
+  "tutorialConnectNfcTitle": "Connecter un tag NFC",
+  "tutorialConnectNfcDesc": "Approchez n'importe quel tag NFC de l'arrière de votre téléphone jusqu'à ce qu'il vibre pour connecter le tag au fichier audio pour la lecture.",
+  "tutorialSettingsTitle": "Paramètres et packs de démarrage",
+  "tutorialSettingsDesc": "Ouvrez le menu des paramètres pour trouver des packs de démarrage audio et d'autres options."
 }
