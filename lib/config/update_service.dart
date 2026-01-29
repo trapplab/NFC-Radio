@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:version/version.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_localizations.dart';
 import 'config.dart';
 
 Version _parseVersion(String tagName, {bool isLocal = false}) {
@@ -48,23 +49,23 @@ class UpdateService {
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
-              title: Text('Update v$remoteVersion available'),
+              title: Text(AppLocalizations.of(context)!.updateAvailable(remoteVersion.toString())),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('A new version is available on GitHub.'),
+                    Text(AppLocalizations.of(context)!.newVersionAvailable),
                     const SizedBox(height: 16),
-                    const Text('Changelog:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text(data['body'] ?? 'No changelog provided.'),
+                    Text(AppLocalizations.of(context)!.changelog, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(data['body'] ?? AppLocalizations.of(context)!.noChangelog),
                   ],
                 ),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Later'),
+                  child: Text(AppLocalizations.of(context)!.later),
                 ),
                 ElevatedButton(
                   onPressed: () async {
@@ -74,7 +75,7 @@ class UpdateService {
                     }
                     if (context.mounted) Navigator.pop(context);
                   },
-                  child: const Text('Download'),
+                  child: Text(AppLocalizations.of(context)!.downloadUpdate),
                 ),
               ],
             ),
@@ -82,7 +83,7 @@ class UpdateService {
         } else if (manual) {
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('You are on the latest version.')),
+            SnackBar(content: Text(AppLocalizations.of(context)!.latestVersion)),
           );
         }
       }
@@ -90,7 +91,7 @@ class UpdateService {
       debugPrint('Error checking for updates: $e');
       if (manual && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error checking for updates: $e')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.updateCheckFailed(e.toString()))),
         );
       }
     }

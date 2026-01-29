@@ -172,23 +172,24 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   void _showImportConfirmation(BuildContext context, GitHubAudioFolder githubFolder) {
     final locale = Localizations.localeOf(context).toString();
     final localization = githubFolder.getLocalization(locale);
+    final l10n = AppLocalizations.of(context)!;
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Import "${localization?.title ?? githubFolder.folderName}"?'),
-        content: Text('This will download ${localization?.files.length ?? 0} audio files and create a new folder.'),
+        title: Text(l10n.importQuestion(localization?.title ?? githubFolder.folderName)),
+        content: Text(l10n.importDescription(localization?.files.length ?? 0)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               _importGithubFolder(githubFolder);
             },
-            child: const Text('Import'),
+            child: Text(l10n.importButton),
           ),
         ],
       ),
@@ -212,13 +213,13 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const AlertDialog(
+      builder: (context) => AlertDialog(
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Downloading audio files...'),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(AppLocalizations.of(context)!.downloadingAudioFiles),
           ],
         ),
       ),
@@ -277,15 +278,16 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
 
       if (mounted) {
         Navigator.pop(context); // Close progress dialog
+        final l10n = AppLocalizations.of(context)!;
         
         if (failedFiles.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Successfully imported "${localization.title}"')),
+            SnackBar(content: Text(l10n.importSuccess(localization.title))),
           );
         } else if (songIds.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to import any files from "${localization.title}"'),
+              content: Text(l10n.importFailed(localization.title)),
               backgroundColor: Colors.red,
             ),
           );
@@ -293,12 +295,12 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
-              title: const Text('Partial Import'),
-              content: Text('Imported ${songIds.length} files, but ${failedFiles.length} files failed to download:\n\n${failedFiles.join(', ')}'),
+              title: Text(l10n.partialImport),
+              content: Text(l10n.importedFiles(songIds.length, failedFiles.length) + '\n\n${failedFiles.join(', ')}'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
+                  child: Text(l10n.ok),
                 ),
               ],
             ),
@@ -309,7 +311,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
       if (mounted) {
         Navigator.pop(context); // Close progress dialog
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to import folder: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(AppLocalizations.of(context)!.failedToImport(e.toString())), backgroundColor: Colors.red),
         );
       }
     }
@@ -342,7 +344,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
       if (manual && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Update check failed: $e'),
+            content: Text(AppLocalizations.of(context)!.updateCheckFailed(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -433,10 +435,10 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             // Show success message if we loaded existing data
             if (mounted && (songProvider.songs.isNotEmpty || folderProvider.folders.isNotEmpty || mappingProvider.mappings.isNotEmpty)) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('🎵 Loaded your saved songs, folders, and NFC mappings!'),
+                SnackBar(
+                  content: Text(AppLocalizations.of(context)!.loadedData),
                   backgroundColor: Colors.green,
-                  duration: Duration(seconds: 3),
+                  duration: const Duration(seconds: 3),
                 ),
               );
             } else if (mounted) {
@@ -451,10 +453,10 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           if (mounted && !_isTestEnvironment()) {
             try {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('⚠️ Failed to load saved data. App will work with empty data.'),
+                SnackBar(
+                  content: Text(AppLocalizations.of(context)!.failedToLoadData),
                   backgroundColor: Colors.orange,
-                  duration: Duration(seconds: 5),
+                  duration: const Duration(seconds: 5),
                 ),
               );
             } catch (contextError) {
@@ -656,7 +658,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                           if (nfcService.currentNfcUuid != null) ...[
                             const SizedBox(height: 8),
                             Text(
-                              'Last detected: ${nfcService.currentNfcUuid}',
+                              AppLocalizations.of(context)!.lastDetected(nfcService.currentNfcUuid!),
                               style: const TextStyle(fontSize: 12),
                               textAlign: TextAlign.center,
                             ),
@@ -749,13 +751,13 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Now Playing: ${musicPlayer.currentSongTitle ?? _getDisplayName(musicPlayer.currentMusicFilePath)}',
+                    AppLocalizations.of(context)!.nowPlaying(musicPlayer.currentSongTitle ?? _getDisplayName(musicPlayer.currentMusicFilePath)),
                     style: const TextStyle(fontWeight: FontWeight.bold),
                     overflow: TextOverflow.ellipsis,
                   ),
                   if (musicPlayer.totalDuration > Duration.zero)
                     Text(
-                      'Position: ${musicPlayer.getCurrentPositionString()} / ${musicPlayer.getTotalDurationString()}',
+                      AppLocalizations.of(context)!.positionWithTotal(musicPlayer.getCurrentPositionString(), musicPlayer.getTotalDurationString()),
                       style: const TextStyle(fontSize: 12),
                     ),
                   const SizedBox(height: 8),
@@ -1003,9 +1005,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   dialogNfcUuid = currentNfcUuid;
                 });
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(
-                    content: Text('🔗 NFC tag linked automatically'),
-                    duration: Duration(seconds: 1),
+                  SnackBar(
+                    content: Text(AppLocalizations.of(dialogContext)!.nfcLinkedAutomatically),
+                    duration: const Duration(seconds: 1),
                   ),
                 );
               } else {
@@ -1028,8 +1030,8 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               if (!isValid) {
                 if (!dialogContext.mounted) return;
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(
-                    content: Text('❌ Rejected: Selected file is not a valid audio file.'),
+                  SnackBar(
+                    content: Text(AppLocalizations.of(dialogContext)!.rejectedInvalidAudio),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -1045,7 +1047,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               });
               if (!dialogContext.mounted) return;
               ScaffoldMessenger.of(dialogContext).showSnackBar(
-                SnackBar(content: Text('📥 Audio selected: ${audioFile.displayName ?? "Unknown"}')),
+                SnackBar(content: Text(AppLocalizations.of(dialogContext)!.audioSelected(audioFile.displayName ?? "Unknown"))),
               );
 
               // Show tutorial Step 2: NFC Connection
@@ -1163,7 +1165,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                         children: [
                           if (dialogNfcUuid != null) ...[
                             Text(
-                              'Assigned NFC: ${dialogNfcUuid!.substring(0, 8)}...',
+                              AppLocalizations.of(context)!.assignedNfc(dialogNfcUuid!.substring(0, 8)),
                               style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 8),
@@ -1446,23 +1448,23 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                       }
                     },
                     itemBuilder: (BuildContext context) => [
-                      const PopupMenuItem<String>(
+                      PopupMenuItem<String>(
                         value: 'edit',
                         child: Row(
                           children: [
-                            Icon(Icons.edit, size: 16),
-                            SizedBox(width: 8),
-                            Text('Edit'),
+                            const Icon(Icons.edit, size: 16),
+                            const SizedBox(width: 8),
+                            Text(AppLocalizations.of(context)!.edit),
                           ],
                         ),
                       ),
-                      const PopupMenuItem<String>(
+                      PopupMenuItem<String>(
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete, size: 16),
-                            SizedBox(width: 8),
-                            Text('Delete'),
+                            const Icon(Icons.delete, size: 16),
+                            const SizedBox(width: 8),
+                            Text(AppLocalizations.of(context)!.delete),
                           ],
                         ),
                       ),
@@ -1523,7 +1525,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                           if (song.connectedNfcUuid != null) ...[
                             const SizedBox(height: 4),
                             Text(
-                              'Connected',
+                              AppLocalizations.of(context)!.connected,
                               style: TextStyle(fontSize: 10, color: Colors.green[700]),
                             ),
                           ],
@@ -2043,7 +2045,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                         }
                         if (!context.mounted) return;
                         messenger.showSnackBar(
-                          SnackBar(content: Text(nfcService.isScanning ? 'NFC scanning started' : 'NFC scanning stopped')),
+                          SnackBar(content: Text(nfcService.isScanning ? AppLocalizations.of(context)!.nfcScanningStarted : AppLocalizations.of(context)!.nfcScanningStopped)),
                         );
                       } catch (e) {
                         if (!context.mounted) return;
@@ -2051,8 +2053,8 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                           SnackBar(content: Text(AppLocalizations.of(context)!.nfcOperationFailed(e))),
                         );
                       }
-                    },
-                    child: Text(nfcService.isScanning ? 'Stop NFC' : 'Start NFC'),
+                      },
+                    child: Text(nfcService.isScanning ? AppLocalizations.of(context)!.stopNfc : AppLocalizations.of(context)!.startNfc),
                   ),
                   ElevatedButton(
                     onPressed: () {
@@ -2173,7 +2175,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Failed to open link: $e')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.failedToOpenLink(e.toString()))),
         );
       }
     }

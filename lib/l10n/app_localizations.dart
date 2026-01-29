@@ -958,6 +958,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open the settings menu to find audio starter packs and other options.'**
   String get tutorialSettingsDesc;
+
+  /// No description provided for @limitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Limit Reached'**
+  String get limitReached;
+
+  /// No description provided for @folderLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'You have reached the limit of 2 folders. To add more, please upgrade to the premium version.'**
+  String get folderLimitReached;
+
+  /// No description provided for @songLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'You have reached the limit of 6 songs per folder. To add more, please upgrade to the premium version.'**
+  String get songLimitReached;
+
+  /// No description provided for @themeColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme Color'**
+  String get themeColor;
+
+  /// No description provided for @lastDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'Last detected: {uuid}'**
+  String lastDetected(Object uuid);
+
+  /// No description provided for @nowPlaying.
+  ///
+  /// In en, this message translates to:
+  /// **'Now Playing: {title}'**
+  String nowPlaying(Object title);
+
+  /// No description provided for @positionWithTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Position: {current} / {total}'**
+  String positionWithTotal(Object current, Object total);
+
+  /// No description provided for @assignedNfc.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned NFC: {id}...'**
+  String assignedNfc(Object id);
+
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// No description provided for @connected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get connected;
+
+  /// No description provided for @nfcScanningStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'NFC scanning started'**
+  String get nfcScanningStarted;
+
+  /// No description provided for @nfcScanningStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'NFC scanning stopped'**
+  String get nfcScanningStopped;
+
+  /// No description provided for @stopNfc.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop NFC'**
+  String get stopNfc;
+
+  /// No description provided for @startNfc.
+  ///
+  /// In en, this message translates to:
+  /// **'Start NFC'**
+  String get startNfc;
+
+  /// No description provided for @storageError.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage Error: Failed to {operation}. Error: {error}'**
+  String storageError(Object error, Object operation);
+
+  /// No description provided for @white.
+  ///
+  /// In en, this message translates to:
+  /// **'White'**
+  String get white;
+
+  /// No description provided for @cappuccino.
+  ///
+  /// In en, this message translates to:
+  /// **'Cappuccino'**
+  String get cappuccino;
+
+  /// No description provided for @black.
+  ///
+  /// In en, this message translates to:
+  /// **'Black'**
+  String get black;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

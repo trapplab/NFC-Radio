@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import 'theme_provider.dart';
 
 class ColorChooser extends StatelessWidget {
@@ -7,21 +8,22 @@ class ColorChooser extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {    
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
-        const Padding(
-          padding: EdgeInsets.all(16.0),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
           child: Text(
-            'Theme Color',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            l10n.themeColor,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildColorButton(Colors.white, 'White', context),
-            _buildColorButton(const Color(0xFFC8B6A8), 'Cappuccino', context),
-            _buildColorButton(Colors.black, 'Black', context),
+            _buildColorButton(Colors.white, l10n.white, context),
+            _buildColorButton(const Color(0xFFC8B6A8), l10n.cappuccino, context),
+            _buildColorButton(Colors.black, l10n.black, context),
           ],
         ),
       ],

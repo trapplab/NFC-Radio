@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import '../l10n/app_localizations.dart';
 import 'storage_service.dart';
 import '../config/config.dart';
 import '../iap/iap_service.dart';
@@ -97,14 +98,14 @@ class FolderProvider with ChangeNotifier {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Limit Reached'),
-          content: const Text('You have reached the limit of 2 folders. To add more, please upgrade to the premium version.'),
+          title: Text(AppLocalizations.of(context)!.limitReached),
+          content: Text(AppLocalizations.of(context)!.folderLimitReached),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             if (AppConfig.isGooglePlayRelease)
               ElevatedButton(
@@ -112,7 +113,7 @@ class FolderProvider with ChangeNotifier {
                   Navigator.of(context).pop();
                   await IAPService.instance.buyPremium();
                 },
-                child: const Text('Upgrade'),
+                child: Text(AppLocalizations.of(context)!.upgrade),
               ),
           ],
         );
@@ -126,14 +127,14 @@ class FolderProvider with ChangeNotifier {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Limit Reached'),
-          content: const Text('You have reached the limit of 6 songs per folder. To add more, please upgrade to the premium version.'),
+          title: Text(AppLocalizations.of(context)!.limitReached),
+          content: Text(AppLocalizations.of(context)!.songLimitReached),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             if (AppConfig.isGooglePlayRelease)
               ElevatedButton(
@@ -141,7 +142,7 @@ class FolderProvider with ChangeNotifier {
                   Navigator.of(context).pop();
                   await IAPService.instance.buyPremium();
                 },
-                child: const Text('Upgrade'),
+                child: Text(AppLocalizations.of(context)!.upgrade),
               ),
           ],
         );

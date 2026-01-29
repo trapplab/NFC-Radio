@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'song.dart';
 import '../nfc/nfc_music_mapping.dart';
 import 'folder.dart';
@@ -472,7 +473,7 @@ class StorageService {
   void showStorageError(BuildContext context, String operation, dynamic error) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Storage Error: Failed to $operation. Error: $error'),
+        content: Text(AppLocalizations.of(context)!.storageError(operation, error.toString())),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 3),
       ),

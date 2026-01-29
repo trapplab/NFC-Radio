@@ -500,4 +500,68 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutorialSettingsDesc => 'Ouvrez le menu des paramètres pour trouver des packs de démarrage audio et d\'autres options.';
+
+  @override
+  String get limitReached => 'Limite atteinte';
+
+  @override
+  String get folderLimitReached => 'Vous avez atteint la limite de 2 dossiers. Pour en ajouter plus, veuillez passer à la version premium.';
+
+  @override
+  String get songLimitReached => 'Vous avez atteint la limite de 6 chansons par dossier. Pour en ajouter plus, veuillez passer à la version premium.';
+
+  @override
+  String get themeColor => 'Couleur du thème';
+
+  @override
+  String lastDetected(Object uuid) {
+    return 'Dernier détecté : $uuid';
+  }
+
+  @override
+  String nowPlaying(Object title) {
+    return 'Lecture en cours : $title';
+  }
+
+  @override
+  String positionWithTotal(Object current, Object total) {
+    return 'Position : $current / $total';
+  }
+
+  @override
+  String assignedNfc(Object id) {
+    return 'NFC assigné : $id...';
+  }
+
+  @override
+  String get edit => 'Modifier';
+
+  @override
+  String get connected => 'Connecté';
+
+  @override
+  String get nfcScanningStarted => 'Scan NFC démarré';
+
+  @override
+  String get nfcScanningStopped => 'Scan NFC arrêté';
+
+  @override
+  String get stopNfc => 'Arrêter le NFC';
+
+  @override
+  String get startNfc => 'Démarrer le NFC';
+
+  @override
+  String storageError(Object error, Object operation) {
+    return 'Erreur de stockage : Échec de $operation. Erreur : $error';
+  }
+
+  @override
+  String get white => 'Blanc';
+
+  @override
+  String get cappuccino => 'Cappuccino';
+
+  @override
+  String get black => 'Noir';
 }
