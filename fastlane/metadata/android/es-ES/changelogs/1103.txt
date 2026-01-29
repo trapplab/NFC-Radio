@@ -1,0 +1,3 @@
+## Corregido
+- corregir tutorial de configuración que se muestra cuando el usuario ya lo ha abierto
+- traducir cadenas de interfaz de usuario codificadas de forma rígida que faltan

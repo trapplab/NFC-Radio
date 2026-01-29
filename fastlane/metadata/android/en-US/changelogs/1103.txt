@@ -1,0 +1,3 @@
+## Fixed
+- fix settings tutorial showing when already opened by user
+- translate missing hardcoded ui strings

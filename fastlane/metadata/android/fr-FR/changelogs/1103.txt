@@ -1,0 +1,3 @@
+## Corrigé
+- corriger le tutoriel des paramètres s'affichant alors qu'il est déjà ouvert par l'utilisateur
+- traduire les chaînes d'interface utilisateur codées en dur manquantes

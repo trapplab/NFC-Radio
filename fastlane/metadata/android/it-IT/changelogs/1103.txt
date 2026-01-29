@@ -1,0 +1,3 @@
+## Risolto
+- correggere tutorial impostazioni che viene mostrato quando è già aperto dall'utente
+- tradurre le stringhe UI hardcoded mancanti

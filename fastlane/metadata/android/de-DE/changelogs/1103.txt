@@ -1,0 +1,3 @@
+## Gefixt
+- Fehler bei den Einstellungshinweisen beheben, die angezeigt werden, obwohl sie bereits vom Benutzer geöffnet wurden.
+- Fehlende festcodierte UI-Strings übersetzen

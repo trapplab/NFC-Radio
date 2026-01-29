@@ -13,6 +13,11 @@
 
 # Changelog
 
+## [0.11.3]
+### Fixed
+- fix settings tutorial showing when already opened by user
+- translate missing hardcoded ui strings
+
 ## [0.11.2]
 ### Fixed
 - translate missing ui strings
