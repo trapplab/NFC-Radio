@@ -603,7 +603,10 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             builder: (context) => IconButton(
               key: _settingsMenuKey,
               icon: const Icon(Icons.menu),
-              onPressed: () => Scaffold.of(context).openEndDrawer(),
+              onPressed: () {
+                TutorialService.instance.markSettingsTutorialShown();
+                Scaffold.of(context).openEndDrawer();
+              },
               tooltip: AppLocalizations.of(context)!.settingsTitle,
             ),
           ),
