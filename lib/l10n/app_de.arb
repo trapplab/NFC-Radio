@@ -134,7 +134,7 @@
   "screenLocked": "Bildschirm gesperrt",
   "swipeUpToUnlock": "Mit 3 Fingern nach oben wischen zum Entsperren",
   "tutorialAddFolderTitle": "Musiksammlungen erstellen",
-  "tutorialAddFolderDesc": "Tippen Sie auf \"Neuen Ordner hinzufügen\", um Ordner zu erstellen und Ihre Audiodateisammlung zu organisieren.",
+  "tutorialAddFolderDesc": "Tippen Sie auf \"Neuen Ordner hinzufügen\", um Ordner zu erstellen und Ihre Audiodateisammlung zu organisieren. Hinweis: Nur geöffnete Ordner werden für die Wiedergabe berücksichtigt, und Dateien werden aus dem obersten geöffneten Ordner ausgewählt.",
   "tutorialAddSongTitle": "Ihre Lieder hinzufügen",
   "tutorialAddSongDesc": "Sobald ein Ordner erstellt wurde, tippen Sie auf \"Audiodatei hinzufügen\", um Audiodateien von Ihrem Gerät auszuwählen.",
   "tutorialAttachFileTitle": "Audiodatei auswählen",

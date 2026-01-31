@@ -134,7 +134,7 @@
   "screenLocked": "Schermo bloccato",
   "swipeUpToUnlock": "Scorri con 3 dita verso l'alto per sbloccare",
   "tutorialAddFolderTitle": "Crea collezioni musicali",
-  "tutorialAddFolderDesc": "Tocca \"Aggiungi nuova cartella\" per creare cartelle e organizzare la tua collezione di file audio.",
+  "tutorialAddFolderDesc": "Tocca \"Aggiungi nuova cartella\" per creare cartelle e organizzare la tua collezione di file audio. Nota: Solo le cartelle aperte sono considerate per la riproduzione, e i file vengono selezionati dalla cartella aperta più in alto.",
   "tutorialAddSongTitle": "Aggiungi le tue canzoni",
   "tutorialAddSongDesc": "Una volta creata una cartella, tocca \"Aggiungi file audio\" per selezionare i file audio dal tuo dispositivo.",
   "tutorialAttachFileTitle": "Seleziona file audio",

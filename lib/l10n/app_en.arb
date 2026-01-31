@@ -134,7 +134,7 @@
   "screenLocked": "Screen Locked",
   "swipeUpToUnlock": "3-Finger Swipe Up to Unlock",
   "tutorialAddFolderTitle": "Create Music Collections",
-  "tutorialAddFolderDesc": "Tap \"Add New Folder\" to create folders and organize your audio files collection.",
+  "tutorialAddFolderDesc": "Tap \"Add New Folder\" to create folders and organize your audio files collection. Note: Only opened folders are considered for playback, and files are selected from the topmost opened folder.",
   "tutorialAddSongTitle": "Add Your Songs",
   "tutorialAddSongDesc": "Once a folder is created, tap \"Add Audio File\" to select audio files from your device.",
   "tutorialAttachFileTitle": "Select Audio File",

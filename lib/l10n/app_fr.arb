@@ -134,7 +134,7 @@
   "screenLocked": "Écran verrouillé",
   "swipeUpToUnlock": "Faites glisser 3 doigts vers le haut pour déverrouiller",
   "tutorialAddFolderTitle": "Créer des collections musicales",
-  "tutorialAddFolderDesc": "Appuyez sur \"Ajouter un nouveau dossier\" pour créer des dossiers et organiser votre collection de fichiers audio.",
+  "tutorialAddFolderDesc": "Appuyez sur \"Ajouter un nouveau dossier\" pour créer des dossiers et organiser votre collection de fichiers audio. Remarque : Seuls les dossiers ouverts sont pris en compte pour la lecture, et les fichiers sont sélectionnés dans le dossier ouvert le plus haut.",
   "tutorialAddSongTitle": "Ajoutez vos chansons",
   "tutorialAddSongDesc": "Une fois qu'un dossier est créé, appuyez sur \"Ajouter un fichier audio\" pour sélectionner des fichiers audio sur votre appareil.",
   "tutorialAttachFileTitle": "Sélectionner un fichier audio",

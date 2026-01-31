@@ -908,7 +908,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialAddFolderDesc.
   ///
   /// In en, this message translates to:
-  /// **'Tap \"Add New Folder\" to create folders and organize your audio files collection.'**
+  /// **'Tap \"Add New Folder\" to create folders and organize your audio files collection. Note: Only opened folders are considered for playback, and files are selected from the topmost opened folder.'**
   String get tutorialAddFolderDesc;
 
   /// No description provided for @tutorialAddSongTitle.

@@ -475,7 +475,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tutorialAddFolderTitle => 'Crear colecciones de música';
 
   @override
-  String get tutorialAddFolderDesc => 'Toca \"Agregar nueva carpeta\" para crear carpetas y organizar tu colección de archivos de audio.';
+  String get tutorialAddFolderDesc => 'Toca \"Agregar nueva carpeta\" para crear carpetas y organizar tu colección de archivos de audio. Nota: Solo las carpetas abiertas se consideran para la reproducción, y los archivos se seleccionan de la carpeta abierta más alta.';
 
   @override
   String get tutorialAddSongTitle => 'Agrega tus canciones';
