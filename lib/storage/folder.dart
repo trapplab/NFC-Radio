@@ -191,22 +191,6 @@ class FolderProvider with ChangeNotifier {
 
       _isInitialized = true;
 
-      // Collapse all folders by default on initialization
-      if (_folders.isNotEmpty) {
-        for (int i = 0; i < _folders.length; i++) {
-          _folders[i] = Folder(
-            id: _folders[i].id,
-            name: _folders[i].name,
-            songIds: _folders[i].songIds,
-            isExpanded: false,
-            position: _folders[i].position,
-          );
-        }
-        debugPrint('📁 All folders collapsed by default');
-      } else {
-        debugPrint('📁 No folders found in storage');
-      }
-
       debugPrint('✅ FolderProvider initialized with ${_folders.length} folders');
       debugPrint('📁 ===== FOLDERPROVIDER INITIALIZATION COMPLETED =====');
       notifyListeners();
@@ -313,33 +297,19 @@ class FolderProvider with ChangeNotifier {
   void toggleFolderExpansion(String folderId) {
     final folderIndex = _folders.indexWhere((folder) => folder.id == folderId);
     if (folderIndex != -1) {
-      final bool wasExpanded = _folders[folderIndex].isExpanded;
+      // Simply toggle the expansion state of the clicked folder
+      final updatedFolder = Folder(
+        id: _folders[folderIndex].id,
+        name: _folders[folderIndex].name,
+        songIds: _folders[folderIndex].songIds,
+        isExpanded: !_folders[folderIndex].isExpanded, // Toggle only this folder
+        position: _folders[folderIndex].position,
+      );
+      _folders[folderIndex] = updatedFolder;
 
-      // Update all folders in memory only - no storage operations
-      // Collapse all folders
-      for (int i = 0; i < _folders.length; i++) {
-        _folders[i] = Folder(
-          id: _folders[i].id,
-          name: _folders[i].name,
-          songIds: _folders[i].songIds,
-          isExpanded: false,
-          position: _folders[i].position,
-        );
-      }
+      // Persist the expansion state to storage
+      _saveFolderToStorage(updatedFolder);
 
-      // If the clicked folder was not expanded, expand it now
-      // (If it was expanded, it stays collapsed, allowing all folders to be closed)
-      if (!wasExpanded) {
-        _folders[folderIndex] = Folder(
-          id: _folders[folderIndex].id,
-          name: _folders[folderIndex].name,
-          songIds: _folders[folderIndex].songIds,
-          isExpanded: true,
-          position: _folders[folderIndex].position,
-        );
-      }
-       
-      // Notify listeners - expansion state is kept in memory only
       notifyListeners();
     }
   }

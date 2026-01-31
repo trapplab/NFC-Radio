@@ -90,49 +90,43 @@ class NFCService with ChangeNotifier {
     }
   }
 
-  // Find song by NFC UUID
+  // Find song by NFC UUID with priority logic (only searches open folders)
   Song? _findSongByUuid(String uuid) {
     if (_songProvider == null || _folderProvider == null) {
       debugPrint('SongProvider or FolderProvider is null');
       return null;
     }
-    
-    debugPrint('Searching for UUID: $uuid');
-    
-    // 1. Identify the "open folder"
-    Folder? openFolder;
-    try {
-      // The open folder is the one that is expanded
-      openFolder = _folderProvider!.folders.firstWhere((f) => f.isExpanded);
-      debugPrint('Open folder identified by expansion: ${openFolder.name}');
-    } catch (_) {
-      // If no folder is expanded, use the first folder as fallback
-      if (_folderProvider!.folders.isNotEmpty) {
-        openFolder = _folderProvider!.folders.first;
-        debugPrint('No folder expanded, using first folder as fallback: ${openFolder.name}');
-      }
-    }
 
-    if (openFolder == null) {
-      debugPrint('No folders available to search in');
+    debugPrint('Searching for UUID: $uuid');
+
+    // Get only open folders
+    final List<Folder> openFolders = _folderProvider!.folders.where((f) => f.isExpanded).toList();
+
+    if (openFolders.isEmpty) {
+      debugPrint('No open folders available - no playback will occur');
       return null;
     }
 
-    // 2. Search for the song with this UUID within the open folder
-    debugPrint('Searching in folder: ${openFolder.name} (${openFolder.songIds.length} songs)');
-    for (String songId in openFolder.songIds) {
-      try {
-        final song = _songProvider!.songs.firstWhere((s) => s.id == songId);
-        if (song.connectedNfcUuid == uuid) {
-          debugPrint('Found song in open folder: ${song.title}');
-          return song;
+    // Sort open folders by position (highest first = lowest position value)
+    openFolders.sort((a, b) => a.position.compareTo(b.position));
+
+    // Search in open folders (highest position first)
+    for (final folder in openFolders) {
+      debugPrint('Searching in open folder: ${folder.name} (position ${folder.position}) - ${folder.songIds.length} songs');
+      for (String songId in folder.songIds) {
+        try {
+          final song = _songProvider!.songs.firstWhere((s) => s.id == songId);
+          if (song.connectedNfcUuid == uuid) {
+            debugPrint('Found song in open folder (position ${folder.position}): ${song.title}');
+            return song; // Return immediately - highest priority
+          }
+        } catch (_) {
+          // Song ID in folder but not in SongProvider - skip
         }
-      } catch (_) {
-        // Song ID in folder but not in SongProvider? Should not happen but handle gracefully
       }
     }
-    
-    debugPrint('No song found for UUID: $uuid in folder: ${openFolder.name}');
+
+    debugPrint('No song found for UUID: $uuid in open folders');
     return null;
   }
 
@@ -198,21 +192,6 @@ class NFCService with ChangeNotifier {
     }
   }
 
-  // Check if all folders are closed (no folders are expanded)
-  bool _areAllFoldersClosed() {
-    if (_folderProvider == null || _folderProvider!.folders.isEmpty) {
-      return true;
-    }
-    
-    // Check if any folder is expanded
-    for (final folder in _folderProvider!.folders) {
-      if (folder.isExpanded) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   // Process NFC tag for music playback with retry mechanism
   Future<void> _processNfcTag(String uuid) async {
     debugPrint('🔄 ===== NFC TAG PROCESSING STARTED =====');
@@ -257,12 +236,13 @@ class NFCService with ChangeNotifier {
       return;
     }
     
-    // Step 1.5: Check if all folders are closed (prevent playback if no folders open)
+    // Step 1.5: Check if any folders are open (prevent playback if no folders open)
     // Only check this after providers are fully validated to avoid initialization issues
-    if (_areAllFoldersClosed()) {
-      debugPrint('🔒 All folders are closed - NFC tag detected but music playback blocked');
+    final List<Folder> openFolders = _folderProvider!.folders.where((f) => f.isExpanded).toList();
+    if (openFolders.isEmpty) {
+      debugPrint('🔒 No open folders - NFC tag detected but music playback blocked');
       debugPrint('🔒 Tag detected: $uuid - Open a folder to enable music playback');
-      _notifyUser('All folders closed - Open a folder to play music');
+      _notifyUser('No open folders - Open a folder to play music');
       // Still notify listeners to update UI with the detected UUID
       notifyListeners();
       return;
