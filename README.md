@@ -21,7 +21,7 @@ I wanted to have a simple-to-use radio that can be used to hear favorite songs o
 
 ## Screenshots
 
-<img src="assets/images/overview2.jpeg" alt="App Screenshot Overview" width="600"/>
+<img src="assets/images/NFCRadioOverview.jpg" alt="App Screenshot Overview" width="600"/>
 
 App Overview | App Detail | App Lock
 
