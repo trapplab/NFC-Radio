@@ -52,9 +52,6 @@ dependencies:
   kiosk_mode: ^0.8.0
   screen_brightness: ^1.0.0
   path_provider: ^2.1.2
-  archive: ^3.6.1
-  share_plus: ^10.0.0
-  json_annotation: ^4.8.1
 
   # Splash screen: to update run `dart run flutter_native_splash:create`
   flutter_native_splash: ^2.4.7

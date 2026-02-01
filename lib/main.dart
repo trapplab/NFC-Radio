@@ -296,7 +296,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             context: context,
             builder: (context) => AlertDialog(
               title: Text(l10n.partialImport),
-              content: Text(l10n.importedFiles(songIds.length, failedFiles.length) + '\n\n${failedFiles.join(', ')}'),
+              content: Text('${l10n.importedFiles(songIds.length, failedFiles.length)}\n\n${failedFiles.join(', ')}'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
