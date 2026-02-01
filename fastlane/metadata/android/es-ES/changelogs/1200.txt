@@ -1,0 +1,3 @@
+## Cambiado
+- Lógica actualizada para el manejo de carpetas, ahora se pueden abrir múltiples carpetas. Se reproducirá el archivo de audio de la carpeta más superior.
+- Las mismas carpetas, al cerrar la aplicación, se abrirán nuevamente al iniciar la aplicación otra vez.

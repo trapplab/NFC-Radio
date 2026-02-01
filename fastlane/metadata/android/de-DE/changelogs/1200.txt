@@ -1,0 +1,3 @@
+## Geändert
+- Aktualisierte Logik für die Handhabung von Ordnern, es können jetzt mehrere Ordner geöffnet werden. Die Audiodatei aus dem obersten Ordner wird abgespielt.
+- Die gleichen Ordner werden beim Schließen der App beim erneuten Start der App wieder geöffnet.

@@ -13,6 +13,11 @@
 
 # Changelog
 
+## [0.12.0]
+### Changed
+- Updated logic how folders are handled, multiple folders can be opened now. The audio file form the topmost folder will be played.
+- The same folders when closing the app will be opened again when starting the app again.
+
 ## [0.11.3]
 ### Fixed
 - fix settings tutorial showing when already opened by user

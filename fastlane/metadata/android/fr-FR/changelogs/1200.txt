@@ -1,0 +1,3 @@
+## Modifié
+- Logique mise à jour sur la gestion des dossiers, plusieurs dossiers peuvent désormais être ouverts. Le fichier audio du dossier le plus en haut sera lu.
+- Les mêmes dossiers seront de nouveau ouverts lors du redémarrage de l'application après sa fermeture.

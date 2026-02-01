@@ -1,0 +1,3 @@
+## Modificato
+- Logica aggiornata per la gestione delle cartelle, ora è possibile aprire più cartelle contemporaneamente. Verrà riprodotto il file audio dalla cartella più in alto.
+- Le stesse cartelle, chiudendo l'app, verranno riaperte all'avvio successivo dell'app.
