@@ -13,6 +13,10 @@
 
 # Changelog
 
+## [0.13.0]
+### Added
+- Added buymeacoffee shop hint in settings menu.
+
 ## [0.12.0]
 ### Changed
 - Updated logic how folders are handled, multiple folders can be opened now. The audio file form the topmost folder will be played.
