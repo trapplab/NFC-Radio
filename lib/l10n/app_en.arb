@@ -160,5 +160,6 @@
   "storageError": "Storage Error: Failed to {operation}. Error: {error}",
   "white": "White",
   "cappuccino": "Cappuccino",
-  "black": "Black"
+  "black": "Black",
+  "needNfcTagsTitle": "Need NFC Tags?"
 }

@@ -1066,6 +1066,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Black'**
   String get black;
+
+  /// No description provided for @needNfcTagsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Need NFC Tags?'**
+  String get needNfcTagsTitle;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

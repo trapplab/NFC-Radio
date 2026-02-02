@@ -564,4 +564,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get black => 'Nero';
+
+  @override
+  String get needNfcTagsTitle => 'Hai bisogno di tag NFC?';
 }

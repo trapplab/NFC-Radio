@@ -160,5 +160,6 @@
   "storageError": "Erreur de stockage : Échec de {operation}. Erreur : {error}",
   "white": "Blanc",
   "cappuccino": "Cappuccino",
-  "black": "Noir"
+  "black": "Noir",
+  "needNfcTagsTitle": "Besoin d'étiquettes NFC?"
 }
