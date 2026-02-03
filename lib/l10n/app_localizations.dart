@@ -1070,7 +1070,7 @@ abstract class AppLocalizations {
   /// No description provided for @needNfcTagsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Need NFC Tags?'**
+  /// **'Want some extras?'**
   String get needNfcTagsTitle;
 }
 
