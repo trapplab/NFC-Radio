@@ -35,4 +35,17 @@ platform :android do
     gradle(task: "clean assembleRelease")
     upload_to_play_store
   end
+
+  desc "Deploy to Open Testing (Beta)"
+  lane :open_test do
+    upload_to_play_store(
+      track: 'open',              # Open Testing Track
+      aab: '../build/app/outputs/bundle/playRelease/app-play-release.aab',
+      json_key: 'fastlane/supply.json',
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: 'draft'     # Upload as Draft
+    )
+  end
 end

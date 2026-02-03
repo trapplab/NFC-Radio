@@ -30,7 +30,6 @@ jobs:
         run: |
           ./flutter/bin/flutter doctor -v
 
-          
       - name: Decode keystore
         run: |
           echo "${{ secrets.ANDROID_GITHUB_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
@@ -104,3 +103,55 @@ jobs:
           body_path: release_notes.md
           files: |
             ${{ github.workspace }}/apks/nfc-radio-arm64-v8a-${{ github.ref_name }}.apk
+
+  deploy_playstore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Checkout Flutter
+        run: git submodule update --init --recursive
+
+      - name: Configure Flutter Environment
+        run: |
+          export PUB_CACHE=$(pwd)/.pub-cache
+          ./flutter/bin/flutter config --no-analytics
+
+      - name: Flutter Doctor
+        run: |
+          ./flutter/bin/flutter doctor -v
+
+      - name: Decode Playstore Secrets
+        env:
+          PLAYSTORE_JSON_BASE64: ${{ secrets.PLAYSTORE_JSON_BASE64 }}
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_GITHUB_KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p android/fastlane
+          echo "$PLAYSTORE_JSON_BASE64" | base64 -d > android/fastlane/supply.json
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+
+      - name: Create key.properties
+        run: |
+          echo "storeFile=upload-keystore.jks" >> android/key.properties
+          echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
+          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
+
+      - name: Prepare Play Flavor
+        run: ./scripts/prepare_flavor.sh play
+
+      - name: Build Play AAB
+        run: |
+          export PUB_CACHE=$(pwd)/.pub-cache
+          ./flutter/bin/flutter build appbundle --flavor play --release
+
+      - name: Deploy to Open Testing
+        working-directory: android
+        run: fastlane open_test
