@@ -1733,6 +1733,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
 
   void _showDeleteSongDialog(BuildContext context, Song song, SongProvider songProvider) {
     final mappingProvider = Provider.of<NFCMusicMappingProvider>(context, listen: false);
+    final folderProvider = Provider.of<FolderProvider>(context, listen: false);
 
     showDialog(
       context: context,
@@ -1768,6 +1769,15 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             onPressed: () async {
               // Remove NFC mapping if it exists
               mappingProvider.removeMapping(song.id);
+              
+              // Remove song from folder's songIds list
+              try {
+                final folder = folderProvider.folders.firstWhere((f) => f.songIds.contains(song.id));
+                folderProvider.removeSongFromFolder(folder.id, song.id);
+                debugPrint('🗑️ Removed song ${song.id} from folder ${folder.id}');
+              } catch (_) {
+                debugPrint('⚠️ Song ${song.id} not found in any folder');
+              }
               
               // Delete the physical file if it's in the app's audio directory
               final filePath = song.filePath;
