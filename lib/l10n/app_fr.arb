@@ -162,4 +162,18 @@
   "cappuccino": "Cappuccino",
   "black": "Noir",
   "needNfcTagsTitle": "Envie d'un petit extra?"
+  "songActions": "Actions de chanson",
+  "moveToFolder": "Déplacer vers le dossier...",
+  "copyToFolder": "Copier vers le dossier...",
+  "moveSongToFolder": "Déplacer la chanson vers le dossier",
+  "copySongToFolder": "Copier la chanson vers le dossier",
+  "songMovedToFolder": "Chanson déplacée vers \"{folderName}\"",
+  "songCopiedToFolder": "Chanson copiée vers \"{folderName}\"",
+  "nfcConflictDetected": "Conflit NFC détecté",
+  "nfcConflictDescription": "Le dossier de destination contient déjà une chanson connectée à la même étiquette NFC.",
+  "nfcTagId": "Étiquette NFC : {nfcId}...",
+  "existingSongInFolder": "Chanson existante dans le dossier :",
+  "whatWouldYouLikeToDo": "Que voudriez-vous faire ?",
+  "moveWithoutNfc": "Déplacer/Copier sans NFC",
+  "replaceNfcConnection": "Remplacer la connexion NFC"
 }

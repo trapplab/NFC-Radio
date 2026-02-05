@@ -162,4 +162,18 @@
   "cappuccino": "Cappuccino",
   "black": "Black",
   "needNfcTagsTitle": "Want some extras?"
+  "songActions": "Song Actions",
+  "moveToFolder": "Move to Folder...",
+  "copyToFolder": "Copy to Folder...",
+  "moveSongToFolder": "Move Song to Folder",
+  "copySongToFolder": "Copy Song to Folder",
+  "songMovedToFolder": "Song moved to \"{folderName}\"",
+  "songCopiedToFolder": "Song copied to \"{folderName}\"",
+  "nfcConflictDetected": "NFC Conflict Detected",
+  "nfcConflictDescription": "The target folder already has a song connected to the same NFC tag.",
+  "nfcTagId": "NFC Tag: {nfcId}...",
+  "existingSongInFolder": "Existing song in folder:",
+  "whatWouldYouLikeToDo": "What would you like to do?",
+  "moveWithoutNfc": "Move/Copy without NFC",
+  "replaceNfcConnection": "Replace NFC Connection"
 }

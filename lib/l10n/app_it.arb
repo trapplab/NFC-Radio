@@ -162,4 +162,18 @@
   "cappuccino": "Cappuccino",
   "black": "Nero",
   "needNfcTagsTitle": "Vuoi qualche extra?"
+  "songActions": "Azioni canzone",
+  "moveToFolder": "Sposta nella cartella...",
+  "copyToFolder": "Copia nella cartella...",
+  "moveSongToFolder": "Sposta canzone nella cartella",
+  "copySongToFolder": "Copia canzone nella cartella",
+  "songMovedToFolder": "Canzone spostata in \"{folderName}\"",
+  "songCopiedToFolder": "Canzone copiata in \"{folderName}\"",
+  "nfcConflictDetected": "Conflitto NFC rilevato",
+  "nfcConflictDescription": "La cartella di destinazione contiene già una canzone collegata alla stessa etichetta NFC.",
+  "nfcTagId": "Etichetta NFC: {nfcId}...",
+  "existingSongInFolder": "Canzone esistente nella cartella:",
+  "whatWouldYouLikeToDo": "Cosa vorresti fare?",
+  "moveWithoutNfc": "Sposta/Copia senza NFC",
+  "replaceNfcConnection": "Sostituisci connessione NFC"
 }

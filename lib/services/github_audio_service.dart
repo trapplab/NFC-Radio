@@ -52,8 +52,8 @@ class GitHubAudioService {
     }
   }
 
-  /// Download an audio file and return the local path
-  static Future<String> downloadAudioFile(String folderName, String fileName) async {
+  /// Download an audio file and return the local path and file size
+  static Future<DownloadResult> downloadAudioFile(String folderName, String fileName) async {
     try {
       final url = '$_rawBaseUrl/$folderName/$fileName';
       debugPrint('📥 Downloading: $url');
@@ -68,7 +68,8 @@ class GitHubAudioService {
         final filePath = p.join(audioDir.path, fileName);
         final file = File(filePath);
         await file.writeAsBytes(response.bodyBytes);
-        return filePath;
+        final fileSize = response.bodyBytes.length;
+        return DownloadResult(path: filePath, sizeBytes: fileSize);
       } else {
         throw Exception('Failed to download audio file (HTTP ${response.statusCode}): $fileName');
       }
@@ -77,4 +78,12 @@ class GitHubAudioService {
       rethrow;
     }
   }
+}
+
+/// Result of a file download operation
+class DownloadResult {
+  final String path;
+  final int sizeBytes;
+
+  DownloadResult({required this.path, required this.sizeBytes});
 }

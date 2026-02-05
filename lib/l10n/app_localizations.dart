@@ -1072,6 +1072,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Want some extras?'**
   String get needNfcTagsTitle;
+  
+  /// No description provided for @songActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Song Actions'**
+  String get songActions;
+
+  /// No description provided for @moveToFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to Folder...'**
+  String get moveToFolder;
+
+  /// No description provided for @copyToFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to Folder...'**
+  String get copyToFolder;
+
+  /// No description provided for @moveSongToFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Move Song to Folder'**
+  String get moveSongToFolder;
+
+  /// No description provided for @copySongToFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Song to Folder'**
+  String get copySongToFolder;
+
+  /// No description provided for @songMovedToFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Song moved to \"{folderName}\"'**
+  String songMovedToFolder(Object folderName);
+
+  /// No description provided for @songCopiedToFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Song copied to \"{folderName}\"'**
+  String songCopiedToFolder(Object folderName);
+
+  /// No description provided for @nfcConflictDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'NFC Conflict Detected'**
+  String get nfcConflictDetected;
+
+  /// No description provided for @nfcConflictDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The target folder already has a song connected to the same NFC tag.'**
+  String get nfcConflictDescription;
+
+  /// No description provided for @nfcTagId.
+  ///
+  /// In en, this message translates to:
+  /// **'NFC Tag: {nfcId}...'**
+  String nfcTagId(Object nfcId);
+
+  /// No description provided for @existingSongInFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing song in folder:'**
+  String get existingSongInFolder;
+
+  /// No description provided for @whatWouldYouLikeToDo.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like to do?'**
+  String get whatWouldYouLikeToDo;
+
+  /// No description provided for @moveWithoutNfc.
+  ///
+  /// In en, this message translates to:
+  /// **'Move/Copy without NFC'**
+  String get moveWithoutNfc;
+
+  /// No description provided for @replaceNfcConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace NFC Connection'**
+  String get replaceNfcConnection;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
