@@ -1,0 +1,3 @@
+## Ajouté
+- Ajout de la possibilité de déplacer et copier des chansons entre dossiers via une pression longue sur les cartes des chansons.
+- Afficher l'index du fichier et la taille totale lors du téléchargement.

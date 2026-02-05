@@ -1,0 +1,3 @@
+## Hinzugefügt
+- Möglichkeit hinzugefügt, Songs durch langes Drücken auf die Liedkarten zwischen Ordnern zu verschieben und zu kopieren.
+- Anzeigen des Dateiverzeichnisses und der Gesamtgröße beim Download.

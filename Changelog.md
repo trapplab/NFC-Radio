@@ -13,6 +13,11 @@
 
 # Changelog
 
+## [0.14.0]
+### Added
+- Added ability to move and copy songs between folders via long-press on song cards.
+- Show file index and total size in download.
+
 ## [0.13.0]
 ### Added
 - Added buymeacoffee shop hint in settings menu.

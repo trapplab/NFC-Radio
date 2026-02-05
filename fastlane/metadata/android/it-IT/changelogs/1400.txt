@@ -1,0 +1,3 @@
+## Aggiunto
+- Aggiunta la possibilità di spostare e copiare le canzoni tra cartelle tramite pressione prolungata sulle schede delle canzoni.
+- Mostra l'indice del file e la dimensione totale durante il download.

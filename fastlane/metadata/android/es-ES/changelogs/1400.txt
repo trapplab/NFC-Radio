@@ -1,0 +1,3 @@
+## Agregado
+- Se añadió la capacidad de mover y copiar canciones entre carpetas mediante una pulsación prolongada en las tarjetas de canciones.
+- Mostrar índice de archivo y tamaño total durante la descarga.

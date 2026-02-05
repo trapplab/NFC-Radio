@@ -42,7 +42,7 @@ platform :android do
       track: 'open',              # Open Testing Track
       aab: '../build/app/outputs/bundle/playRelease/app-play-release.aab',
       json_key: 'fastlane/supply.json',
-      skip_upload_metadata: true,
+      skip_upload_metadata: false,
       skip_upload_images: true,
       skip_upload_screenshots: true,
       release_status: 'draft'     # Upload as Draft
