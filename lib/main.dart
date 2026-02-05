@@ -197,6 +197,19 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     );
   }
 
+  /// Format bytes into human-readable format (KB, MB, GB)
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) {
+      return '$bytes B';
+    } else if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    } else if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    } else {
+      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+    }
+  }
+
   Future<void> _importGithubFolder(GitHubAudioFolder githubFolder) async {
     final locale = Localizations.localeOf(context).toString();
     final localization = githubFolder.getLocalization(locale);
@@ -210,19 +223,39 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
       return;
     }
 
-    // Show progress dialog
+    // Show progress dialog with file counter and size
+    int currentFile = 0;
+    final totalFiles = localization.files.length;
+    int downloadedBytes = 0;
+    StateSetter? dialogSetState;
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(AppLocalizations.of(context)!.downloadingAudioFiles),
-          ],
-        ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          dialogSetState = setState;
+          return AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(AppLocalizations.of(context)!.downloadingAudioFiles),
+                const SizedBox(height: 8),
+                Text(
+                  '$currentFile / $totalFiles',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Downloaded: ${_formatBytes(downloadedBytes)}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
 
@@ -232,12 +265,21 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
 
       for (final githubFile in localization.files) {
         try {
-          final localPath = await GitHubAudioService.downloadAudioFile(githubFolder.folderName, githubFile.name);
-          
+          currentFile++;
+          if (mounted && dialogSetState != null) {
+            dialogSetState!(() {}); // Update progress
+          }
+          final result = await GitHubAudioService.downloadAudioFile(githubFolder.folderName, githubFile.name);
+          downloadedBytes += result.sizeBytes;
+
+          if (mounted && dialogSetState != null) {
+            dialogSetState!(() {}); // Update progress with size
+          }
+
           final song = Song(
             id: const Uuid().v4(),
             title: githubFile.title,
-            filePath: localPath,
+            filePath: result.path,
           );
           songProvider.addSong(song);
           songIds.add(song.id);
