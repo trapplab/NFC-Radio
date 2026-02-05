@@ -1,0 +1,2 @@
+## Agregado
+- Se agregó una sugerencia de tienda de buymeacoffee en el menú de configuración.

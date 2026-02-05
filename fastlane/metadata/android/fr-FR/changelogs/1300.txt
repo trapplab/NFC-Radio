@@ -1,0 +1,2 @@
+## Ajouté
+- Ajout de l'indication de la boutique BuyMeACoffee dans le menu des paramètres.

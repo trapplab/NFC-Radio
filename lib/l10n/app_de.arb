@@ -160,5 +160,6 @@
   "storageError": "Speicherfehler: Fehler bei {operation}. Fehler: {error}",
   "white": "Weiß",
   "cappuccino": "Cappuccino",
-  "black": "Schwarz"
+  "black": "Schwarz",
+  "needNfcTagsTitle": "Ein paar Extras gefällig?"
 }

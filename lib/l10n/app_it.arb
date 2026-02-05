@@ -160,5 +160,6 @@
   "storageError": "Errore di archiviazione: Impossibile {operation}. Errore: {error}",
   "white": "Bianco",
   "cappuccino": "Cappuccino",
-  "black": "Nero"
+  "black": "Nero",
+  "needNfcTagsTitle": "Vuoi qualche extra?"
 }
