@@ -564,4 +564,52 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get black => 'Nero';
+
+  @override
+  String get songActions => 'Azioni canzone';
+
+  @override
+  String get moveToFolder => 'Sposta nella cartella...';
+
+  @override
+  String get copyToFolder => 'Copia nella cartella...';
+
+  @override
+  String get moveSongToFolder => 'Sposta canzone nella cartella';
+
+  @override
+  String get copySongToFolder => 'Copia canzone nella cartella';
+
+  @override
+  String songMovedToFolder(Object folderName) {
+    return 'Canzone spostata in \"$folderName\"';
+  }
+
+  @override
+  String songCopiedToFolder(Object folderName) {
+    return 'Canzone copiata in \"$folderName\"';
+  }
+
+  @override
+  String get nfcConflictDetected => 'Conflitto NFC rilevato';
+
+  @override
+  String get nfcConflictDescription => 'La cartella di destinazione contiene già una canzone collegata alla stessa etichetta NFC.';
+
+  @override
+  String nfcTagId(Object nfcId) {
+    return 'Etichetta NFC: $nfcId...';
+  }
+
+  @override
+  String get existingSongInFolder => 'Canzone esistente nella cartella:';
+
+  @override
+  String get whatWouldYouLikeToDo => 'Cosa vorresti fare?';
+
+  @override
+  String get moveWithoutNfc => 'Sposta/Copia senza NFC';
+
+  @override
+  String get replaceNfcConnection => 'Sostituisci connessione NFC';
 }

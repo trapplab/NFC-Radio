@@ -160,5 +160,19 @@
   "storageError": "Speicherfehler: Fehler bei {operation}. Fehler: {error}",
   "white": "Weiß",
   "cappuccino": "Cappuccino",
-  "black": "Schwarz"
+  "black": "Schwarz",
+  "songActions": "Lied-Aktionen",
+  "moveToFolder": "In Ordner verschieben...",
+  "copyToFolder": "In Ordner kopieren...",
+  "moveSongToFolder": "Lied in Ordner verschieben",
+  "copySongToFolder": "Lied in Ordner kopieren",
+  "songMovedToFolder": "Lied in \"{folderName}\" verschoben",
+  "songCopiedToFolder": "Lied in \"{folderName}\" kopiert",
+  "nfcConflictDetected": "NFC-Konflikt erkannt",
+  "nfcConflictDescription": "Der Zielordner enthält bereits ein Lied, das mit demselben NFC-Tag verbunden ist.",
+  "nfcTagId": "NFC-Tag: {nfcId}...",
+  "existingSongInFolder": "Vorhandenes Lied im Ordner:",
+  "whatWouldYouLikeToDo": "Was möchten Sie tun?",
+  "moveWithoutNfc": "Verschieben/Kopieren ohne NFC",
+  "replaceNfcConnection": "NFC-Verbindung ersetzen"
 }

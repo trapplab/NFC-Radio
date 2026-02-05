@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:collection/collection.dart';
 import '../l10n/app_localizations.dart';
 import 'storage_service.dart';
 import '../config/config.dart';
@@ -385,4 +386,108 @@ class FolderProvider with ChangeNotifier {
   Map<String, dynamic> getStorageStats() {
     return _storageService.getStorageStats();
   }
+
+  // ========== SONG MOVE & COPY OPERATIONS ==========
+
+  /// Check for conflicts when moving/copying a song to a target folder
+  /// Returns MoveResult with conflict info if any issues found, null if all clear
+  MoveResult? _checkMoveConflicts(
+    String songId,
+    String toFolderId,
+    List<dynamic> songs,
+  ) {
+    // Check if target folder has song limit
+    if (isSongLimitReached(toFolderId)) {
+      return MoveResult(success: false, reason: MoveFailureReason.songLimit);
+    }
+
+    // Check if song already exists in target folder
+    final toFolderIndex = _folders.indexWhere((f) => f.id == toFolderId);
+    if (toFolderIndex != -1) {
+      final toFolder = _folders[toFolderIndex];
+      if (toFolder.songIds.contains(songId)) {
+        return MoveResult(success: false, reason: MoveFailureReason.duplicate);
+      }
+    }
+
+    // Check for NFC conflict
+    final song = songs.firstWhereOrNull((s) => s.id == songId);
+    if (song != null && song.connectedNfcUuid != null) {
+      if (toFolderIndex != -1) {
+        final toFolder = _folders[toFolderIndex];
+        final conflictingSongId = toFolder.songIds.firstWhereOrNull((id) {
+          final folderSong = songs.firstWhereOrNull((s) => s.id == id);
+          return folderSong != null && folderSong.connectedNfcUuid == song.connectedNfcUuid;
+        });
+
+        if (conflictingSongId != null) {
+          return MoveResult(
+            success: false,
+            reason: MoveFailureReason.nfcConflict,
+            conflictingSongId: conflictingSongId,
+          );
+        }
+      }
+    }
+
+    return null; // No conflicts
+  }
+
+  /// Move a song from one folder to another
+  /// Returns MoveResult with success status and optional conflict info
+  Future<MoveResult> moveSongToFolder(
+    String songId,
+    String fromFolderId,
+    String toFolderId,
+    List<dynamic> songs,
+  ) async {
+    // Check for conflicts
+    final conflict = _checkMoveConflicts(songId, toFolderId, songs);
+    if (conflict != null) return conflict;
+
+    // Remove from source folder
+    removeSongFromFolder(fromFolderId, songId);
+
+    // Add to target folder
+    addSongToFolder(toFolderId, songId);
+
+    return MoveResult(success: true);
+  }
+
+  /// Copy a song to another folder (keeps song in both folders)
+  /// Returns MoveResult with success status and optional conflict info
+  Future<MoveResult> copySongToFolder(
+    String songId,
+    String toFolderId,
+    List<dynamic> songs,
+  ) async {
+    // Check for conflicts
+    final conflict = _checkMoveConflicts(songId, toFolderId, songs);
+    if (conflict != null) return conflict;
+
+    // Add to target folder (keep in source folder)
+    addSongToFolder(toFolderId, songId);
+
+    return MoveResult(success: true);
+  }
+}
+
+/// Enum for move/copy failure reasons
+enum MoveFailureReason {
+  songLimit,
+  nfcConflict,
+  duplicate,
+}
+
+/// Result class for move/copy operations
+class MoveResult {
+  final bool success;
+  final MoveFailureReason? reason;
+  final String? conflictingSongId;
+
+  MoveResult({
+    required this.success,
+    this.reason,
+    this.conflictingSongId,
+  });
 }

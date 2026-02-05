@@ -160,5 +160,19 @@
   "storageError": "Error de almacenamiento: Fallo al {operation}. Error: {error}",
   "white": "Blanco",
   "cappuccino": "Capuchino",
-  "black": "Negro"
+  "black": "Negro",
+  "songActions": "Acciones de canción",
+  "moveToFolder": "Mover a carpeta...",
+  "copyToFolder": "Copiar a carpeta...",
+  "moveSongToFolder": "Mover canción a carpeta",
+  "copySongToFolder": "Copiar canción a carpeta",
+  "songMovedToFolder": "Canción movida a \"{folderName}\"",
+  "songCopiedToFolder": "Canción copiada a \"{folderName}\"",
+  "nfcConflictDetected": "Conflicto NFC detectado",
+  "nfcConflictDescription": "La carpeta de destino ya tiene una canción conectada a la misma etiqueta NFC.",
+  "nfcTagId": "Etiqueta NFC: {nfcId}...",
+  "existingSongInFolder": "Canción existente en carpeta:",
+  "whatWouldYouLikeToDo": "¿Qué le gustaría hacer?",
+  "moveWithoutNfc": "Mover/Copiar sin NFC",
+  "replaceNfcConnection": "Reemplazar conexión NFC"
 }
