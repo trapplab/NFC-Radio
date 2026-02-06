@@ -953,6 +953,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     final bool isEditing = song != null;
     final TextEditingController titleController = TextEditingController(text: song?.title ?? '');
     final TextEditingController filePathController = TextEditingController(text: song?.filePath ?? '');
+    final String? originalFilePath = song?.filePath;
     String? dialogNfcUuid = song?.connectedNfcUuid;
     
     final nfcService = Provider.of<NFCService>(context, listen: false);
@@ -1052,7 +1053,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 });
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
                   SnackBar(
-                    content: Text(AppLocalizations.of(context)!.nfcLinkedAutomatically),
+                    content: Text(AppLocalizations.of(dialogContext)!.nfcLinkedAutomatically),
                     duration: const Duration(seconds: 1),
                   ),
                 );
@@ -1077,7 +1078,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 if (!dialogContext.mounted) return;
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
                   SnackBar(
-                    content: Text(AppLocalizations.of(context)!.rejectedInvalidAudio),
+                    content: Text(AppLocalizations.of(dialogContext)!.rejectedInvalidAudio),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -1093,7 +1094,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               });
               if (!dialogContext.mounted) return;
               ScaffoldMessenger.of(dialogContext).showSnackBar(
-                SnackBar(content: Text(AppLocalizations.of(context)!.audioSelected(audioFile.displayName ?? "Unknown"))),
+                SnackBar(content: Text(AppLocalizations.of(dialogContext)!.audioSelected(audioFile.displayName ?? "Unknown"))),
               );
 
               // Show tutorial Step 2: NFC Connection
@@ -1135,7 +1136,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                         key: _attachFileButtonKey,
                         icon: const Icon(Icons.attach_file),
                         onPressed: () async {
-                          final settings = Provider.of<SettingsProvider>(context, listen: false);
+                          final settings = Provider.of<SettingsProvider>(dialogContext, listen: false);
                           final success = await AudioIntentService().pickAudioFromApp(
                             filterAudioOnly: settings.filterAudioOnly,
                           );
@@ -1369,6 +1370,25 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     );
 
                     if (isEditing) {
+                      // Delete old audio file if it was replaced with a different one
+                      if (originalFilePath != null &&
+                          originalFilePath != filePathController.text &&
+                          !originalFilePath.startsWith('content://')) {
+                        final otherSongsUseFile = songProvider.songs.any(
+                          (s) => s.id != song.id && s.filePath == originalFilePath,
+                        );
+                        if (!otherSongsUseFile) {
+                          try {
+                            final oldFile = File(originalFilePath);
+                            if (await oldFile.exists()) {
+                              await oldFile.delete();
+                              debugPrint('🗑️ Deleted old audio file: $originalFilePath');
+                            }
+                          } catch (e) {
+                            debugPrint('⚠️ Failed to delete old audio file: $e');
+                          }
+                        }
+                      }
                       songProvider.updateSong(newSong);
                     } else {
                       songProvider.addSong(newSong);
