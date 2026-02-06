@@ -40,7 +40,7 @@ platform :android do
   lane :open_test do
     upload_to_play_store(
       track: 'open',              # Open Testing Track
-      aab: '../android/app/build/outputs/bundle/playRelease/app-play-release.aab',
+      aab: 'android/app/build/outputs/bundle/playRelease/app-play-release.aab',
       json_key: 'fastlane/supply.json',
       skip_upload_metadata: false,
       skip_upload_images: true,
