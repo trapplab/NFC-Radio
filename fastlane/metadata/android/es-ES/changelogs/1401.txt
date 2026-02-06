@@ -1,0 +1,3 @@
+## Corregido
+- vincular la carpeta fastlane a la carpeta android para que las cadenas de herramientas de fdroid y playstore puedan acceder
+- corregir la edición del archivo en archivos de audio ya añadidos

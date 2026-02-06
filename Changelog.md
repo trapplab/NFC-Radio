@@ -13,6 +13,11 @@
 
 # Changelog
 
+## [0.14.1]
+### Fixed
+- link fastlane folder to android folder so fdroid and playstore toolchains can access
+- fix edit file on already added audio files
+
 ## [0.14.0]
 ### Added
 - Added ability to move and copy songs between folders via long-press on song cards.

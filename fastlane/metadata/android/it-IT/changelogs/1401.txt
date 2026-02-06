@@ -1,0 +1,3 @@
+## Risolto
+- collega la cartella fastlane alla cartella android in modo che le toolchain fdroid e playstore possano accedere
+- correggi modifica file su file audio già aggiunti

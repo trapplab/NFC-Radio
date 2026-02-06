@@ -1,0 +1,3 @@
+## Behoben
+- Verknüpfe den Fastlane-Ordner mit dem Android-Ordner, damit sowohl F-Droid- als auch Playstore-Toolchains darauf zugreifen können.
+- Bearbeitungsdatei für bereits hinzugefügte Audiodateien reparieren
