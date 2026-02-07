@@ -39,6 +39,14 @@ Submit a new Beta Build to Crashlytics Beta
 
 Deploy a new version to the Google Play
 
+### android open_test
+
+```sh
+[bundle exec] fastlane android open_test
+```
+
+Deploy to Open Testing (Beta)
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
