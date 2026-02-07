@@ -131,7 +131,7 @@ jobs:
       - name: Decode Playstore Secrets
         env:
           PLAYSTORE_JSON_BASE64: ${{ secrets.PLAYSTORE_JSON_BASE64 }}
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_GITHUB_KEYSTORE_BASE64 }}
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_PLAYSTORE_KEYSTORE_BASE64 }}
         run: |
           mkdir -p android/fastlane
           echo "$PLAYSTORE_JSON_BASE64" | base64 -d > android/fastlane/supply.json
