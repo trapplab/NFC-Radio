@@ -1072,7 +1072,7 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Want some extras?'**
   String get needNfcTagsTitle;
-  
+
   /// No description provided for @songActions.
   ///
   /// In en, this message translates to:
@@ -1156,6 +1156,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Replace NFC Connection'**
   String get replaceNfcConnection;
+
+  /// No description provided for @showAudioControlsOnLockscreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Show audio controls on lockscreen'**
+  String get showAudioControlsOnLockscreen;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

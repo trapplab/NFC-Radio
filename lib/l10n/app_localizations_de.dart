@@ -567,7 +567,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get needNfcTagsTitle => 'Ein paar Extras gefällig?';
-  
+
   @override
   String get songActions => 'Lied-Aktionen';
 
@@ -615,4 +615,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get replaceNfcConnection => 'NFC-Verbindung ersetzen';
+
+  @override
+  String get showAudioControlsOnLockscreen => 'Audiosteuerungen auf Sperrbildschirm anzeigen';
 }

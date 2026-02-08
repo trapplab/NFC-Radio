@@ -11,6 +11,7 @@ import 'package:collection/collection.dart';
 import 'nfc/nfc_music_mapping.dart';
 import 'nfc/nfc_service.dart';
 import 'audio/music_player.dart';
+import 'audio/player_widget.dart';
 import 'storage/song.dart';
 import 'storage/folder.dart';
 import 'storage/storage_service.dart';
@@ -606,6 +607,13 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     settings.setUseSystemOverlay(value);
                   },
                 ),
+                SwitchListTile(
+                  title: Text(AppLocalizations.of(context)!.showAudioControlsOnLockscreen),
+                  value: settings.showAudioControlsOnLockscreen,
+                  onChanged: (value) {
+                    settings.setShowAudioControlsOnLockscreen(value);
+                  },
+                ),
                 const Divider(),
                 const ColorChooser(),
                 const Divider(),
@@ -777,72 +785,8 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           // Music Player Section - Fixed at the bottom
           // Audio player should only be visible when not in "Add New Song" or "Edit Song" mode
           // Since nfcService.setEditMode is true when in those dialogs, we can use that flag
-          if ((musicPlayer.isPlaying || musicPlayer.isPaused) && !nfcService.isInEditMode)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Provider.of<ThemeProvider>(context).footerColor,
-                border: Border.all(color: Provider.of<ThemeProvider>(context).bannerColor),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.nowPlaying(musicPlayer.currentSongTitle ?? _getDisplayName(musicPlayer.currentMusicFilePath)),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (musicPlayer.totalDuration > Duration.zero)
-                    Text(
-                      AppLocalizations.of(context)!.positionWithTotal(musicPlayer.getCurrentPositionString(), musicPlayer.getTotalDurationString()),
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        onPressed: musicPlayer.togglePlayPause,
-                        icon: Icon(musicPlayer.isPlaying ? Icons.pause : Icons.play_arrow),
-                        tooltip: musicPlayer.isPlaying ? 'Pause' : 'Play',
-                      ),
-                      IconButton(
-                        onPressed: musicPlayer.stopMusic,
-                        icon: const Icon(Icons.stop),
-                        tooltip: 'Stop',
-                      ),
-                      if (musicPlayer.totalDuration > Duration.zero)
-                        Expanded(
-                          child: Slider(
-                            value: musicPlayer.savedPosition.inSeconds.toDouble(),
-                            min: 0,
-                            max: musicPlayer.totalDuration.inSeconds.toDouble(),
-                            onChangeStart: (_) {
-                              musicPlayer.setSeeking(true);
-                            },
-                            onChanged: (value) {
-                              musicPlayer.seekTo(Duration(seconds: value.toInt()));
-                            },
-                            onChangeEnd: (value) {
-                              musicPlayer.seekTo(Duration(seconds: value.toInt()), persist: true);
-                              musicPlayer.setSeeking(false);
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+          if (!nfcService.isInEditMode)
+            const PlayerWidget(),
         ],
       ),
     );

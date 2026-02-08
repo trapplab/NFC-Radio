@@ -4,6 +4,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:kiosk_mode/kiosk_mode.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'dimmed_mode_service.dart';
+import '../audio/music_player.dart';
+import '../audio/player_widget.dart';
 import '../config/settings_provider.dart';
 import '../config/theme_provider.dart';
 import '../l10n/app_localizations.dart';
@@ -44,6 +46,9 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
       
       final settings = Provider.of<SettingsProvider>(context, listen: false);
       settings.addListener(_onSettingsChanged);
+
+      final musicPlayer = Provider.of<MusicPlayer>(context, listen: false);
+      musicPlayer.addListener(_onMusicPlayerChanged);
       
       if (settings.useSystemOverlay) {
         _requestPermission();
@@ -60,6 +65,11 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
     if (await Permission.systemAlertWindow.isDenied) {
       await Permission.systemAlertWindow.request();
     }
+  }
+
+  void _onMusicPlayerChanged() {
+    if (!mounted) return;
+    _updateBrightness();
   }
 
   void _onSettingsChanged() {
@@ -82,10 +92,45 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
     dimmedModeService.removeListener(_onDimmedModeChanged);
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     settings.removeListener(_onSettingsChanged);
+    final musicPlayer = Provider.of<MusicPlayer>(context, listen: false);
+    musicPlayer.removeListener(_onMusicPlayerChanged);
     _removeOverlay();
     super.dispose();
   }
   
+  void _updateBrightness() {
+    if (!mounted) return;
+    final dimmedModeService = Provider.of<DimmedModeService>(context, listen: false);
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final musicPlayer = Provider.of<MusicPlayer>(context, listen: false);
+
+    if (dimmedModeService.isDimmed) {
+      bool showControls = settings.showAudioControlsOnLockscreen && (musicPlayer.isPlaying || musicPlayer.isPaused);
+      if (showControls) {
+        debugPrint('DimmedModeWrapper: Restoring brightness for audio controls');
+        if (_originalBrightness != null) {
+          ScreenBrightness().setScreenBrightness(_originalBrightness!);
+        } else {
+          ScreenBrightness().resetScreenBrightness();
+        }
+      } else {
+        debugPrint('DimmedModeWrapper: Dimming screen');
+        ScreenBrightness().setScreenBrightness(0.0);
+      }
+    } else {
+      debugPrint('DimmedModeWrapper: Restoring brightness (not dimmed)');
+      if (_originalBrightness != null) {
+        ScreenBrightness().setScreenBrightness(_originalBrightness!).then((_) {
+          Future.delayed(const Duration(milliseconds: 500), () {
+            ScreenBrightness().resetScreenBrightness();
+          });
+        });
+      } else {
+        ScreenBrightness().resetScreenBrightness();
+      }
+    }
+  }
+
   void _onDimmedModeChanged() {
     if (!mounted) return;
     final dimmedModeService = Provider.of<DimmedModeService>(context, listen: false);
@@ -94,10 +139,10 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
     debugPrint('DimmedModeWrapper: _onDimmedModeChanged - isDimmed: ${dimmedModeService.isDimmed}, useSystemOverlay: ${settings.useSystemOverlay}');
 
     if (dimmedModeService.isDimmed) {
-      // Save current brightness and dim screen
+      // Save current brightness and update
       ScreenBrightness().current.then((brightness) {
         _originalBrightness = brightness;
-        ScreenBrightness().setScreenBrightness(0.0);
+        _updateBrightness();
       });
 
       if (settings.useSystemOverlay) {
@@ -112,18 +157,7 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
         _removeOverlay();
       }
     } else {
-      // Restore screen brightness
-      if (_originalBrightness != null) {
-        ScreenBrightness().setScreenBrightness(_originalBrightness!).then((_) {
-          // Reset to system control after a short delay to ensure the set value is applied
-          Future.delayed(const Duration(milliseconds: 500), () {
-            ScreenBrightness().resetScreenBrightness();
-          });
-        });
-      } else {
-        ScreenBrightness().resetScreenBrightness();
-      }
-
+      _updateBrightness();
       _removeOverlay();
       // Stop kiosk mode when deactivating
       getKioskMode().then((state) {
@@ -143,15 +177,19 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
     if (_overlayEntry == null) {
       debugPrint('DimmedModeWrapper: Creating new OverlayEntry');
       _overlayEntry = OverlayEntry(
-        builder: (overlayContext) => BlockOverlay(
-          swipeThreshold: -350, // Set the 3-finger slide length here (negative for upward)
-          onUnlock: () {
-            debugPrint('DimmedModeWrapper: Overlay unlock triggered');
-            if (!mounted) return;
-            final dimmedModeService = Provider.of<DimmedModeService>(context, listen: false);
-            dimmedModeService.disableDimmedMode();
-          },
-        ),
+        builder: (overlayContext) {
+          final settings = Provider.of<SettingsProvider>(overlayContext);
+          return BlockOverlay(
+            swipeThreshold: -350,
+            onUnlock: () {
+              debugPrint('DimmedModeWrapper: Overlay unlock triggered');
+              if (!mounted) return;
+              final dimmedModeService = Provider.of<DimmedModeService>(context, listen: false);
+              dimmedModeService.disableDimmedMode();
+            },
+            showAudioControls: settings.showAudioControlsOnLockscreen,
+          );
+        },
       );
       Overlay.of(context).insert(_overlayEntry!);
     } else {
@@ -286,6 +324,7 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
                    BlockOverlay(
                      swipeThreshold: -350,
                      onUnlock: () => dimmedModeService.disableDimmedMode(),
+                     showAudioControls: settings.showAudioControlsOnLockscreen,
                    ),
               ],
             ),
@@ -306,10 +345,12 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
 class BlockOverlay extends StatefulWidget {
   final VoidCallback onUnlock;
   final double swipeThreshold;
+  final bool showAudioControls;
   
   const BlockOverlay({
     required this.onUnlock, 
-    this.swipeThreshold = -350, 
+    this.swipeThreshold = -350,
+    this.showAudioControls = false,
     super.key,
   });
   
@@ -393,6 +434,15 @@ class _BlockOverlayState extends State<BlockOverlay> {
                 child: Container(color: Colors.transparent),
               ),
             ),
+
+            // Player widget at the bottom - moved to top of stack for visibility and interaction
+            if (widget.showAudioControls)
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 100,
+                child: PlayerWidget(isLockscreen: true),
+              ),
           ],
         ),
       ),

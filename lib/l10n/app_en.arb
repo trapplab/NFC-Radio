@@ -161,7 +161,7 @@
   "white": "White",
   "cappuccino": "Cappuccino",
   "black": "Black",
-  "needNfcTagsTitle": "Want some extras?"
+  "needNfcTagsTitle": "Want some extras?",
   "songActions": "Song Actions",
   "moveToFolder": "Move to Folder...",
   "copyToFolder": "Copy to Folder...",
@@ -175,5 +175,6 @@
   "existingSongInFolder": "Existing song in folder:",
   "whatWouldYouLikeToDo": "What would you like to do?",
   "moveWithoutNfc": "Move/Copy without NFC",
-  "replaceNfcConnection": "Replace NFC Connection"
+  "replaceNfcConnection": "Replace NFC Connection",
+  "showAudioControlsOnLockscreen": "Show audio controls on lockscreen"
 }

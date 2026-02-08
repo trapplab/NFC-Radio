@@ -161,7 +161,7 @@
   "white": "Bianco",
   "cappuccino": "Cappuccino",
   "black": "Nero",
-  "needNfcTagsTitle": "Vuoi qualche extra?"
+  "needNfcTagsTitle": "Vuoi qualche extra?",
   "songActions": "Azioni canzone",
   "moveToFolder": "Sposta nella cartella...",
   "copyToFolder": "Copia nella cartella...",
@@ -175,5 +175,6 @@
   "existingSongInFolder": "Canzone esistente nella cartella:",
   "whatWouldYouLikeToDo": "Cosa vorresti fare?",
   "moveWithoutNfc": "Sposta/Copia senza NFC",
-  "replaceNfcConnection": "Sostituisci connessione NFC"
+  "replaceNfcConnection": "Sostituisci connessione NFC",
+  "showAudioControlsOnLockscreen": "Mostra controlli audio sulla schermata di blocco"
 }

@@ -161,7 +161,7 @@
   "white": "Blanc",
   "cappuccino": "Cappuccino",
   "black": "Noir",
-  "needNfcTagsTitle": "Envie d'un petit extra?"
+  "needNfcTagsTitle": "Envie d'un petit extra?",
   "songActions": "Actions de chanson",
   "moveToFolder": "Déplacer vers le dossier...",
   "copyToFolder": "Copier vers le dossier...",
@@ -175,5 +175,6 @@
   "existingSongInFolder": "Chanson existante dans le dossier :",
   "whatWouldYouLikeToDo": "Que voudriez-vous faire ?",
   "moveWithoutNfc": "Déplacer/Copier sans NFC",
-  "replaceNfcConnection": "Remplacer la connexion NFC"
+  "replaceNfcConnection": "Remplacer la connexion NFC",
+  "showAudioControlsOnLockscreen": "Afficher les contrôles audio sur l'écran de verrouillage"
 }
