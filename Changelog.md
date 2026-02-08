@@ -13,6 +13,10 @@
 
 # Changelog
 
+## [0.15.0]
+### Added
+- added setting to make audio player visible on lockscreen
+
 ## [0.14.1]
 ### Fixed
 - link fastlane folder to android folder so fdroid and playstore toolchains can access

@@ -1,0 +1,2 @@
+## Añadido
+- se añadió una configuración para que el reproductor de audio sea visible en la pantalla de bloqueo

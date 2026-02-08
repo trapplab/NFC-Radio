@@ -1,0 +1,2 @@
+## Ajouté
+- ajout d'un paramètre pour rendre le lecteur audio visible sur l'écran de verrouillage

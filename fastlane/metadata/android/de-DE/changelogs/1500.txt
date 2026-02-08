@@ -1,0 +1,2 @@
+## Hinzugefügt
+- Einstellung hinzugefügt, um den Audioplayer auf dem Sperrbildschirm sichtbar zu machen

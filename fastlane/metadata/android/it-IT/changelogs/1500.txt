@@ -1,0 +1,2 @@
+## Aggiunto
+- aggiunta impostazione per rendere il lettore audio visibile sulla schermata di blocco

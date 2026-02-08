@@ -1,0 +1,2 @@
+## Added
+- added setting to make audio player visible on lockscreen
