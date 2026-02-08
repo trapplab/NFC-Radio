@@ -140,9 +140,9 @@ jobs:
       - name: Create key.properties
         run: |
           echo "storeFile=upload-keystore.jks" >> android/key.properties
-          echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> android/key.properties
-          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
-          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
+          echo "storePassword=${{ secrets.ANDROID_PLAYSTORE_KEYSTORE_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.ANDROID_PLAYSTORE_KEY_ALIAS }}" >> android/key.properties
+          echo "keyPassword=${{ secrets.ANDROID_PLAYSTORE_KEY_PASSWORD }}" >> android/key.properties
 
       - name: Prepare Play Flavor
         run: ./scripts/prepare_flavor.sh play
