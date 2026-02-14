@@ -1,0 +1,5 @@
+## Arreglado
+- intenta arreglar el envío de fastlane a la Play Store rápidamente
+## Cambiado
+- Readme actualizado
+- rehacer enlaces en el menú de configuración

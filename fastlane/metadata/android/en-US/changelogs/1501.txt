@@ -1,0 +1,5 @@
+## Fixed
+- try to fix fastlane push into the playstore
+## Changed
+- updated Readme
+- rework links in settings menu

@@ -13,6 +13,13 @@
 
 # Changelog
 
+## [0.15.1]
+### Fixed
+- try to fix fastlane push into the playstore
+## Changed
+- updated Readme
+- rework links in settings menu
+
 ## [0.15.0]
 ### Added
 - added setting to make audio player visible on lockscreen

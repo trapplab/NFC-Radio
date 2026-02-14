@@ -1,0 +1,5 @@
+## Risolto
+- cerca di sistemare il push di fastlane sul Play Store
+## Modificato
+- Readme aggiornato
+- rielaborare i link nel menu delle impostazioni

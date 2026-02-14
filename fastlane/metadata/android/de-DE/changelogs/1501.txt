@@ -1,0 +1,5 @@
+## Gefixt
+- Versuchen, Fastlane Upload in den Playstore zu reparieren.
+## Geändert
+- aktualisierte Readme
+- Links im Einstellungsmenü überarbeiten

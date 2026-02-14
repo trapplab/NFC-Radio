@@ -1,0 +1,5 @@
+## Corrigé
+- essayer de réparer le push fastlane vers le Playstore
+## Modifié
+- Readme mis à jour
+- retravailler les liens dans le menu des paramètres
