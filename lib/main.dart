@@ -679,12 +679,19 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                         onChanged: (value) {
                           if (value != null) {
                             settings.setSleepTimerDurationMinutes(value);
+                            final sleepTimer = Provider.of<SleepTimerService>(context, listen: false);
+                            if (sleepTimer.isActive) {
+                              final duration = value == 0
+                                  ? const Duration(seconds: 10)
+                                  : Duration(minutes: value);
+                              sleepTimer.start(duration);
+                            }
                           }
                         },
-                        items: [0, 15, 30, 45, 60, 90].map((minutes) {
+                        items: [5, 10, 15, 30, 45, 60, 90].map((minutes) {
                           return DropdownMenuItem<int>(
                             value: minutes,
-                            child: Text(minutes == 0 ? '10 sec (test)' : AppLocalizations.of(context)!.sleepTimerMinutes(minutes)),
+                            child: Text(AppLocalizations.of(context)!.sleepTimerMinutes(minutes)),
                           );
                         }).toList(),
                       ),

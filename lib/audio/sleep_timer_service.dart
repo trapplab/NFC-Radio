@@ -24,8 +24,6 @@ class SleepTimerService with ChangeNotifier {
       _remainingDuration -= const Duration(seconds: 1);
       if (_remainingDuration <= Duration.zero) {
         _onTimerComplete();
-      } else {
-        notifyListeners();
       }
     });
     notifyListeners();
@@ -43,10 +41,10 @@ class SleepTimerService with ChangeNotifier {
   }
 
   void pause() {
+    if (_timer == null) return;
     _timer?.cancel();
     _timer = null;
     debugPrint('😴 Sleep timer paused with ${_remainingDuration.inSeconds}s remaining');
-    // Keep _isActive true and _remainingDuration intact so we can resume
   }
 
   void resume() {
@@ -56,8 +54,6 @@ class SleepTimerService with ChangeNotifier {
       _remainingDuration -= const Duration(seconds: 1);
       if (_remainingDuration <= Duration.zero) {
         _onTimerComplete();
-      } else {
-        notifyListeners();
       }
     });
   }

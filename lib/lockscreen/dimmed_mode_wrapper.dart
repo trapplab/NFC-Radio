@@ -25,6 +25,7 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
   double _dragOffset = 0.0;
   OverlayEntry? _overlayEntry;
   double? _originalBrightness;
+  bool? _lastBrightnessState; // Track to avoid redundant logging
   
   @override
   void initState() {
@@ -104,19 +105,31 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final musicPlayer = Provider.of<MusicPlayer>(context, listen: false);
 
+    // Determine the desired brightness state:
+    // true = bright (audio controls visible), false = dimmed, null = not dimmed at all
+    bool? desiredState;
     if (dimmedModeService.isDimmed) {
       bool showControls = settings.showAudioControlsOnLockscreen && (musicPlayer.isPlaying || musicPlayer.isPaused);
-      if (showControls) {
-        debugPrint('DimmedModeWrapper: Restoring brightness for audio controls');
-        if (_originalBrightness != null) {
-          ScreenBrightness().setScreenBrightness(_originalBrightness!);
-        } else {
-          ScreenBrightness().resetScreenBrightness();
-        }
+      desiredState = showControls; // true = bright for controls, false = dimmed
+    } else {
+      desiredState = null; // not in dimmed mode
+    }
+
+    // Skip if brightness state hasn't changed
+    if (desiredState == _lastBrightnessState) return;
+
+    _lastBrightnessState = desiredState;
+
+    if (desiredState == true) {
+      debugPrint('DimmedModeWrapper: Restoring brightness for audio controls');
+      if (_originalBrightness != null) {
+        ScreenBrightness().setScreenBrightness(_originalBrightness!);
       } else {
-        debugPrint('DimmedModeWrapper: Dimming screen');
-        ScreenBrightness().setScreenBrightness(0.0);
+        ScreenBrightness().resetScreenBrightness();
       }
+    } else if (desiredState == false) {
+      debugPrint('DimmedModeWrapper: Dimming screen');
+      ScreenBrightness().setScreenBrightness(0.0);
     } else {
       debugPrint('DimmedModeWrapper: Restoring brightness (not dimmed)');
       if (_originalBrightness != null) {
@@ -173,9 +186,8 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
   
   void _showOverlay() {
     if (!mounted) return;
-    debugPrint('DimmedModeWrapper: _showOverlay called');
     if (_overlayEntry == null) {
-      debugPrint('DimmedModeWrapper: Creating new OverlayEntry');
+      debugPrint('DimmedModeWrapper: Creating OverlayEntry');
       _overlayEntry = OverlayEntry(
         builder: (overlayContext) {
           final settings = Provider.of<SettingsProvider>(overlayContext);
@@ -192,13 +204,10 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
         },
       );
       Overlay.of(context).insert(_overlayEntry!);
-    } else {
-      debugPrint('DimmedModeWrapper: OverlayEntry already exists');
     }
   }
   
   void _removeOverlay() {
-    debugPrint('DimmedModeWrapper: _removeOverlay called');
     if (_overlayEntry != null) {
       debugPrint('DimmedModeWrapper: Removing OverlayEntry');
       _overlayEntry?.remove();
