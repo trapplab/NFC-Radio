@@ -26,7 +26,7 @@ import 'models/github_audio_folder.dart';
 import 'config/settings_provider.dart';
 import 'config/theme_provider.dart';
 import 'config/color_chooser.dart';
-import 'config/buy_me_a_coffee_widget.dart';
+import 'config/social_icon_bar.dart';
 import 'package:path/path.dart' as p;
 import 'package:url_launcher/url_launcher.dart';
 import 'tutorial/tutorial_service.dart';
@@ -617,7 +617,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 const Divider(),
                 const ColorChooser(),
                 const Divider(),
-                const BuyMeACoffeeWidget(),
+                const SocialIconBar(),
                 const Divider(),
                 ListTile(
                   title: Text(AppLocalizations.of(context)!.appVersion),
