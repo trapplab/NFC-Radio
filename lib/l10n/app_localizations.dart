@@ -1234,6 +1234,65 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'NFC tag connected to folder'**
   String get folderNfcConnected;
+  /// No description provided for @sleepTimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep Timer'**
+  String get sleepTimer;
+
+  /// No description provided for @sleepTimerDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get sleepTimerDuration;
+
+  /// No description provided for @sleepTimerMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String sleepTimerMinutes(Object minutes);
+
+  /// No description provided for @autoSleepTimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-enable'**
+  String get autoSleepTimer;
+
+  /// No description provided for @autoSleepTimerDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically start sleep timer on playback'**
+  String get autoSleepTimerDescription;
+
+  /// No description provided for @restrictToHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Only during certain hours'**
+  String get restrictToHours;
+
+  /// No description provided for @sleepTimerFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get sleepTimerFrom;
+
+  /// No description provided for @sleepTimerTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get sleepTimerTo;
+
+  /// No description provided for @sleepTimerRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep: {time}'**
+  String sleepTimerRemaining(Object time);
+
+  /// No description provided for @sleepTimerCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep timer cancelled'**
+  String get sleepTimerCancelled;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

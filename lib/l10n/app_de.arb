@@ -189,4 +189,14 @@
   "scanNfcForFolder": "NFC-Tag für Ordner scannen",
   "holdNfcTagNearDevice": "Halten Sie einen NFC-Tag an Ihr Gerät, um ihn mit diesem Ordner zu verbinden.",
   "folderNfcConnected": "NFC-Tag mit Ordner verbunden"
+  "sleepTimer": "Schlaf-Timer",
+  "sleepTimerDuration": "Dauer",
+  "sleepTimerMinutes": "{minutes} Min.",
+  "autoSleepTimer": "Automatisch aktivieren",
+  "autoSleepTimerDescription": "Schlaf-Timer bei Wiedergabe automatisch starten",
+  "restrictToHours": "Nur zu bestimmten Uhrzeiten",
+  "sleepTimerFrom": "Von",
+  "sleepTimerTo": "Bis",
+  "sleepTimerRemaining": "Schlaf: {time}",
+  "sleepTimerCancelled": "Schlaf-Timer abgebrochen"
 }

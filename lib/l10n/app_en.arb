@@ -189,4 +189,14 @@
   "scanNfcForFolder": "Scan NFC Tag for Folder",
   "holdNfcTagNearDevice": "Hold an NFC tag near your device to connect it to this folder.",
   "folderNfcConnected": "NFC tag connected to folder"
+  "sleepTimer": "Sleep Timer",
+  "sleepTimerDuration": "Duration",
+  "sleepTimerMinutes": "{minutes} min",
+  "autoSleepTimer": "Auto-enable",
+  "autoSleepTimerDescription": "Automatically start sleep timer on playback",
+  "restrictToHours": "Only during certain hours",
+  "sleepTimerFrom": "From",
+  "sleepTimerTo": "To",
+  "sleepTimerRemaining": "Sleep: {time}",
+  "sleepTimerCancelled": "Sleep timer cancelled"
 }

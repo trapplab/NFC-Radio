@@ -656,4 +656,36 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get folderNfcConnected => 'Etiqueta NFC conectada a carpeta';
+  String get sleepTimer => 'Temporizador de sueño';
+
+  @override
+  String get sleepTimerDuration => 'Duración';
+
+  @override
+  String sleepTimerMinutes(Object minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get autoSleepTimer => 'Activar automáticamente';
+
+  @override
+  String get autoSleepTimerDescription => 'Iniciar temporizador de sueño automáticamente al reproducir';
+
+  @override
+  String get restrictToHours => 'Solo durante ciertas horas';
+
+  @override
+  String get sleepTimerFrom => 'Desde';
+
+  @override
+  String get sleepTimerTo => 'Hasta';
+
+  @override
+  String sleepTimerRemaining(Object time) {
+    return 'Sueño: $time';
+  }
+
+  @override
+  String get sleepTimerCancelled => 'Temporizador de sueño cancelado';
 }

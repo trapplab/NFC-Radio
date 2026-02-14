@@ -12,6 +12,7 @@ import 'nfc/nfc_music_mapping.dart';
 import 'nfc/nfc_service.dart';
 import 'audio/music_player.dart';
 import 'audio/player_widget.dart';
+import 'audio/sleep_timer_service.dart';
 import 'storage/song.dart';
 import 'storage/folder.dart';
 import 'storage/storage_service.dart';
@@ -69,6 +70,7 @@ class NFCJukeboxApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => NFCService()),
         ChangeNotifierProvider.value(value: IAPService.instance),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => SleepTimerService()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: Consumer<ThemeProvider>(
@@ -435,6 +437,49 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           final musicPlayer = Provider.of<MusicPlayer>(context, listen: false);
           final nfcService = Provider.of<NFCService>(context, listen: false);
           final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+          final sleepTimerService = Provider.of<SleepTimerService>(context, listen: false);
+
+          // Wire up sleep timer with music player
+          sleepTimerService.setMusicPlayer(musicPlayer);
+
+          // Listen for playback state changes to manage sleep timer
+          musicPlayer.addListener(() {
+            if (musicPlayer.isPlaying && !sleepTimerService.isActive) {
+              // Auto-start sleep timer if enabled
+              if (sleepTimerService.shouldAutoEnable(
+                autoEnabled: settingsProvider.autoSleepTimerEnabled,
+                restrictHours: settingsProvider.autoSleepTimerRestrictHours,
+                startHour: settingsProvider.autoSleepTimerStartHour,
+                endHour: settingsProvider.autoSleepTimerEndHour,
+              )) {
+                final duration = settingsProvider.sleepTimerDurationMinutes == 0
+                    ? const Duration(seconds: 10)
+                    : Duration(minutes: settingsProvider.sleepTimerDurationMinutes);
+                sleepTimerService.start(duration);
+              }
+            } else if (musicPlayer.isPlaying && sleepTimerService.isActive) {
+              // Resume timer if it was paused
+              sleepTimerService.resume();
+            } else if (musicPlayer.isPaused && sleepTimerService.isActive) {
+              sleepTimerService.pause();
+            } else if (musicPlayer.isStopped && sleepTimerService.isActive) {
+              sleepTimerService.cancel();
+            }
+          });
+
+          // Re-evaluate sleep timer when settings change
+          settingsProvider.addListener(() {
+            if (!sleepTimerService.isActive || !musicPlayer.isPlaying) return;
+            final shouldBeActive = sleepTimerService.shouldAutoEnable(
+              autoEnabled: settingsProvider.autoSleepTimerEnabled,
+              restrictHours: settingsProvider.autoSleepTimerRestrictHours,
+              startHour: settingsProvider.autoSleepTimerStartHour,
+              endHour: settingsProvider.autoSleepTimerEndHour,
+            );
+            if (!shouldBeActive) {
+              sleepTimerService.cancel();
+            }
+          });
 
           // Set callback for position changes to persist in song
           musicPlayer.onPositionChangedCallback = (position) {
@@ -622,6 +667,93 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   onChanged: (value) {
                     settings.setShowAudioControlsOnLockscreen(value);
                   },
+                ),
+                ExpansionTile(
+                  title: Text(AppLocalizations.of(context)!.sleepTimer),
+                  leading: const Icon(Icons.bedtime),
+                  children: [
+                    ListTile(
+                      title: Text(AppLocalizations.of(context)!.sleepTimerDuration),
+                      trailing: DropdownButton<int>(
+                        value: settings.sleepTimerDurationMinutes,
+                        onChanged: (value) {
+                          if (value != null) {
+                            settings.setSleepTimerDurationMinutes(value);
+                          }
+                        },
+                        items: [0, 15, 30, 45, 60, 90].map((minutes) {
+                          return DropdownMenuItem<int>(
+                            value: minutes,
+                            child: Text(minutes == 0 ? '10 sec (test)' : AppLocalizations.of(context)!.sleepTimerMinutes(minutes)),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    SwitchListTile(
+                      title: Text(AppLocalizations.of(context)!.autoSleepTimer),
+                      subtitle: Text(AppLocalizations.of(context)!.autoSleepTimerDescription),
+                      value: settings.autoSleepTimerEnabled,
+                      onChanged: (value) {
+                        settings.setAutoSleepTimerEnabled(value);
+                      },
+                    ),
+                    if (settings.autoSleepTimerEnabled) ...[
+                      SwitchListTile(
+                        title: Text(AppLocalizations.of(context)!.restrictToHours),
+                        value: settings.autoSleepTimerRestrictHours,
+                        onChanged: (value) {
+                          settings.setAutoSleepTimerRestrictHours(value);
+                        },
+                      ),
+                      if (settings.autoSleepTimerRestrictHours) ...[
+                        Builder(builder: (context) {
+                          final use24h = MediaQuery.of(context).alwaysUse24HourFormat;
+                          String formatHour(int hour) {
+                            if (use24h) return '${hour.toString().padLeft(2, '0')}:00';
+                            final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+                            final period = hour < 12 ? 'AM' : 'PM';
+                            return '$displayHour:00 $period';
+                          }
+                          return Column(children: [
+                            ListTile(
+                              title: Text(AppLocalizations.of(context)!.sleepTimerFrom),
+                              trailing: DropdownButton<int>(
+                                value: settings.autoSleepTimerStartHour,
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    settings.setAutoSleepTimerStartHour(value);
+                                  }
+                                },
+                                items: List.generate(24, (hour) {
+                                  return DropdownMenuItem<int>(
+                                    value: hour,
+                                    child: Text(formatHour(hour)),
+                                  );
+                                }),
+                              ),
+                            ),
+                            ListTile(
+                              title: Text(AppLocalizations.of(context)!.sleepTimerTo),
+                              trailing: DropdownButton<int>(
+                                value: settings.autoSleepTimerEndHour,
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    settings.setAutoSleepTimerEndHour(value);
+                                  }
+                                },
+                                items: List.generate(24, (hour) {
+                                  return DropdownMenuItem<int>(
+                                    value: hour,
+                                    child: Text(formatHour(hour)),
+                                  );
+                                }),
+                              ),
+                            ),
+                          ]);
+                        }),
+                      ],
+                    ],
+                  ],
                 ),
                 const Divider(),
                 const ColorChooser(),

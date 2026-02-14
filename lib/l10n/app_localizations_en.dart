@@ -656,4 +656,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get folderNfcConnected => 'NFC tag connected to folder';
+  String get sleepTimer => 'Sleep Timer';
+
+  @override
+  String get sleepTimerDuration => 'Duration';
+
+  @override
+  String sleepTimerMinutes(Object minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get autoSleepTimer => 'Auto-enable';
+
+  @override
+  String get autoSleepTimerDescription => 'Automatically start sleep timer on playback';
+
+  @override
+  String get restrictToHours => 'Only during certain hours';
+
+  @override
+  String get sleepTimerFrom => 'From';
+
+  @override
+  String get sleepTimerTo => 'To';
+
+  @override
+  String sleepTimerRemaining(Object time) {
+    return 'Sleep: $time';
+  }
+
+  @override
+  String get sleepTimerCancelled => 'Sleep timer cancelled';
 }
