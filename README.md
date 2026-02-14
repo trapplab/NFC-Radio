@@ -3,13 +3,14 @@
 ## Available on
 [<img src="https://img.shields.io/badge/F--Droid-1976D2?style=for-the-badge&logo=f-droid"
       alt="Get it on F-Droid"
-      height="50">](https://f-droid.org/packages/com.trapplab.nfc_radio/
-)
+      height="50">](https://f-droid.org/packages/com.trapplab.nfc_radio/)
+[<img src="https://img.shields.io/badge/Google_Play-01875f?style=for-the-badge&logo=google-play"
+      alt="Get it on Google Play"
+      hspace="16"
+      height="50">](https://play.google.com/store/apps/details?id=com.trapplab.nfc_radio)
 [<img src="https://img.shields.io/badge/GitHub%20Releases-100000?style=for-the-badge&logo=github"
       alt="Get it on GitHub"
-      height="50">](
-https://github.com/trapplab/NFC-Radio/releases
-)
+      height="50">](https://github.com/trapplab/NFC-Radio/releases)
 
 ### Status
 ![GitHub Release](https://img.shields.io/github/v/release/trapplab/NFC-Radio)
