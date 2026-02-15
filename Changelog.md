@@ -13,6 +13,11 @@
 
 # Changelog
 
+## [0.16.0]
+### Added 
+- Play complete folders as playlist from a NFC Tag
+- possibility to add multiple audio files at once
+
 ## [0.15.1]
 ### Fixed
 - try to fix fastlane push into the playstore

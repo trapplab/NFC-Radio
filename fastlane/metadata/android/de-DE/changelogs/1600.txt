@@ -1,0 +1,3 @@
+## Hinzugefügt
+- Komplette Ordner als Wiedergabeliste von einem NFC-Tag abspielen
+- Möglichkeit, mehrere Audiodateien gleichzeitig hinzuzufügen

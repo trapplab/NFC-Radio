@@ -1,0 +1,3 @@
+## Ajouté
+- Lire des dossiers complets comme une liste de lecture à partir d'une étiquette NFC
+- possibilité d'ajouter plusieurs fichiers audio à la fois
