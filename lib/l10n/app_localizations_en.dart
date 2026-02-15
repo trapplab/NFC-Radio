@@ -618,4 +618,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showAudioControlsOnLockscreen => 'Show audio controls on lockscreen';
+
+  @override
+  String get connectNfc => 'Connect NFC';
+
+  @override
+  String get disconnectNfc => 'Disconnect NFC';
+
+  @override
+  String get shufflePlayback => 'Shuffle';
+
+  @override
+  String get loopPlaylist => 'Loop Playlist';
+
+  @override
+  String get folderHasNoSongs => 'Folder has no songs to play';
+
+  @override
+  String get nfcAlreadyConnectedToFolder => 'This NFC tag is already connected to folder:';
+
+  @override
+  String get nfcAlreadyConnectedToSongInFolder => 'This NFC tag is already connected to a song in this folder:';
+
+  @override
+  String filesAdded(Object count) {
+    return '$count audio files added';
+  }
+
+  @override
+  String get scanNfcForFolder => 'Scan NFC Tag for Folder';
+
+  @override
+  String get holdNfcTagNearDevice => 'Hold an NFC tag near your device to connect it to this folder.';
+
+  @override
+  String get folderNfcConnected => 'NFC tag connected to folder';
 }

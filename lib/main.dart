@@ -23,6 +23,7 @@ import 'iap/iap_service.dart';
 import 'services/audio_intent_service.dart';
 import 'services/github_audio_service.dart';
 import 'models/github_audio_folder.dart';
+import 'models/external_audio_file.dart';
 import 'config/settings_provider.dart';
 import 'config/theme_provider.dart';
 import 'config/color_chooser.dart';
@@ -442,6 +443,15 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               songProvider.updateSongPosition(musicPlayer.currentSong!.id, position.inMilliseconds);
             }
           };
+
+          // Set callback for playlist position changes to persist in folder
+          musicPlayer.onPlaylistPositionChanged = (folderId, songIndex, positionMs) {
+            folderProvider.updateFolderPlaybackState(
+              folderId,
+              lastPlayedSongIndex: songIndex,
+              lastPlayedPositionMs: positionMs,
+            );
+          };
     
           if (!songProvider.isInitialized || !folderProvider.isInitialized || !settingsProvider.isInitialized) {
             debugPrint('🔄 Initializing providers with persisted data...');
@@ -834,6 +844,14 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             _showSongDialog(context, songProvider, folderId: folderId);
           }
         },
+        onLongPress: () {
+          if (folderId == null) return;
+          if (folderProvider.isSongLimitReached(folderId)) {
+            folderProvider.showSongLimitDialog(context);
+            return;
+          }
+          _pickMultipleAudioFiles(context, songProvider, folderProvider, folderId);
+        },
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -848,6 +866,63 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
         ),
       ),
     );
+  }
+
+  void _pickMultipleAudioFiles(
+    BuildContext context,
+    SongProvider songProvider,
+    FolderProvider folderProvider,
+    String folderId,
+  ) {
+    int addedCount = 0;
+    StreamSubscription<ExternalAudioFile>? subscription;
+
+    // Listen for multiple audio files picked
+    subscription = AudioIntentService().onAudioPicked.listen((audioFile) async {
+      final path = audioFile.sourceUri.isScheme('file')
+          ? audioFile.sourceUri.toFilePath()
+          : audioFile.sourceUri.toString();
+
+      final isValid = await _isValidAudioFile(path);
+      if (!isValid) return;
+
+      final title = (audioFile.displayName ?? path.split('/').last)
+          .replaceAll(RegExp(r'\.[^.]+$'), '');
+
+      final newSong = Song(
+        id: const Uuid().v4(),
+        title: title,
+        filePath: path,
+      );
+
+      songProvider.addSong(newSong);
+      folderProvider.addSongToFolder(folderId, newSong.id);
+      addedCount++;
+
+      debugPrint('📥 Multi-import: Added "$title" ($addedCount files so far)');
+    });
+
+    // Launch the file picker (with multi-select enabled by native side)
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    AudioIntentService().pickAudioFromApp(
+      filterAudioOnly: settings.filterAudioOnly,
+    ).then((success) {
+      if (!success && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.failedToLaunchAudioPicker)),
+        );
+      }
+
+      // Cancel subscription after a delay to allow all callbacks to arrive
+      Future.delayed(const Duration(seconds: 2), () {
+        subscription?.cancel();
+        if (addedCount > 0 && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context)!.filesAdded(addedCount))),
+          );
+        }
+      });
+    });
   }
 
   void _showAddFolderDialog(BuildContext context, FolderProvider folderProvider) {
@@ -1406,19 +1481,27 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     // Get songs in this folder
     final folderSongs = songProvider.songs.where((song) => folder.songIds.contains(song.id)).toList();
 
+    final bool isFolderNfcConnected = folder.connectedNfcUuid != null;
+    final bool isFolderPlaylistActive = musicPlayer.isPlaylistMode && musicPlayer.currentPlaylistFolderId == folder.id;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Provider.of<ThemeProvider>(context).footerColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Provider.of<ThemeProvider>(context).bannerColor.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: isFolderNfcConnected
+              ? Colors.green
+              : Provider.of<ThemeProvider>(context).bannerColor.withValues(alpha: 0.3),
+          width: isFolderNfcConnected ? 2 : 1,
+        ),
       ),
       child: Column(
         children: [
           // Folder header
           InkWell(
             onTap: () => folderProvider.toggleFolderExpansion(folder.id),
-            onLongPress: () => _showFolderActionsDialog(context, folder, folderProvider),
+            onLongPress: () => _showFolderActionsDialog(context, folder, folderProvider, musicPlayer),
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -1446,6 +1529,37 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                   Icon(
                     folder.isExpanded ? Icons.expand_less : Icons.expand_more,
                     color: Provider.of<ThemeProvider>(context).bannerColor,
+                  ),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      if (isFolderPlaylistActive) {
+                        if (musicPlayer.isPlaying) {
+                          musicPlayer.pauseMusic();
+                        } else {
+                          musicPlayer.resumeMusic();
+                        }
+                      } else if (folderSongs.isNotEmpty) {
+                        musicPlayer.startPlaylist(
+                          songs: folderSongs,
+                          folderId: folder.id,
+                          shuffle: folder.isShuffleEnabled,
+                          loopPlaylist: folder.isLoopPlaylistEnabled,
+                          startIndex: folder.lastPlayedSongIndex ?? 0,
+                          startPositionMs: folder.lastPlayedPositionMs ?? 0,
+                        );
+                      }
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Icon(
+                        isFolderPlaylistActive && musicPlayer.isPlaying
+                            ? Icons.pause_circle
+                            : Icons.play_circle,
+                        color: isFolderPlaylistActive ? Colors.green : Colors.grey,
+                        size: 20,
+                      ),
+                    ),
                   ),
                   ReorderableDragStartListener(
                     index: index,
@@ -1565,51 +1679,293 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     BuildContext context,
     Folder folder,
     FolderProvider folderProvider,
+    MusicPlayer musicPlayer,
   ) {
+    final nfcService = Provider.of<NFCService>(context, listen: false);
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              folder.name,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.edit),
-              title: Text(AppLocalizations.of(context)!.edit),
-              onTap: () async {
-                Navigator.pop(context);
-                await Future.delayed(const Duration(milliseconds: 100));
-                if (context.mounted) {
-                  _showEditFolderDialog(context, folder, folderProvider);
-                }
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: Text(
-                AppLocalizations.of(context)!.delete,
-                style: const TextStyle(color: Colors.red),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                folder.name,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              onTap: () async {
-                Navigator.pop(context);
-                await Future.delayed(const Duration(milliseconds: 100));
-                if (context.mounted) {
-                  _showDeleteFolderDialog(context, folder, folderProvider);
-                }
-              },
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(AppLocalizations.of(context)!.cancel),
-            ),
-          ],
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: Text(AppLocalizations.of(context)!.edit),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await Future.delayed(const Duration(milliseconds: 100));
+                  if (context.mounted) {
+                    _showEditFolderDialog(context, folder, folderProvider);
+                  }
+                },
+              ),
+              if (nfcService.isNfcAvailable)
+                ListTile(
+                  leading: Icon(
+                    Icons.nfc,
+                    color: folder.connectedNfcUuid != null ? Colors.green : null,
+                  ),
+                  title: Text(folder.connectedNfcUuid != null
+                      ? AppLocalizations.of(context)!.disconnectNfc
+                      : AppLocalizations.of(context)!.connectNfc),
+                  subtitle: folder.connectedNfcUuid != null
+                      ? Text(AppLocalizations.of(context)!.assignedNfc(
+                          folder.connectedNfcUuid!.substring(0, folder.connectedNfcUuid!.length.clamp(0, 8))))
+                      : null,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await Future.delayed(const Duration(milliseconds: 100));
+                    if (context.mounted) {
+                      if (folder.connectedNfcUuid != null) {
+                        folderProvider.disconnectFolderFromNfc(folder.id);
+                      } else {
+                        _showFolderNfcDialog(context, folder, folderProvider);
+                      }
+                    }
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.shuffle),
+                title: Text(AppLocalizations.of(context)!.shufflePlayback),
+                trailing: Switch(
+                  value: folder.isShuffleEnabled,
+                  onChanged: (value) {
+                    folderProvider.updateFolderShuffle(folder.id, value);
+                    if (musicPlayer.isPlaylistMode && musicPlayer.currentPlaylistFolderId == folder.id) {
+                      musicPlayer.setShuffleEnabled(value);
+                    }
+                    final updatedFolder = folderProvider.folders.firstWhere((f) => f.id == folder.id);
+                    setModalState(() {
+                      folder = updatedFolder;
+                    });
+                  },
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.repeat),
+                title: Text(AppLocalizations.of(context)!.loopPlaylist),
+                trailing: Switch(
+                  value: folder.isLoopPlaylistEnabled,
+                  onChanged: (value) {
+                    folderProvider.updateFolderLoop(folder.id, value);
+                    if (musicPlayer.isPlaylistMode && musicPlayer.currentPlaylistFolderId == folder.id) {
+                      musicPlayer.setLoopPlaylistEnabled(value);
+                    }
+                    final updatedFolder = folderProvider.folders.firstWhere((f) => f.id == folder.id);
+                    setModalState(() {
+                      folder = updatedFolder;
+                    });
+                  },
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: Text(
+                  AppLocalizations.of(context)!.delete,
+                  style: const TextStyle(color: Colors.red),
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await Future.delayed(const Duration(milliseconds: 100));
+                  if (context.mounted) {
+                    _showDeleteFolderDialog(context, folder, folderProvider);
+                  }
+                },
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(AppLocalizations.of(context)!.cancel),
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  void _showFolderNfcDialog(BuildContext context, Folder folder, FolderProvider folderProvider) {
+    final nfcService = Provider.of<NFCService>(context, listen: false);
+    final songProvider = Provider.of<SongProvider>(context, listen: false);
+    final mappingProvider = Provider.of<NFCMusicMappingProvider>(context, listen: false);
+
+    nfcService.setEditMode(true);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        String? detectedUuid;
+        return StatefulBuilder(
+          builder: (dialogContext, setState) {
+            // Listen for NFC changes
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (nfcService.currentNfcUuid != null && nfcService.currentNfcUuid != detectedUuid) {
+                setState(() {
+                  detectedUuid = nfcService.currentNfcUuid;
+                });
+              }
+            });
+
+            return ListenableBuilder(
+              listenable: nfcService,
+              builder: (context, _) {
+                final currentUuid = nfcService.currentNfcUuid;
+
+                return AlertDialog(
+                  title: Text(AppLocalizations.of(dialogContext)!.scanNfcForFolder),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(AppLocalizations.of(dialogContext)!.holdNfcTagNearDevice),
+                      const SizedBox(height: 16),
+                      if (currentUuid != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: Colors.blue[300]!),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                AppLocalizations.of(dialogContext)!.newNfcDetected(
+                                  currentUuid.substring(0, currentUuid.length.clamp(0, 8)),
+                                ),
+                                style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 8),
+                              ElevatedButton(
+                                onPressed: () async {
+                                  // Check conflicts: song in same folder with this UUID
+                                  Song? conflictingSong;
+                                  try {
+                                    conflictingSong = songProvider.songs.firstWhere(
+                                      (s) => s.connectedNfcUuid == currentUuid &&
+                                             folder.songIds.contains(s.id),
+                                    );
+                                  } catch (_) {
+                                    conflictingSong = null;
+                                  }
+
+                                  // Check conflicts: another folder with this UUID
+                                  Folder? conflictingFolder;
+                                  try {
+                                    conflictingFolder = folderProvider.folders.firstWhere(
+                                      (f) => f.connectedNfcUuid == currentUuid && f.id != folder.id,
+                                    );
+                                  } catch (_) {
+                                    conflictingFolder = null;
+                                  }
+
+                                  bool shouldConnect = true;
+
+                                  if (conflictingSong != null && dialogContext.mounted) {
+                                    shouldConnect = await showDialog<bool>(
+                                      context: dialogContext,
+                                      builder: (ctx) => AlertDialog(
+                                        title: Text(AppLocalizations.of(dialogContext)!.nfcTagAlreadyConnected),
+                                        content: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(AppLocalizations.of(dialogContext)!.nfcAlreadyConnectedToSongInFolder),
+                                            const SizedBox(height: 8),
+                                            Text('"${conflictingSong!.title}"', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                            const SizedBox(height: 8),
+                                            Text(AppLocalizations.of(dialogContext)!.replaceConnectionQuestion),
+                                          ],
+                                        ),
+                                        actions: [
+                                          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(AppLocalizations.of(dialogContext)!.keepExisting)),
+                                          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: Text(AppLocalizations.of(dialogContext)!.replaceConnection)),
+                                        ],
+                                      ),
+                                    ) ?? false;
+
+                                    if (shouldConnect) {
+                                      songProvider.disconnectSongFromNfc(conflictingSong.id);
+                                      mappingProvider.removeMapping(conflictingSong.id);
+                                    }
+                                  }
+
+                                  if (conflictingFolder != null && shouldConnect && dialogContext.mounted) {
+                                    shouldConnect = await showDialog<bool>(
+                                      context: dialogContext,
+                                      builder: (ctx) => AlertDialog(
+                                        title: Text(AppLocalizations.of(dialogContext)!.nfcTagAlreadyConnected),
+                                        content: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(AppLocalizations.of(dialogContext)!.nfcAlreadyConnectedToFolder),
+                                            const SizedBox(height: 8),
+                                            Text('"${conflictingFolder!.name}"', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                            const SizedBox(height: 8),
+                                            Text(AppLocalizations.of(dialogContext)!.replaceConnectionQuestion),
+                                          ],
+                                        ),
+                                        actions: [
+                                          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(AppLocalizations.of(dialogContext)!.keepExisting)),
+                                          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: Text(AppLocalizations.of(dialogContext)!.replaceConnection)),
+                                        ],
+                                      ),
+                                    ) ?? false;
+
+                                    if (shouldConnect) {
+                                      folderProvider.disconnectFolderFromNfc(conflictingFolder.id);
+                                    }
+                                  }
+
+                                  if (shouldConnect) {
+                                    folderProvider.connectFolderToNfc(folder.id, currentUuid);
+                                    nfcService.setEditMode(false);
+                                    if (dialogContext.mounted) {
+                                      Navigator.of(dialogContext).pop();
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text(AppLocalizations.of(context)!.folderNfcConnected)),
+                                      );
+                                    }
+                                  }
+                                },
+                                child: Text(AppLocalizations.of(dialogContext)!.useThisNfc),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else ...[
+                        Text(
+                          nfcService.isScanning
+                              ? AppLocalizations.of(dialogContext)!.scanningForNfc
+                              : AppLocalizations.of(dialogContext)!.waitingForNfc,
+                          style: TextStyle(color: nfcService.isScanning ? Colors.blue : Colors.grey),
+                        ),
+                      ],
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        nfcService.setEditMode(false);
+                        Navigator.of(dialogContext).pop();
+                      },
+                      child: Text(AppLocalizations.of(dialogContext)!.cancel),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1638,11 +1994,8 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           TextButton(
             onPressed: () {
               if (nameController.text.isNotEmpty) {
-                final updatedFolder = Folder(
-                  id: folder.id,
+                final updatedFolder = folder.copyWith(
                   name: nameController.text,
-                  songIds: folder.songIds,
-                  isExpanded: folder.isExpanded,
                 );
                 folderProvider.updateFolder(updatedFolder);
                 Navigator.pop(context);

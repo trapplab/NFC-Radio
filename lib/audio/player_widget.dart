@@ -69,10 +69,20 @@ class PlayerWidget extends StatelessWidget {
                   ),
                   style: TextStyle(fontSize: 12, color: subtextColor),
                 ),
+              if (musicPlayer.isPlaylistMode)
+                Text(
+                  'Track ${musicPlayer.currentPlaylistIndex + 1}/${musicPlayer.playlistLength}',
+                  style: TextStyle(fontSize: 11, color: subtextColor),
+                ),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  if (musicPlayer.isPlaylistMode)
+                    IconButton(
+                      onPressed: musicPlayer.hasPrevious ? musicPlayer.playPrevious : null,
+                      icon: Icon(Icons.skip_previous, color: musicPlayer.hasPrevious ? iconColor : iconColor.withValues(alpha: 0.3)),
+                    ),
                   IconButton(
                     onPressed: musicPlayer.togglePlayPause,
                     icon: Icon(
@@ -81,6 +91,11 @@ class PlayerWidget extends StatelessWidget {
                     ),
                     tooltip: musicPlayer.isPlaying ? 'Pause' : 'Play',
                   ),
+                  if (musicPlayer.isPlaylistMode)
+                    IconButton(
+                      onPressed: musicPlayer.hasNext ? musicPlayer.playNext : null,
+                      icon: Icon(Icons.skip_next, color: musicPlayer.hasNext ? iconColor : iconColor.withValues(alpha: 0.3)),
+                    ),
                   if (musicPlayer.totalDuration > Duration.zero)
                     Expanded(
                       child: Slider(

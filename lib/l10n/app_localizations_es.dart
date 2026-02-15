@@ -618,4 +618,39 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get showAudioControlsOnLockscreen => 'Mostrar controles de audio en la pantalla de bloqueo';
+
+  @override
+  String get connectNfc => 'Conectar NFC';
+
+  @override
+  String get disconnectNfc => 'Desconectar NFC';
+
+  @override
+  String get shufflePlayback => 'Aleatorio';
+
+  @override
+  String get loopPlaylist => 'Repetir lista';
+
+  @override
+  String get folderHasNoSongs => 'La carpeta no tiene canciones para reproducir';
+
+  @override
+  String get nfcAlreadyConnectedToFolder => 'Esta etiqueta NFC ya está conectada a la carpeta:';
+
+  @override
+  String get nfcAlreadyConnectedToSongInFolder => 'Esta etiqueta NFC ya está conectada a una canción en esta carpeta:';
+
+  @override
+  String filesAdded(Object count) {
+    return '$count archivos de audio añadidos';
+  }
+
+  @override
+  String get scanNfcForFolder => 'Escanear etiqueta NFC para carpeta';
+
+  @override
+  String get holdNfcTagNearDevice => 'Acerque una etiqueta NFC a su dispositivo para conectarla a esta carpeta.';
+
+  @override
+  String get folderNfcConnected => 'Etiqueta NFC conectada a carpeta';
 }

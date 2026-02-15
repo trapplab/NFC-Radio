@@ -176,5 +176,16 @@
   "whatWouldYouLikeToDo": "¿Qué le gustaría hacer?",
   "moveWithoutNfc": "Mover/Copiar sin NFC",
   "replaceNfcConnection": "Reemplazar conexión NFC",
-  "showAudioControlsOnLockscreen": "Mostrar controles de audio en la pantalla de bloqueo"
+  "showAudioControlsOnLockscreen": "Mostrar controles de audio en la pantalla de bloqueo",
+  "connectNfc": "Conectar NFC",
+  "disconnectNfc": "Desconectar NFC",
+  "shufflePlayback": "Aleatorio",
+  "loopPlaylist": "Repetir lista",
+  "folderHasNoSongs": "La carpeta no tiene canciones para reproducir",
+  "nfcAlreadyConnectedToFolder": "Esta etiqueta NFC ya está conectada a la carpeta:",
+  "nfcAlreadyConnectedToSongInFolder": "Esta etiqueta NFC ya está conectada a una canción en esta carpeta:",
+  "filesAdded": "{count} archivos de audio añadidos",
+  "scanNfcForFolder": "Escanear etiqueta NFC para carpeta",
+  "holdNfcTagNearDevice": "Acerque una etiqueta NFC a su dispositivo para conectarla a esta carpeta.",
+  "folderNfcConnected": "Etiqueta NFC conectada a carpeta"
 }

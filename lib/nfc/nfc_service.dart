@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:collection/collection.dart';
 import 'nfc_music_mapping.dart';
 import '../storage/song.dart';
 import '../storage/folder.dart';
@@ -130,6 +131,51 @@ class NFCService with ChangeNotifier {
     return null;
   }
 
+  // Find folder by NFC UUID (searches all folders regardless of expansion state)
+  Folder? _findFolderByNfcUuid(String uuid) {
+    if (_folderProvider == null) return null;
+    return _folderProvider!.folders.firstWhereOrNull((f) => f.connectedNfcUuid == uuid);
+  }
+
+  // Process folder NFC tag for playlist playback
+  Future<void> _processFolderNfcTag(String uuid, Folder folder) async {
+    debugPrint('🎶 Folder NFC detected: ${folder.name} (${folder.id})');
+
+    final songs = folder.songIds
+        .map((id) => _songProvider!.songs.firstWhereOrNull((s) => s.id == id))
+        .nonNulls
+        .toList();
+
+    if (songs.isEmpty) {
+      debugPrint('🎶 Folder "${folder.name}" has no songs');
+      _notifyUser('Folder "${folder.name}" has no songs');
+      return;
+    }
+
+    // Check if currently playing this folder's playlist → toggle pause/resume
+    if (_musicPlayer!.isPlaylistMode &&
+        _musicPlayer!.currentPlaylistFolderId == folder.id) {
+      if (_musicPlayer!.isPlaying) {
+        debugPrint('⏸️ Pausing folder playlist');
+        await _musicPlayer!.pauseMusic();
+      } else if (_musicPlayer!.isPaused) {
+        debugPrint('▶️ Resuming folder playlist');
+        await _musicPlayer!.resumeMusic();
+      }
+      return;
+    }
+
+    // Start new playlist
+    await _musicPlayer!.startPlaylist(
+      songs: songs,
+      folderId: folder.id,
+      shuffle: folder.isShuffleEnabled,
+      loopPlaylist: folder.isLoopPlaylistEnabled,
+      startIndex: folder.lastPlayedSongIndex ?? 0,
+      startPositionMs: folder.lastPlayedPositionMs ?? 0,
+    );
+  }
+
   // Handle NFC tag discovery with music integration
   void _onNfcDiscovered(NfcTag tag) async {
     debugPrint('📡 NFC Tag Discovered! isScanning=$_isScanning, isProcessingTag=$_isProcessingTag');
@@ -236,14 +282,24 @@ class NFCService with ChangeNotifier {
       return;
     }
     
-    // Step 1.5: Check if any folders are open (prevent playback if no folders open)
-    // Only check this after providers are fully validated to avoid initialization issues
+    // Step 1.5: Check if this UUID matches a folder (works regardless of expansion state)
+    final folder = _findFolderByNfcUuid(uuid);
+    if (folder != null) {
+      if (_isInEditMode) {
+        debugPrint('🔧 Edit mode active - skipping folder playback for tag: $uuid');
+        notifyListeners();
+        return;
+      }
+      await _processFolderNfcTag(uuid, folder);
+      return;
+    }
+
+    // Step 1.6: Check if any folders are open (prevent song playback if no folders open)
     final List<Folder> openFolders = _folderProvider!.folders.where((f) => f.isExpanded).toList();
     if (openFolders.isEmpty) {
       debugPrint('🔒 No open folders - NFC tag detected but music playback blocked');
       debugPrint('🔒 Tag detected: $uuid - Open a folder to enable music playback');
       _notifyUser('No open folders - Open a folder to play music');
-      // Still notify listeners to update UI with the detected UUID
       notifyListeners();
       return;
     }

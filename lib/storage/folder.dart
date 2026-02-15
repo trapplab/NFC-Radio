@@ -25,13 +25,59 @@ class Folder extends HiveObject {
   @HiveField(4)
   int position;
 
+  @HiveField(5)
+  String? connectedNfcUuid;
+
+  @HiveField(6)
+  bool isShuffleEnabled;
+
+  @HiveField(7)
+  bool isLoopPlaylistEnabled;
+
+  @HiveField(8)
+  int? lastPlayedSongIndex;
+
+  @HiveField(9)
+  int? lastPlayedPositionMs;
+
   Folder({
     required this.id,
     required this.name,
     this.songIds = const [],
     this.isExpanded = false,
     this.position = 0,
+    this.connectedNfcUuid,
+    this.isShuffleEnabled = false,
+    this.isLoopPlaylistEnabled = false,
+    this.lastPlayedSongIndex,
+    this.lastPlayedPositionMs,
   });
+
+  Folder copyWith({
+    String? id,
+    String? name,
+    List<String>? songIds,
+    bool? isExpanded,
+    int? position,
+    String? Function()? connectedNfcUuid,
+    bool? isShuffleEnabled,
+    bool? isLoopPlaylistEnabled,
+    int? Function()? lastPlayedSongIndex,
+    int? Function()? lastPlayedPositionMs,
+  }) {
+    return Folder(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      songIds: songIds ?? this.songIds,
+      isExpanded: isExpanded ?? this.isExpanded,
+      position: position ?? this.position,
+      connectedNfcUuid: connectedNfcUuid != null ? connectedNfcUuid() : this.connectedNfcUuid,
+      isShuffleEnabled: isShuffleEnabled ?? this.isShuffleEnabled,
+      isLoopPlaylistEnabled: isLoopPlaylistEnabled ?? this.isLoopPlaylistEnabled,
+      lastPlayedSongIndex: lastPlayedSongIndex != null ? lastPlayedSongIndex() : this.lastPlayedSongIndex,
+      lastPlayedPositionMs: lastPlayedPositionMs != null ? lastPlayedPositionMs() : this.lastPlayedPositionMs,
+    );
+  }
 
   // Convert the folder to a JSON map
   Map<String, dynamic> toJson() => {
@@ -40,6 +86,11 @@ class Folder extends HiveObject {
     'songIds': songIds,
     'isExpanded': isExpanded,
     'position': position,
+    'connectedNfcUuid': connectedNfcUuid,
+    'isShuffleEnabled': isShuffleEnabled,
+    'isLoopPlaylistEnabled': isLoopPlaylistEnabled,
+    'lastPlayedSongIndex': lastPlayedSongIndex,
+    'lastPlayedPositionMs': lastPlayedPositionMs,
   };
 
   // Create a folder from a JSON map
@@ -49,6 +100,11 @@ class Folder extends HiveObject {
     songIds: List<String>.from(json['songIds'] ?? []),
     isExpanded: json['isExpanded'] ?? false,
     position: json['position'] ?? 0,
+    connectedNfcUuid: json['connectedNfcUuid'],
+    isShuffleEnabled: json['isShuffleEnabled'] ?? false,
+    isLoopPlaylistEnabled: json['isLoopPlaylistEnabled'] ?? false,
+    lastPlayedSongIndex: json['lastPlayedSongIndex'],
+    lastPlayedPositionMs: json['lastPlayedPositionMs'],
   );
 }
 
@@ -216,14 +272,8 @@ class FolderProvider with ChangeNotifier {
     }
 
     // Set position to the end of the list
-    final newFolder = Folder(
-      id: folder.id,
-      name: folder.name,
-      songIds: folder.songIds,
-      isExpanded: folder.isExpanded,
-      position: _folders.length,
-    );
-    
+    final newFolder = folder.copyWith(position: _folders.length);
+
     _folders.add(newFolder);
     _saveFolderToStorage(newFolder);
     notifyListeners();
@@ -245,13 +295,7 @@ class FolderProvider with ChangeNotifier {
   void updateFolder(Folder updatedFolder) {
     final folderIndex = _folders.indexWhere((folder) => folder.id == updatedFolder.id);
     if (folderIndex != -1) {
-      final updated = Folder(
-        id: updatedFolder.id,
-        name: updatedFolder.name,
-        songIds: updatedFolder.songIds,
-        isExpanded: updatedFolder.isExpanded,
-        position: _folders[folderIndex].position, // Preserve position
-      );
+      final updated = updatedFolder.copyWith(position: _folders[folderIndex].position);
       _folders[folderIndex] = updated;
       _saveFolderToStorage(updated);
       notifyListeners();
@@ -266,12 +310,8 @@ class FolderProvider with ChangeNotifier {
         return;
       }
 
-      final updatedFolder = Folder(
-        id: _folders[folderIndex].id,
-        name: _folders[folderIndex].name,
+      final updatedFolder = _folders[folderIndex].copyWith(
         songIds: [..._folders[folderIndex].songIds, songId],
-        isExpanded: _folders[folderIndex].isExpanded,
-        position: _folders[folderIndex].position,
       );
       _folders[folderIndex] = updatedFolder;
       _saveFolderToStorage(updatedFolder);
@@ -282,12 +322,8 @@ class FolderProvider with ChangeNotifier {
   void removeSongFromFolder(String folderId, String songId) {
     final folderIndex = _folders.indexWhere((folder) => folder.id == folderId);
     if (folderIndex != -1) {
-      final updatedFolder = Folder(
-        id: _folders[folderIndex].id,
-        name: _folders[folderIndex].name,
+      final updatedFolder = _folders[folderIndex].copyWith(
         songIds: _folders[folderIndex].songIds.where((id) => id != songId).toList(),
-        isExpanded: _folders[folderIndex].isExpanded,
-        position: _folders[folderIndex].position,
       );
       _folders[folderIndex] = updatedFolder;
       _saveFolderToStorage(updatedFolder);
@@ -298,17 +334,11 @@ class FolderProvider with ChangeNotifier {
   void toggleFolderExpansion(String folderId) {
     final folderIndex = _folders.indexWhere((folder) => folder.id == folderId);
     if (folderIndex != -1) {
-      // Simply toggle the expansion state of the clicked folder
-      final updatedFolder = Folder(
-        id: _folders[folderIndex].id,
-        name: _folders[folderIndex].name,
-        songIds: _folders[folderIndex].songIds,
-        isExpanded: !_folders[folderIndex].isExpanded, // Toggle only this folder
-        position: _folders[folderIndex].position,
+      final updatedFolder = _folders[folderIndex].copyWith(
+        isExpanded: !_folders[folderIndex].isExpanded,
       );
       _folders[folderIndex] = updatedFolder;
 
-      // Persist the expansion state to storage
       _saveFolderToStorage(updatedFolder);
 
       notifyListeners();
@@ -332,13 +362,7 @@ class FolderProvider with ChangeNotifier {
   /// Update positions of all folders after reordering or removal
   Future<void> _updateFolderPositions() async {
     for (int i = 0; i < _folders.length; i++) {
-      _folders[i] = Folder(
-        id: _folders[i].id,
-        name: _folders[i].name,
-        songIds: _folders[i].songIds,
-        isExpanded: _folders[i].isExpanded,
-        position: i,
-      );
+      _folders[i] = _folders[i].copyWith(position: i);
       await _saveFolderToStorage(_folders[i]);
     }
   }
@@ -385,6 +409,69 @@ class FolderProvider with ChangeNotifier {
   /// Get storage statistics
   Map<String, dynamic> getStorageStats() {
     return _storageService.getStorageStats();
+  }
+
+  // ========== FOLDER NFC & PLAYLIST OPERATIONS ==========
+
+  void connectFolderToNfc(String folderId, String nfcUuid) {
+    final folderIndex = _folders.indexWhere((f) => f.id == folderId);
+    if (folderIndex != -1) {
+      final updated = _folders[folderIndex].copyWith(
+        connectedNfcUuid: () => nfcUuid,
+      );
+      _folders[folderIndex] = updated;
+      _saveFolderToStorage(updated);
+      notifyListeners();
+    }
+  }
+
+  void disconnectFolderFromNfc(String folderId) {
+    final folderIndex = _folders.indexWhere((f) => f.id == folderId);
+    if (folderIndex != -1) {
+      final updated = _folders[folderIndex].copyWith(
+        connectedNfcUuid: () => null,
+      );
+      _folders[folderIndex] = updated;
+      _saveFolderToStorage(updated);
+      notifyListeners();
+    }
+  }
+
+  void updateFolderPlaybackState(String folderId, {int? lastPlayedSongIndex, int? lastPlayedPositionMs}) {
+    final folderIndex = _folders.indexWhere((f) => f.id == folderId);
+    if (folderIndex != -1) {
+      final updated = _folders[folderIndex].copyWith(
+        lastPlayedSongIndex: () => lastPlayedSongIndex,
+        lastPlayedPositionMs: () => lastPlayedPositionMs,
+      );
+      _folders[folderIndex] = updated;
+      _saveFolderToStorage(updated);
+      // Don't notify listeners to avoid UI flicker during playback
+    }
+  }
+
+  void updateFolderShuffle(String folderId, bool value) {
+    final folderIndex = _folders.indexWhere((f) => f.id == folderId);
+    if (folderIndex != -1) {
+      final updated = _folders[folderIndex].copyWith(isShuffleEnabled: value);
+      _folders[folderIndex] = updated;
+      _saveFolderToStorage(updated);
+      notifyListeners();
+    }
+  }
+
+  void updateFolderLoop(String folderId, bool value) {
+    final folderIndex = _folders.indexWhere((f) => f.id == folderId);
+    if (folderIndex != -1) {
+      final updated = _folders[folderIndex].copyWith(isLoopPlaylistEnabled: value);
+      _folders[folderIndex] = updated;
+      _saveFolderToStorage(updated);
+      notifyListeners();
+    }
+  }
+
+  Folder? findFolderByNfcUuid(String nfcUuid) {
+    return _folders.firstWhereOrNull((f) => f.connectedNfcUuid == nfcUuid);
   }
 
   // ========== SONG MOVE & COPY OPERATIONS ==========

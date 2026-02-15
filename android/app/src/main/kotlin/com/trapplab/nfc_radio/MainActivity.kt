@@ -75,16 +75,26 @@ class MainActivity : FlutterActivity() {
         val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
             type = if (filterAudioOnly) "audio/*" else "*/*"
             addCategory(Intent.CATEGORY_OPENABLE)
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         }
         startActivityForResult(Intent.createChooser(intent, "Select Audio App"), REQUEST_CODE_PICK_AUDIO)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        
+
         if (requestCode == REQUEST_CODE_PICK_AUDIO && resultCode == Activity.RESULT_OK) {
-            data?.data?.let { uri ->
-                copyFileToInternalStorage(uri)
+            val clipData = data?.clipData
+            if (clipData != null) {
+                // Multiple files selected
+                for (i in 0 until clipData.itemCount) {
+                    copyFileToInternalStorage(clipData.getItemAt(i).uri)
+                }
+            } else {
+                // Single file selected
+                data?.data?.let { uri ->
+                    copyFileToInternalStorage(uri)
+                }
             }
         }
     }

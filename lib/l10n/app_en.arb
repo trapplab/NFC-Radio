@@ -176,5 +176,16 @@
   "whatWouldYouLikeToDo": "What would you like to do?",
   "moveWithoutNfc": "Move/Copy without NFC",
   "replaceNfcConnection": "Replace NFC Connection",
-  "showAudioControlsOnLockscreen": "Show audio controls on lockscreen"
+  "showAudioControlsOnLockscreen": "Show audio controls on lockscreen",
+  "connectNfc": "Connect NFC",
+  "disconnectNfc": "Disconnect NFC",
+  "shufflePlayback": "Shuffle",
+  "loopPlaylist": "Loop Playlist",
+  "folderHasNoSongs": "Folder has no songs to play",
+  "nfcAlreadyConnectedToFolder": "This NFC tag is already connected to folder:",
+  "nfcAlreadyConnectedToSongInFolder": "This NFC tag is already connected to a song in this folder:",
+  "filesAdded": "{count} audio files added",
+  "scanNfcForFolder": "Scan NFC Tag for Folder",
+  "holdNfcTagNearDevice": "Hold an NFC tag near your device to connect it to this folder.",
+  "folderNfcConnected": "NFC tag connected to folder"
 }

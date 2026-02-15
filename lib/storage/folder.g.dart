@@ -22,13 +22,18 @@ class FolderAdapter extends TypeAdapter<Folder> {
       songIds: (fields[2] as List?)?.cast<String>() ?? [],
       isExpanded: fields[3] as bool? ?? false,
       position: fields[4] as int? ?? 0,
+      connectedNfcUuid: fields[5] as String?,
+      isShuffleEnabled: fields[6] as bool? ?? false,
+      isLoopPlaylistEnabled: fields[7] as bool? ?? false,
+      lastPlayedSongIndex: fields[8] as int?,
+      lastPlayedPositionMs: fields[9] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Folder obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -38,7 +43,17 @@ class FolderAdapter extends TypeAdapter<Folder> {
       ..writeByte(3)
       ..write(obj.isExpanded)
       ..writeByte(4)
-      ..write(obj.position);
+      ..write(obj.position)
+      ..writeByte(5)
+      ..write(obj.connectedNfcUuid)
+      ..writeByte(6)
+      ..write(obj.isShuffleEnabled)
+      ..writeByte(7)
+      ..write(obj.isLoopPlaylistEnabled)
+      ..writeByte(8)
+      ..write(obj.lastPlayedSongIndex)
+      ..writeByte(9)
+      ..write(obj.lastPlayedPositionMs);
   }
 
   @override
