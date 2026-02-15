@@ -66,6 +66,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addAudioFile => 'Audiodatei hinzufügen';
 
   @override
+  String get addMultipleAudioFiles => 'Mehrere hinzufügen';
+
+  @override
   String get addNewSong => 'Neues Lied hinzufügen';
 
   @override
@@ -618,4 +621,39 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get showAudioControlsOnLockscreen => 'Audiosteuerungen auf Sperrbildschirm anzeigen';
+
+  @override
+  String get connectNfc => 'NFC verbinden';
+
+  @override
+  String get disconnectNfc => 'NFC trennen';
+
+  @override
+  String get shufflePlayback => 'Zufällig';
+
+  @override
+  String get loopPlaylist => 'Playlist wiederholen';
+
+  @override
+  String get folderHasNoSongs => 'Ordner hat keine Songs zum Abspielen';
+
+  @override
+  String get nfcAlreadyConnectedToFolder => 'Dieser NFC-Tag ist bereits mit einem Ordner verbunden:';
+
+  @override
+  String get nfcAlreadyConnectedToSongInFolder => 'Dieser NFC-Tag ist bereits mit einem Song in diesem Ordner verbunden:';
+
+  @override
+  String filesAdded(Object count) {
+    return '$count Audiodateien hinzugefügt';
+  }
+
+  @override
+  String get scanNfcForFolder => 'NFC-Tag für Ordner scannen';
+
+  @override
+  String get holdNfcTagNearDevice => 'Halten Sie einen NFC-Tag an Ihr Gerät, um ihn mit diesem Ordner zu verbinden.';
+
+  @override
+  String get folderNfcConnected => 'NFC-Tag mit Ordner verbunden';
 }

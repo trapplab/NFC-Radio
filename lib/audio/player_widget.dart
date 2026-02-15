@@ -36,7 +36,31 @@ class PlayerWidget extends StatelessWidget {
         final Color subtextColor = isLockscreen ? Colors.white70 : Colors.black54;
         final Color iconColor = isLockscreen ? Colors.white : Colors.black;
 
-        return Container(
+        return Dismissible(
+          key: const ValueKey('player_widget'),
+          direction: DismissDirection.horizontal,
+          background: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.only(left: 20),
+            child: const Icon(Icons.stop_circle_outlined, color: Colors.red),
+          ),
+          secondaryBackground: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            child: const Icon(Icons.stop_circle_outlined, color: Colors.red),
+          ),
+          onDismissed: (_) => musicPlayer.stopMusic(),
+          child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -69,10 +93,20 @@ class PlayerWidget extends StatelessWidget {
                   ),
                   style: TextStyle(fontSize: 12, color: subtextColor),
                 ),
+              if (musicPlayer.isPlaylistMode)
+                Text(
+                  'Track ${musicPlayer.currentPlaylistIndex + 1}/${musicPlayer.playlistLength}',
+                  style: TextStyle(fontSize: 11, color: subtextColor),
+                ),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  if (musicPlayer.isPlaylistMode)
+                    IconButton(
+                      onPressed: musicPlayer.hasPrevious ? musicPlayer.playPrevious : null,
+                      icon: Icon(Icons.skip_previous, color: musicPlayer.hasPrevious ? iconColor : iconColor.withValues(alpha: 0.3)),
+                    ),
                   IconButton(
                     onPressed: musicPlayer.togglePlayPause,
                     icon: Icon(
@@ -81,6 +115,11 @@ class PlayerWidget extends StatelessWidget {
                     ),
                     tooltip: musicPlayer.isPlaying ? 'Pause' : 'Play',
                   ),
+                  if (musicPlayer.isPlaylistMode)
+                    IconButton(
+                      onPressed: musicPlayer.hasNext ? musicPlayer.playNext : null,
+                      icon: Icon(Icons.skip_next, color: musicPlayer.hasNext ? iconColor : iconColor.withValues(alpha: 0.3)),
+                    ),
                   if (musicPlayer.totalDuration > Duration.zero)
                     Expanded(
                       child: Slider(
@@ -105,7 +144,8 @@ class PlayerWidget extends StatelessWidget {
               ),
             ],
           ),
-        );
+        ), // end Container (Dismissible child)
+        ); // end Dismissible
       },
     );
   }

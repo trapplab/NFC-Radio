@@ -47,7 +47,7 @@ platform :android do
       skip_upload_metadata: false,
       skip_upload_images: true,
       skip_upload_screenshots: true,
-      release_status: 'draft'     # Upload as Draft
+      release_status: 'completed'
     )
   end
 end

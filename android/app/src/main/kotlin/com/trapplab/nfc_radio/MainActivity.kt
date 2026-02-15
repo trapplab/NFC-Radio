@@ -19,17 +19,19 @@ class MainActivity : FlutterActivity() {
     }
 
     private var methodChannel: MethodChannel? = null
+    private var pendingPickResult: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        
+
         methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL_NAME)
         methodChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
                 "pickAudio" -> {
                     val filterAudioOnly = call.argument<Boolean>("filterAudioOnly") ?: false
+                    pendingPickResult = result
                     pickAudio(filterAudioOnly)
-                    result.success("started")
+                    // result will be resolved in onActivityResult
                 }
                 "openApp" -> {
                     val packageName = call.argument<String>("packageName")
@@ -75,52 +77,64 @@ class MainActivity : FlutterActivity() {
         val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
             type = if (filterAudioOnly) "audio/*" else "*/*"
             addCategory(Intent.CATEGORY_OPENABLE)
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         }
         startActivityForResult(Intent.createChooser(intent, "Select Audio App"), REQUEST_CODE_PICK_AUDIO)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        
-        if (requestCode == REQUEST_CODE_PICK_AUDIO && resultCode == Activity.RESULT_OK) {
-            data?.data?.let { uri ->
-                copyFileToInternalStorage(uri)
+
+        if (requestCode == REQUEST_CODE_PICK_AUDIO) {
+            if (resultCode == Activity.RESULT_OK) {
+                val files = mutableListOf<Map<String, String>>()
+                val clipData = data?.clipData
+                if (clipData != null) {
+                    // Multiple files selected
+                    for (i in 0 until clipData.itemCount) {
+                        copyFileToInternalStorage(clipData.getItemAt(i).uri)?.let { files.add(it) }
+                    }
+                } else {
+                    // Single file selected
+                    data?.data?.let { uri ->
+                        copyFileToInternalStorage(uri)?.let { files.add(it) }
+                    }
+                }
+                pendingPickResult?.success(files)
+            } else {
+                // Cancelled or failed
+                pendingPickResult?.success(emptyList<Map<String, String>>())
             }
+            pendingPickResult = null
         }
     }
 
-    private fun copyFileToInternalStorage(uri: Uri) {
-        try {
+    private fun copyFileToInternalStorage(uri: Uri): Map<String, String>? {
+        return try {
             val inputStream = contentResolver.openInputStream(uri)
             val originalFileName = getFileName(uri) ?: "audio"
             val fileName = "${System.currentTimeMillis()}_$originalFileName"
-            
-            // Create audio directory if it doesn't exist
+
             val audioDir = File(filesDir, "audio")
             if (!audioDir.exists()) {
                 audioDir.mkdirs()
             }
-            
+
             val destFile = File(audioDir, fileName)
             val outputStream = FileOutputStream(destFile)
-            
+
             inputStream?.use { input ->
                 outputStream.use { output ->
                     input.copyTo(output)
                 }
             }
-            
+
             Log.d(TAG, "File copied to: ${destFile.absolutePath}")
-            val result = mapOf(
-                "filePath" to destFile.absolutePath,
-                "displayName" to originalFileName
-            )
-            methodChannel?.invokeMethod("onAudioPicked", result)
-            
+            mapOf("filePath" to destFile.absolutePath, "displayName" to originalFileName)
+
         } catch (e: Exception) {
             Log.e(TAG, "Error copying file", e)
-            // Fallback to original URI if copy fails
-            methodChannel?.invokeMethod("onAudioPicked", uri.toString())
+            null
         }
     }
 

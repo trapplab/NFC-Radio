@@ -1,0 +1,3 @@
+## Aggiunto
+- Riprodurre cartelle complete come playlist da un tag NFC
+- possibilità di aggiungere più file audio contemporaneamente

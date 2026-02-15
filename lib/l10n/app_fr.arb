@@ -19,6 +19,7 @@
   "noFoldersYet": "Aucun dossier pour l'instant. Créez un dossier pour organiser vos chansons!",
   "addNewFolder": "Ajouter un nouveau dossier",
   "addAudioFile": "Ajouter un fichier audio",
+  "addMultipleAudioFiles": "Ajouter plusieurs",
   "addNewSong": "Ajouter une nouvelle chanson",
   "editSong": "Modifier la chanson",
   "playbackOptions": "Options de lecture",
@@ -176,5 +177,16 @@
   "whatWouldYouLikeToDo": "Que voudriez-vous faire ?",
   "moveWithoutNfc": "Déplacer/Copier sans NFC",
   "replaceNfcConnection": "Remplacer la connexion NFC",
-  "showAudioControlsOnLockscreen": "Afficher les contrôles audio sur l'écran de verrouillage"
+  "showAudioControlsOnLockscreen": "Afficher les contrôles audio sur l'écran de verrouillage",
+  "connectNfc": "Connecter NFC",
+  "disconnectNfc": "Déconnecter NFC",
+  "shufflePlayback": "Aléatoire",
+  "loopPlaylist": "Boucler la liste",
+  "folderHasNoSongs": "Le dossier n'a pas de chansons à lire",
+  "nfcAlreadyConnectedToFolder": "Cette balise NFC est déjà connectée au dossier :",
+  "nfcAlreadyConnectedToSongInFolder": "Cette balise NFC est déjà connectée à une chanson dans ce dossier :",
+  "filesAdded": "{count} fichiers audio ajoutés",
+  "scanNfcForFolder": "Scanner le tag NFC pour le dossier",
+  "holdNfcTagNearDevice": "Approchez un tag NFC de votre appareil pour le connecter à ce dossier.",
+  "folderNfcConnected": "Tag NFC connecté au dossier"
 }

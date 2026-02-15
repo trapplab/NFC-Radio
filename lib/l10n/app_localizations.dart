@@ -215,6 +215,12 @@ abstract class AppLocalizations {
   /// **'Add Audio File'**
   String get addAudioFile;
 
+  /// No description provided for @addMultipleAudioFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Multiple'**
+  String get addMultipleAudioFiles;
+
   /// No description provided for @addNewSong.
   ///
   /// In en, this message translates to:
@@ -1162,6 +1168,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show audio controls on lockscreen'**
   String get showAudioControlsOnLockscreen;
+
+  /// No description provided for @connectNfc.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect NFC'**
+  String get connectNfc;
+
+  /// No description provided for @disconnectNfc.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect NFC'**
+  String get disconnectNfc;
+
+  /// No description provided for @shufflePlayback.
+  ///
+  /// In en, this message translates to:
+  /// **'Shuffle'**
+  String get shufflePlayback;
+
+  /// No description provided for @loopPlaylist.
+  ///
+  /// In en, this message translates to:
+  /// **'Loop Playlist'**
+  String get loopPlaylist;
+
+  /// No description provided for @folderHasNoSongs.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder has no songs to play'**
+  String get folderHasNoSongs;
+
+  /// No description provided for @nfcAlreadyConnectedToFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'This NFC tag is already connected to folder:'**
+  String get nfcAlreadyConnectedToFolder;
+
+  /// No description provided for @nfcAlreadyConnectedToSongInFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'This NFC tag is already connected to a song in this folder:'**
+  String get nfcAlreadyConnectedToSongInFolder;
+
+  /// No description provided for @filesAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} audio files added'**
+  String filesAdded(Object count);
+
+  /// No description provided for @scanNfcForFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan NFC Tag for Folder'**
+  String get scanNfcForFolder;
+
+  /// No description provided for @holdNfcTagNearDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold an NFC tag near your device to connect it to this folder.'**
+  String get holdNfcTagNearDevice;
+
+  /// No description provided for @folderNfcConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'NFC tag connected to folder'**
+  String get folderNfcConnected;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

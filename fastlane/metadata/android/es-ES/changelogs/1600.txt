@@ -1,0 +1,3 @@
+## Añadido
+- Reproducir carpetas completas como lista de reproducción desde una etiqueta NFC
+- posibilidad de agregar múltiples archivos de audio a la vez

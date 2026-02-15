@@ -19,6 +19,7 @@
   "noFoldersYet": "Nessuna cartella ancora. Crea una cartella per organizzare le tue canzoni!",
   "addNewFolder": "Aggiungi nuova cartella",
   "addAudioFile": "Aggiungi file audio",
+  "addMultipleAudioFiles": "Aggiungi multipli",
   "addNewSong": "Aggiungi nuova canzone",
   "editSong": "Modifica canzone",
   "playbackOptions": "Opzioni di riproduzione",
@@ -176,5 +177,16 @@
   "whatWouldYouLikeToDo": "Cosa vorresti fare?",
   "moveWithoutNfc": "Sposta/Copia senza NFC",
   "replaceNfcConnection": "Sostituisci connessione NFC",
-  "showAudioControlsOnLockscreen": "Mostra controlli audio sulla schermata di blocco"
+  "showAudioControlsOnLockscreen": "Mostra controlli audio sulla schermata di blocco",
+  "connectNfc": "Connetti NFC",
+  "disconnectNfc": "Disconnetti NFC",
+  "shufflePlayback": "Casuale",
+  "loopPlaylist": "Ripeti playlist",
+  "folderHasNoSongs": "La cartella non ha brani da riprodurre",
+  "nfcAlreadyConnectedToFolder": "Questo tag NFC è già collegato alla cartella:",
+  "nfcAlreadyConnectedToSongInFolder": "Questo tag NFC è già collegato a un brano in questa cartella:",
+  "filesAdded": "{count} file audio aggiunti",
+  "scanNfcForFolder": "Scansiona tag NFC per la cartella",
+  "holdNfcTagNearDevice": "Avvicina un tag NFC al dispositivo per collegarlo a questa cartella.",
+  "folderNfcConnected": "Tag NFC collegato alla cartella"
 }

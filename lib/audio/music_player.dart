@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import '../storage/song.dart';
@@ -12,8 +13,19 @@ class MusicPlayer with ChangeNotifier {
   bool _isSeeking = false;
   Duration _totalDuration = Duration.zero;
 
+  // Playlist state
+  List<Song> _playlist = [];
+  int _currentPlaylistIndex = -1;
+  bool _isPlaylistMode = false;
+  bool _isShuffleEnabled = false;
+  bool _isLoopPlaylistEnabled = false;
+  List<int> _shuffleHistory = [];
+  String? _currentPlaylistFolderId;
+
   // Callback to notify when position changes (for persisting to song)
   void Function(Duration)? onPositionChangedCallback;
+  // Callback to persist playlist position to folder
+  void Function(String folderId, int songIndex, int positionMs)? onPlaylistPositionChanged;
 
   PlayerState get currentState => _currentState;
   bool get isPlaying => _currentState == PlayerState.playing;
@@ -25,6 +37,16 @@ class MusicPlayer with ChangeNotifier {
   Song? get currentSong => _currentSong;
   Duration get savedPosition => _savedPosition;
   Duration get totalDuration => _totalDuration;
+
+  // Playlist getters
+  bool get isPlaylistMode => _isPlaylistMode;
+  int get currentPlaylistIndex => _currentPlaylistIndex;
+  int get playlistLength => _playlist.length;
+  String? get currentPlaylistFolderId => _currentPlaylistFolderId;
+  bool get hasPrevious => _isPlaylistMode && (_isShuffleEnabled
+      ? _shuffleHistory.length > 1
+      : _currentPlaylistIndex > 0);
+  bool get hasNext => _isPlaylistMode && _playlist.length > 1;
 
   MusicPlayer() {
     _setupAudioPlayerListeners();
@@ -46,15 +68,20 @@ class MusicPlayer with ChangeNotifier {
 
   void _setupAudioPlayerListeners() {
     _audioPlayer.onPlayerComplete.listen((_) {
+      if (_isPlaylistMode) {
+        _onSongComplete();
+        return;
+      }
+
       _currentState = PlayerState.stopped;
       _savedPosition = Duration.zero;
-      
+
       // Reset song's saved position when finished
       if (_currentSong != null) {
         _currentSong!.savedPosition = Duration.zero;
         onPositionChangedCallback?.call(Duration.zero);
       }
-      
+
       notifyListeners();
     });
 
@@ -160,8 +187,10 @@ class MusicPlayer with ChangeNotifier {
       await _audioPlayer.resume();
       _currentState = PlayerState.playing;
 
-      // Set loop mode based on song settings
-      final releaseMode = song.isLoopEnabled ? ReleaseMode.loop : ReleaseMode.release;
+      // In playlist mode, always use release so onComplete fires for auto-advance
+      final releaseMode = _isPlaylistMode
+          ? ReleaseMode.release
+          : (song.isLoopEnabled ? ReleaseMode.loop : ReleaseMode.release);
       await _audioPlayer.setReleaseMode(releaseMode);
       debugPrint('🔄 Set release mode to: $releaseMode');
 
@@ -276,10 +305,15 @@ class MusicPlayer with ChangeNotifier {
       debugPrint('⏸️ Pausing audio playback...');
       await _audioPlayer.pause();
       _currentState = PlayerState.paused;
-      
+
+      // Persist playlist position on pause
+      if (_isPlaylistMode) {
+        _notifyPlaylistPosition();
+      }
+
       debugPrint('✅ SUCCESS: Paused playback at $_savedPosition');
       debugPrint('📊 New player state: $_currentState');
-      
+
     } catch (e, stackTrace) {
       debugPrint('❌ CRITICAL ERROR pausing music: $e');
       debugPrint('❌ Stack trace: $stackTrace');
@@ -306,11 +340,26 @@ class MusicPlayer with ChangeNotifier {
         _currentSong!.savedPosition = Duration.zero;
         onPositionChangedCallback?.call(Duration.zero);
       }
-      
+
       await _audioPlayer.stop();
       _currentState = PlayerState.stopped;
       _currentSong = null;
       _savedPosition = Duration.zero;
+
+      // Clear playlist state so the folder no longer appears active
+      if (_isPlaylistMode) {
+        if (_currentPlaylistFolderId != null) {
+          onPlaylistPositionChanged?.call(_currentPlaylistFolderId!, 0, 0);
+        }
+        _isPlaylistMode = false;
+        _playlist = [];
+        _currentPlaylistIndex = -1;
+        _shuffleHistory = [];
+        _isShuffleEnabled = false;
+        _isLoopPlaylistEnabled = false;
+        _currentPlaylistFolderId = null;
+      }
+
       debugPrint('MusicPlayer: Stopped playback and cleared state');
     } catch (e) {
       debugPrint('MusicPlayer: Error stopping: $e');
@@ -433,6 +482,187 @@ class MusicPlayer with ChangeNotifier {
       } catch (e) {
         debugPrint('⚠️ Failed to manually save current position: $e');
       }
+    }
+  }
+
+  // ========== PLAYLIST METHODS ==========
+
+  Future<void> startPlaylist({
+    required List<Song> songs,
+    required String folderId,
+    bool shuffle = false,
+    bool loopPlaylist = false,
+    int startIndex = 0,
+    int startPositionMs = 0,
+  }) async {
+    debugPrint('🎶 ===== STARTING PLAYLIST =====');
+    debugPrint('🎶 Folder: $folderId, Songs: ${songs.length}, Shuffle: $shuffle, Loop: $loopPlaylist');
+
+    if (songs.isEmpty) return;
+
+    _playlist = List.from(songs);
+    _currentPlaylistFolderId = folderId;
+    _isPlaylistMode = true;
+    _isShuffleEnabled = shuffle;
+    _isLoopPlaylistEnabled = loopPlaylist;
+    _shuffleHistory = [];
+
+    // Clamp startIndex to valid range
+    _currentPlaylistIndex = startIndex.clamp(0, _playlist.length - 1);
+    _shuffleHistory.add(_currentPlaylistIndex);
+
+    final song = _playlist[_currentPlaylistIndex];
+
+    // Temporarily set saved position for resume
+    if (startPositionMs > 0) {
+      song.savedPositionMs = startPositionMs;
+      final wasRemember = song.rememberPosition;
+      song.rememberPosition = true;
+      await playMusic(song);
+      song.rememberPosition = wasRemember;
+    } else {
+      await playMusic(song);
+    }
+
+    _notifyPlaylistPosition();
+    notifyListeners();
+    debugPrint('🎶 ===== PLAYLIST STARTED =====');
+  }
+
+  Future<void> playNext() async {
+    if (!_isPlaylistMode || _playlist.isEmpty) return;
+
+    debugPrint('⏭️ Playing next in playlist');
+
+    final nextIndex = _getNextIndex();
+    if (nextIndex == null) {
+      debugPrint('⏭️ No next song available - stopping playlist');
+      stopPlaylist();
+      return;
+    }
+
+    _currentPlaylistIndex = nextIndex;
+    if (_isShuffleEnabled) {
+      _shuffleHistory.add(_currentPlaylistIndex);
+    }
+
+    await playMusic(_playlist[_currentPlaylistIndex]);
+    _notifyPlaylistPosition();
+    notifyListeners();
+  }
+
+  Future<void> playPrevious() async {
+    if (!_isPlaylistMode || _playlist.isEmpty) return;
+
+    debugPrint('⏮️ Playing previous in playlist');
+
+    if (_isShuffleEnabled && _shuffleHistory.length > 1) {
+      // Go back in shuffle history
+      _shuffleHistory.removeLast();
+      _currentPlaylistIndex = _shuffleHistory.last;
+    } else if (!_isShuffleEnabled && _currentPlaylistIndex > 0) {
+      _currentPlaylistIndex--;
+    } else {
+      return; // Already at start
+    }
+
+    await playMusic(_playlist[_currentPlaylistIndex]);
+    _notifyPlaylistPosition();
+    notifyListeners();
+  }
+
+  void _onSongComplete() {
+    debugPrint('🎶 Song completed in playlist mode');
+
+    final nextIndex = _getNextIndex();
+    if (nextIndex == null) {
+      debugPrint('🎶 Playlist finished');
+      stopPlaylist();
+      return;
+    }
+
+    _currentPlaylistIndex = nextIndex;
+    if (_isShuffleEnabled) {
+      _shuffleHistory.add(_currentPlaylistIndex);
+    }
+
+    playMusic(_playlist[_currentPlaylistIndex]).then((_) {
+      _notifyPlaylistPosition();
+      notifyListeners();
+    });
+  }
+
+  int? _getNextIndex() {
+    if (_isShuffleEnabled) {
+      // Find unplayed indices
+      final allIndices = List.generate(_playlist.length, (i) => i);
+      final unplayed = allIndices.where((i) => !_shuffleHistory.contains(i)).toList();
+
+      if (unplayed.isEmpty) {
+        if (_isLoopPlaylistEnabled) {
+          // Reset and continue
+          _shuffleHistory.clear();
+          final nextIdx = Random().nextInt(_playlist.length);
+          return nextIdx;
+        }
+        return null; // All played, no loop
+      }
+
+      return unplayed[Random().nextInt(unplayed.length)];
+    } else {
+      // Sequential
+      final nextIdx = _currentPlaylistIndex + 1;
+      if (nextIdx >= _playlist.length) {
+        if (_isLoopPlaylistEnabled) {
+          return 0;
+        }
+        return null; // End of playlist, no loop
+      }
+      return nextIdx;
+    }
+  }
+
+  void setShuffleEnabled(bool value) {
+    _isShuffleEnabled = value;
+    if (value) {
+      // Start fresh shuffle history from current song position
+      _shuffleHistory = [_currentPlaylistIndex];
+    }
+    notifyListeners();
+  }
+
+  void setLoopPlaylistEnabled(bool value) {
+    _isLoopPlaylistEnabled = value;
+    notifyListeners();
+  }
+
+  void stopPlaylist() {
+    debugPrint('🎶 Stopping playlist mode');
+    _isPlaylistMode = false;
+    _playlist = [];
+    _currentPlaylistIndex = -1;
+    _shuffleHistory = [];
+    _isShuffleEnabled = false;
+    _isLoopPlaylistEnabled = false;
+
+    // Persist final state before clearing folder ID
+    if (_currentPlaylistFolderId != null) {
+      onPlaylistPositionChanged?.call(_currentPlaylistFolderId!, 0, 0);
+    }
+    _currentPlaylistFolderId = null;
+
+    _currentState = PlayerState.stopped;
+    _savedPosition = Duration.zero;
+    notifyListeners();
+  }
+
+  void _notifyPlaylistPosition() {
+    if (_currentPlaylistFolderId != null && _currentPlaylistIndex >= 0) {
+      onPlaylistPositionChanged?.call(
+        _currentPlaylistFolderId!,
+        _currentPlaylistIndex,
+        _savedPosition.inMilliseconds,
+      );
     }
   }
 

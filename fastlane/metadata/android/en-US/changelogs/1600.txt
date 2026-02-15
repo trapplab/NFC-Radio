@@ -1,0 +1,3 @@
+## Added 
+- Play complete folders as playlist from a NFC Tag
+- possibility to add multiple audio files at once
