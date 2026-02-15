@@ -340,11 +340,26 @@ class MusicPlayer with ChangeNotifier {
         _currentSong!.savedPosition = Duration.zero;
         onPositionChangedCallback?.call(Duration.zero);
       }
-      
+
       await _audioPlayer.stop();
       _currentState = PlayerState.stopped;
       _currentSong = null;
       _savedPosition = Duration.zero;
+
+      // Clear playlist state so the folder no longer appears active
+      if (_isPlaylistMode) {
+        if (_currentPlaylistFolderId != null) {
+          onPlaylistPositionChanged?.call(_currentPlaylistFolderId!, 0, 0);
+        }
+        _isPlaylistMode = false;
+        _playlist = [];
+        _currentPlaylistIndex = -1;
+        _shuffleHistory = [];
+        _isShuffleEnabled = false;
+        _isLoopPlaylistEnabled = false;
+        _currentPlaylistFolderId = null;
+      }
+
       debugPrint('MusicPlayer: Stopped playback and cleared state');
     } catch (e) {
       debugPrint('MusicPlayer: Error stopping: $e');

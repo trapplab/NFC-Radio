@@ -1488,10 +1488,10 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
         color: Provider.of<ThemeProvider>(context).footerColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isFolderNfcConnected
+          color: isFolderPlaylistActive
               ? Colors.green
               : Provider.of<ThemeProvider>(context).bannerColor.withValues(alpha: 0.3),
-          width: isFolderNfcConnected ? 2 : 1,
+          width: isFolderPlaylistActive ? 2 : 1,
         ),
       ),
       child: Column(
@@ -1524,6 +1524,11 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                       ),
                     ),
                   ),
+                  if (isFolderNfcConnected)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Icon(Icons.nfc, size: 16, color: Provider.of<ThemeProvider>(context).bannerColor.withValues(alpha: 0.6)),
+                    ),
                   Icon(
                     folder.isExpanded ? Icons.expand_less : Icons.expand_more,
                     color: Provider.of<ThemeProvider>(context).bannerColor,

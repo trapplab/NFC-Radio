@@ -36,7 +36,31 @@ class PlayerWidget extends StatelessWidget {
         final Color subtextColor = isLockscreen ? Colors.white70 : Colors.black54;
         final Color iconColor = isLockscreen ? Colors.white : Colors.black;
 
-        return Container(
+        return Dismissible(
+          key: const ValueKey('player_widget'),
+          direction: DismissDirection.horizontal,
+          background: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.only(left: 20),
+            child: const Icon(Icons.stop_circle_outlined, color: Colors.red),
+          ),
+          secondaryBackground: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            child: const Icon(Icons.stop_circle_outlined, color: Colors.red),
+          ),
+          onDismissed: (_) => musicPlayer.stopMusic(),
+          child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -120,7 +144,8 @@ class PlayerWidget extends StatelessWidget {
               ),
             ],
           ),
-        );
+        ), // end Container (Dismissible child)
+        ); // end Dismissible
       },
     );
   }
