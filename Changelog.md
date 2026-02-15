@@ -13,6 +13,12 @@
 
 # Changelog
 
+xxx
+### Added
+- Added sleep timer to settings menu.
+### Fix
+- fix screen flickering when moving the audio player slider
+
 ## [0.16.0]
 ### Added 
 - Play complete folders as playlist from a NFC Tag
