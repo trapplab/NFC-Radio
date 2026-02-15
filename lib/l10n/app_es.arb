@@ -19,6 +19,7 @@
   "noFoldersYet": "Todavía no hay carpetas. ¡Cree una carpeta para organizar sus canciones!",
   "addNewFolder": "Agregar nueva carpeta",
   "addAudioFile": "Agregar archivo de audio",
+  "addMultipleAudioFiles": "Agregar múltiples",
   "addNewSong": "Agregar nueva canción",
   "editSong": "Editar canción",
   "playbackOptions": "Opciones de reproducción",

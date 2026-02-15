@@ -825,7 +825,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   Widget _buildAddSongButton(BuildContext context, SongProvider songProvider, {String? folderId}) {
     final folderProvider = Provider.of<FolderProvider>(context, listen: false);
     final isFirstFolder = folderId != null && folderProvider.folders.isNotEmpty && folderProvider.folders.first.id == folderId;
-    
+
     return Container(
       key: isFirstFolder ? _addSongButtonKey : null,
       width: 120,
@@ -843,8 +843,35 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             _showSongDialog(context, songProvider, folderId: folderId);
           }
         },
-        onLongPress: () {
-          if (folderId == null) return;
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.add, size: 40, color: Colors.grey),
+            const SizedBox(height: 8),
+            Text(
+              AppLocalizations.of(context)!.addAudioFile,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddMultipleButton(BuildContext context, SongProvider songProvider, String folderId) {
+    final folderProvider = Provider.of<FolderProvider>(context, listen: false);
+
+    return Container(
+      width: 120,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey, width: 1),
+      ),
+      child: InkWell(
+        onTap: () {
           if (folderProvider.isSongLimitReached(folderId)) {
             folderProvider.showSongLimitDialog(context);
             return;
@@ -854,10 +881,10 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.add, size: 40, color: Colors.grey),
+            const Icon(Icons.playlist_add, size: 40, color: Colors.grey),
             const SizedBox(height: 8),
             Text(
-              AppLocalizations.of(context)!.addAudioFile,
+              AppLocalizations.of(context)!.addMultipleAudioFiles,
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
@@ -1557,6 +1584,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 children: [
                   if (folderSongs.isEmpty) ...[
                     _buildAddSongButton(context, songProvider, folderId: folder.id),
+                    _buildAddMultipleButton(context, songProvider, folder.id),
                   ] else ...[
                     ...folderSongs.map((song) => GestureDetector(
                           onLongPress: () {
@@ -1622,6 +1650,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                           ),
                         )),
                     _buildAddSongButton(context, songProvider, folderId: folder.id),
+                    _buildAddMultipleButton(context, songProvider, folder.id),
                   ],
                 ],
               ),

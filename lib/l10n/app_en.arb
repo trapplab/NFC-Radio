@@ -19,6 +19,7 @@
   "noFoldersYet": "No folders yet. Create a folder to organize your songs!",
   "addNewFolder": "Add New Folder",
   "addAudioFile": "Add Audio File",
+  "addMultipleAudioFiles": "Add Multiple",
   "addNewSong": "Add New Song",
   "editSong": "Edit Song",
   "playbackOptions": "Playback Options",

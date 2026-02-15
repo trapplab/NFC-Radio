@@ -19,6 +19,7 @@
   "noFoldersYet": "Aucun dossier pour l'instant. Créez un dossier pour organiser vos chansons!",
   "addNewFolder": "Ajouter un nouveau dossier",
   "addAudioFile": "Ajouter un fichier audio",
+  "addMultipleAudioFiles": "Ajouter plusieurs",
   "addNewSong": "Ajouter une nouvelle chanson",
   "editSong": "Modifier la chanson",
   "playbackOptions": "Options de lecture",

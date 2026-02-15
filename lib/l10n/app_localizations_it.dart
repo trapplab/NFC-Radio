@@ -66,6 +66,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get addAudioFile => 'Aggiungi file audio';
 
   @override
+  String get addMultipleAudioFiles => 'Aggiungi multipli';
+
+  @override
   String get addNewSong => 'Aggiungi nuova canzone';
 
   @override

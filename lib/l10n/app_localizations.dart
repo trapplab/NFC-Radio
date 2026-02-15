@@ -215,6 +215,12 @@ abstract class AppLocalizations {
   /// **'Add Audio File'**
   String get addAudioFile;
 
+  /// No description provided for @addMultipleAudioFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Multiple'**
+  String get addMultipleAudioFiles;
+
   /// No description provided for @addNewSong.
   ///
   /// In en, this message translates to:

@@ -19,6 +19,7 @@
   "noFoldersYet": "Noch keine Ordner. Erstellen Sie einen Ordner, um Ihre Lieder zu organisieren!",
   "addNewFolder": "Neuen Ordner hinzufügen",
   "addAudioFile": "Audiodatei hinzufügen",
+  "addMultipleAudioFiles": "Mehrere hinzufügen",
   "addNewSong": "Neues Lied hinzufügen",
   "editSong": "Lied bearbeiten",
   "playbackOptions": "Wiedergabeoptionen",
