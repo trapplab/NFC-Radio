@@ -23,7 +23,6 @@ import 'iap/iap_service.dart';
 import 'services/audio_intent_service.dart';
 import 'services/github_audio_service.dart';
 import 'models/github_audio_folder.dart';
-import 'models/external_audio_file.dart';
 import 'config/settings_provider.dart';
 import 'config/theme_provider.dart';
 import 'config/color_chooser.dart';
@@ -868,23 +867,27 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     );
   }
 
-  void _pickMultipleAudioFiles(
+  Future<void> _pickMultipleAudioFiles(
     BuildContext context,
     SongProvider songProvider,
     FolderProvider folderProvider,
     String folderId,
-  ) {
-    int addedCount = 0;
-    StreamSubscription<ExternalAudioFile>? subscription;
+  ) async {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final files = await AudioIntentService().pickAudioFromApp(
+      filterAudioOnly: settings.filterAudioOnly,
+    );
 
-    // Listen for multiple audio files picked
-    subscription = AudioIntentService().onAudioPicked.listen((audioFile) async {
+    if (!context.mounted) return;
+
+    int addedCount = 0;
+    for (final audioFile in files) {
       final path = audioFile.sourceUri.isScheme('file')
           ? audioFile.sourceUri.toFilePath()
           : audioFile.sourceUri.toString();
 
       final isValid = await _isValidAudioFile(path);
-      if (!isValid) return;
+      if (!isValid) continue;
 
       final title = (audioFile.displayName ?? path.split('/').last)
           .replaceAll(RegExp(r'\.[^.]+$'), '');
@@ -898,31 +901,14 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
       songProvider.addSong(newSong);
       folderProvider.addSongToFolder(folderId, newSong.id);
       addedCount++;
+      debugPrint('📥 Multi-import: Added "$title" to folder $folderId ($addedCount files so far)');
+    }
 
-      debugPrint('📥 Multi-import: Added "$title" ($addedCount files so far)');
-    });
-
-    // Launch the file picker (with multi-select enabled by native side)
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
-    AudioIntentService().pickAudioFromApp(
-      filterAudioOnly: settings.filterAudioOnly,
-    ).then((success) {
-      if (!success && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.failedToLaunchAudioPicker)),
-        );
-      }
-
-      // Cancel subscription after a delay to allow all callbacks to arrive
-      Future.delayed(const Duration(seconds: 2), () {
-        subscription?.cancel();
-        if (addedCount > 0 && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context)!.filesAdded(addedCount))),
-          );
-        }
-      });
-    });
+    if (addedCount > 0 && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.filesAdded(addedCount))),
+      );
+    }
   }
 
   void _showAddFolderDialog(BuildContext context, FolderProvider folderProvider) {
@@ -1010,7 +996,6 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
 
     // Store the listener function so we can remove it later
     late void Function() updateNfcUuid;
-    StreamSubscription? audioSubscription;
 
     showDialog(
       context: context,
@@ -1085,57 +1070,6 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
           
           nfcService.addListener(updateNfcUuid);
 
-          // Listen for audio picked from external apps
-          audioSubscription ??= AudioIntentService().onAudioPicked.listen((audioFile) async {
-            if (dialogState.isOpen) {
-              final path = audioFile.sourceUri.isScheme('file')
-                  ? audioFile.sourceUri.toFilePath()
-                  : audioFile.sourceUri.toString();
-              
-              final isValid = await _isValidAudioFile(path);
-              if (!isValid) {
-                if (!dialogContext.mounted) return;
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  SnackBar(
-                    content: Text(AppLocalizations.of(dialogContext)!.rejectedInvalidAudio),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-
-              setState(() {
-                filePathController.text = path;
-                
-                if (titleController.text.isEmpty && audioFile.displayName != null) {
-                  titleController.text = audioFile.displayName!.replaceAll(RegExp(r'\.[^.]+$'), '');
-                }
-              });
-              if (!dialogContext.mounted) return;
-              ScaffoldMessenger.of(dialogContext).showSnackBar(
-                SnackBar(content: Text(AppLocalizations.of(dialogContext)!.audioSelected(audioFile.displayName ?? "Unknown"))),
-              );
-
-              // Show tutorial Step 2: NFC Connection
-              if (TutorialService.instance.shouldShowNfcConnectionTutorial) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  final targets = createTutorialTargets(
-                    context: dialogContext,
-                    nfcAreaKey: _nfcAreaKey,
-                  );
-                  if (targets.isNotEmpty) {
-                    showTutorial(
-                      context: dialogContext,
-                      targets: targets,
-                      onFinish: () => TutorialService.instance.markNfcConnectionTutorialShown(),
-                      onSkip: () => TutorialService.instance.markNfcConnectionTutorialShown(),
-                    );
-                  }
-                });
-              }
-            }
-          });
-
           return AlertDialog(
             title: Text(isEditing ? AppLocalizations.of(dialogContext)!.editSong : AppLocalizations.of(dialogContext)!.addNewSong),
             content: SingleChildScrollView(
@@ -1156,13 +1090,51 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                         icon: const Icon(Icons.attach_file),
                         onPressed: () async {
                           final settings = Provider.of<SettingsProvider>(dialogContext, listen: false);
-                          final success = await AudioIntentService().pickAudioFromApp(
+                          final files = await AudioIntentService().pickAudioFromApp(
                             filterAudioOnly: settings.filterAudioOnly,
                           );
-                          if (!success && dialogContext.mounted) {
+                          if (!dialogContext.mounted) return;
+                          if (files.isEmpty) return;
+                          final audioFile = files.first;
+                          final path = audioFile.sourceUri.isScheme('file')
+                              ? audioFile.sourceUri.toFilePath()
+                              : audioFile.sourceUri.toString();
+                          final isValid = await _isValidAudioFile(path);
+                          if (!dialogContext.mounted) return;
+                          if (!isValid) {
                             ScaffoldMessenger.of(dialogContext).showSnackBar(
-                              SnackBar(content: Text(AppLocalizations.of(dialogContext)!.failedToLaunchAudioPicker)),
+                              SnackBar(
+                                content: Text(AppLocalizations.of(dialogContext)!.rejectedInvalidAudio),
+                                backgroundColor: Colors.red,
+                              ),
                             );
+                            return;
+                          }
+                          setState(() {
+                            filePathController.text = path;
+                            if (titleController.text.isEmpty && audioFile.displayName != null) {
+                              titleController.text = audioFile.displayName!.replaceAll(RegExp(r'\.[^.]+$'), '');
+                            }
+                          });
+                          ScaffoldMessenger.of(dialogContext).showSnackBar(
+                            SnackBar(content: Text(AppLocalizations.of(dialogContext)!.audioSelected(audioFile.displayName ?? 'Unknown'))),
+                          );
+                          // Show tutorial Step 2: NFC Connection
+                          if (TutorialService.instance.shouldShowNfcConnectionTutorial) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              final targets = createTutorialTargets(
+                                context: dialogContext,
+                                nfcAreaKey: _nfcAreaKey,
+                              );
+                              if (targets.isNotEmpty) {
+                                showTutorial(
+                                  context: dialogContext,
+                                  targets: targets,
+                                  onFinish: () => TutorialService.instance.markNfcConnectionTutorialShown(),
+                                  onSkip: () => TutorialService.instance.markNfcConnectionTutorialShown(),
+                                );
+                              }
+                            });
                           }
                         },
                       ),
@@ -1432,7 +1404,6 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
 
                     dialogState.isOpen = false;
                     nfcService.removeListener(updateNfcUuid);
-                    audioSubscription?.cancel();
                     nfcService.setEditMode(false);
                     if (!dialogContext.mounted) return;
                     Navigator.pop(dialogContext);
