@@ -1,0 +1,4 @@
+## Added
+- Added sleep timer to settings menu.
+## Fix
+- fix screen flickering when moving the audio player slider

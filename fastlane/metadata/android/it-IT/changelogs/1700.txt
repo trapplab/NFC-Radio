@@ -1,0 +1,4 @@
+## Aggiunto
+- Aggiunta funzione timer di spegnimento nel menu delle impostazioni.
+## Correggi
+- correggere il sfarfallio dello schermo durante lo spostamento del cursore del lettore audio

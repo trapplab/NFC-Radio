@@ -1,0 +1,4 @@
+## Añadido
+- Se añadió temporizador de apagado al menú de configuración.
+## Reparar
+- corregir el parpadeo de la pantalla al mover el control deslizante del reproductor de audio

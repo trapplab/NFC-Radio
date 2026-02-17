@@ -1,0 +1,4 @@
+## Ajouté
+- Ajout d'un minuteur de mise en veille dans le menu des paramètres.
+## Correction
+- corriger le clignotement de l'écran lors du déplacement du curseur du lecteur audio

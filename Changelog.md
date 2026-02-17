@@ -13,7 +13,7 @@
 
 # Changelog
 
-xxx
+## [0.17.0]
 ### Added
 - Added sleep timer to settings menu.
 ### Fix

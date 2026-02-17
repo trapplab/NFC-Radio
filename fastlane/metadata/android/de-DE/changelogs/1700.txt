@@ -1,0 +1,4 @@
+## Hinzugefügt
+- Schlafmodus-Timer zum Einstellungsmenü hinzugefügt.
+## Reparieren
+- Bildschirmflimmern beim Verschieben des Audio-Players-Schiebereglers beheben
