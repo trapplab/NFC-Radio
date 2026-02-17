@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as p;
 import 'music_player.dart';
+import 'sleep_timer_service.dart';
 import '../config/theme_provider.dart';
 import '../l10n/app_localizations.dart';
 
@@ -20,8 +21,8 @@ class PlayerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<ThemeProvider, MusicPlayer>(
-      builder: (context, themeProvider, musicPlayer, child) {
+    return Consumer3<ThemeProvider, MusicPlayer, SleepTimerService>(
+      builder: (context, themeProvider, musicPlayer, sleepTimer, child) {
         if (!musicPlayer.isPlaying && !musicPlayer.isPaused) {
           return const SizedBox.shrink();
         }
@@ -93,10 +94,31 @@ class PlayerWidget extends StatelessWidget {
                   ),
                   style: TextStyle(fontSize: 12, color: subtextColor),
                 ),
-              if (musicPlayer.isPlaylistMode)
-                Text(
-                  'Track ${musicPlayer.currentPlaylistIndex + 1}/${musicPlayer.playlistLength}',
-                  style: TextStyle(fontSize: 11, color: subtextColor),
+              if (sleepTimer.isActive)
+                GestureDetector(
+                  onTap: () {
+                    sleepTimer.cancel();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(AppLocalizations.of(context)!.sleepTimerCancelled),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.bedtime, size: 14, color: subtextColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          AppLocalizations.of(context)!.sleepTimerRemaining(sleepTimer.formatRemaining()),
+                          style: TextStyle(fontSize: 12, color: subtextColor),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               const SizedBox(height: 8),
               Row(

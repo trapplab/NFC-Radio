@@ -189,4 +189,14 @@
   "scanNfcForFolder": "Escanear etiqueta NFC para carpeta",
   "holdNfcTagNearDevice": "Acerque una etiqueta NFC a su dispositivo para conectarla a esta carpeta.",
   "folderNfcConnected": "Etiqueta NFC conectada a carpeta"
+  "sleepTimer": "Temporizador de sueño",
+  "sleepTimerDuration": "Duración",
+  "sleepTimerMinutes": "{minutes} min",
+  "autoSleepTimer": "Activar automáticamente",
+  "autoSleepTimerDescription": "Iniciar temporizador de sueño automáticamente al reproducir",
+  "restrictToHours": "Solo durante ciertas horas",
+  "sleepTimerFrom": "Desde",
+  "sleepTimerTo": "Hasta",
+  "sleepTimerRemaining": "Sueño: {time}",
+  "sleepTimerCancelled": "Temporizador de sueño cancelado"
 }

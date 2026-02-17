@@ -189,4 +189,14 @@
   "scanNfcForFolder": "Scanner le tag NFC pour le dossier",
   "holdNfcTagNearDevice": "Approchez un tag NFC de votre appareil pour le connecter à ce dossier.",
   "folderNfcConnected": "Tag NFC connecté au dossier"
+  "sleepTimer": "Minuterie de sommeil",
+  "sleepTimerDuration": "Durée",
+  "sleepTimerMinutes": "{minutes} min",
+  "autoSleepTimer": "Activer automatiquement",
+  "autoSleepTimerDescription": "Démarrer automatiquement la minuterie lors de la lecture",
+  "restrictToHours": "Uniquement pendant certaines heures",
+  "sleepTimerFrom": "De",
+  "sleepTimerTo": "À",
+  "sleepTimerRemaining": "Sommeil : {time}",
+  "sleepTimerCancelled": "Minuterie de sommeil annulée"
 }
