@@ -13,6 +13,10 @@
 
 # Changelog
 
+xxx
+### Changed
+- when rescan the tag a new random playlist is generated when the player is closed
+
 ## [0.17.0]
 ### Added
 - Added sleep timer to settings menu.
