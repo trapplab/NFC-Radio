@@ -1193,6 +1193,12 @@ abstract class AppLocalizations {
   /// **'Loop Playlist'**
   String get loopPlaylist;
 
+  /// No description provided for @nfcSkipsToNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Play next track on rescan'**
+  String get nfcSkipsToNext;
+
   /// No description provided for @folderHasNoSongs.
   ///
   /// In en, this message translates to:
@@ -1234,6 +1240,7 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'NFC tag connected to folder'**
   String get folderNfcConnected;
+
   /// No description provided for @sleepTimer.
   ///
   /// In en, this message translates to:

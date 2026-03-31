@@ -635,6 +635,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loopPlaylist => 'Loop Playlist';
 
   @override
+  String get nfcSkipsToNext => 'Play next track on rescan';
+
+  @override
   String get folderHasNoSongs => 'Folder has no songs to play';
 
   @override
@@ -656,6 +659,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get folderNfcConnected => 'NFC tag connected to folder';
+
+  @override
   String get sleepTimer => 'Sleep Timer';
 
   @override

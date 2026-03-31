@@ -25,7 +25,7 @@ class MusicPlayer with ChangeNotifier {
   // Callback to notify when position changes (for persisting to song)
   void Function(Duration)? onPositionChangedCallback;
   // Callback to persist playlist position to folder
-  void Function(String folderId, int songIndex, int positionMs)? onPlaylistPositionChanged;
+  void Function(String folderId, int? songIndex, int positionMs)? onPlaylistPositionChanged;
 
   PlayerState get currentState => _currentState;
   bool get isPlaying => _currentState == PlayerState.playing;
@@ -349,7 +349,7 @@ class MusicPlayer with ChangeNotifier {
       // Clear playlist state so the folder no longer appears active
       if (_isPlaylistMode) {
         if (_currentPlaylistFolderId != null) {
-          onPlaylistPositionChanged?.call(_currentPlaylistFolderId!, 0, 0);
+          onPlaylistPositionChanged?.call(_currentPlaylistFolderId!, null, 0);
         }
         _isPlaylistMode = false;
         _playlist = [];
@@ -492,7 +492,7 @@ class MusicPlayer with ChangeNotifier {
     required String folderId,
     bool shuffle = false,
     bool loopPlaylist = false,
-    int startIndex = 0,
+    int? startIndex,
     int startPositionMs = 0,
   }) async {
     debugPrint('🎶 ===== STARTING PLAYLIST =====');
@@ -507,8 +507,12 @@ class MusicPlayer with ChangeNotifier {
     _isLoopPlaylistEnabled = loopPlaylist;
     _shuffleHistory = [];
 
-    // Clamp startIndex to valid range
-    _currentPlaylistIndex = startIndex.clamp(0, _playlist.length - 1);
+    // When shuffle is enabled and no saved position, pick a random start
+    if (shuffle && startIndex == null) {
+      _currentPlaylistIndex = Random().nextInt(_playlist.length);
+    } else {
+      _currentPlaylistIndex = (startIndex ?? 0).clamp(0, _playlist.length - 1);
+    }
     _shuffleHistory.add(_currentPlaylistIndex);
 
     final song = _playlist[_currentPlaylistIndex];
@@ -645,9 +649,9 @@ class MusicPlayer with ChangeNotifier {
     _isShuffleEnabled = false;
     _isLoopPlaylistEnabled = false;
 
-    // Persist final state before clearing folder ID
+    // Persist final state before clearing folder ID (null = fresh start next time)
     if (_currentPlaylistFolderId != null) {
-      onPlaylistPositionChanged?.call(_currentPlaylistFolderId!, 0, 0);
+      onPlaylistPositionChanged?.call(_currentPlaylistFolderId!, null, 0);
     }
     _currentPlaylistFolderId = null;
 

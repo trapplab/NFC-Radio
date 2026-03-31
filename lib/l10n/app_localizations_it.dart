@@ -635,6 +635,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get loopPlaylist => 'Ripeti playlist';
 
   @override
+  String get nfcSkipsToNext => 'Riproduci il brano successivo alla nuova scansione';
+
+  @override
   String get folderHasNoSongs => 'La cartella non ha brani da riprodurre';
 
   @override
@@ -656,6 +659,8 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get folderNfcConnected => 'Tag NFC collegato alla cartella';
+
+  @override
   String get sleepTimer => 'Timer del sonno';
 
   @override

@@ -635,6 +635,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get loopPlaylist => 'Repetir lista';
 
   @override
+  String get nfcSkipsToNext => 'Reproducir siguiente pista al volver a escanear';
+
+  @override
   String get folderHasNoSongs => 'La carpeta no tiene canciones para reproducir';
 
   @override
@@ -656,6 +659,8 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get folderNfcConnected => 'Etiqueta NFC conectada a carpeta';
+
+  @override
   String get sleepTimer => 'Temporizador de sueño';
 
   @override
