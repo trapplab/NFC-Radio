@@ -1,0 +1,4 @@
+## Modificato
+- quando si scansiona nuovamente il tag, viene generata una nuova playlist casuale quando il lettore è chiuso
+- aggiunta opzione nella cartella per riprodurre il nuovo file al riesame
+- visualizzazione a griglia dei file audio

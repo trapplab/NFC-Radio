@@ -1,0 +1,4 @@
+## Geändert
+- Beim erneuten Scannen des Tags wird eine neue zufällige Playlist erstellt, wenn der Player geschlossen ist.
+- Option im Ordner hinzugefügt, um neue Datei bei erneutem Scannen abzuspielen
+- Rasteransicht Audiodateien

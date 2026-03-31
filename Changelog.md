@@ -13,7 +13,7 @@
 
 # Changelog
 
-xxx
+## [0.18.0]
 ### Changed
 - when rescan the tag a new random playlist is generated when the player is closed
 - added option in folder to play new file on rescan
