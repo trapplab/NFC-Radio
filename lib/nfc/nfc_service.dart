@@ -171,7 +171,7 @@ class NFCService with ChangeNotifier {
       folderId: folder.id,
       shuffle: folder.isShuffleEnabled,
       loopPlaylist: folder.isLoopPlaylistEnabled,
-      startIndex: folder.lastPlayedSongIndex ?? 0,
+      startIndex: folder.lastPlayedSongIndex,
       startPositionMs: folder.lastPlayedPositionMs ?? 0,
     );
   }
