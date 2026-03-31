@@ -40,6 +40,9 @@ class Folder extends HiveObject {
   @HiveField(9)
   int? lastPlayedPositionMs;
 
+  @HiveField(10)
+  bool nfcSkipsToNext;
+
   Folder({
     required this.id,
     required this.name,
@@ -51,6 +54,7 @@ class Folder extends HiveObject {
     this.isLoopPlaylistEnabled = false,
     this.lastPlayedSongIndex,
     this.lastPlayedPositionMs,
+    this.nfcSkipsToNext = false,
   });
 
   Folder copyWith({
@@ -64,6 +68,7 @@ class Folder extends HiveObject {
     bool? isLoopPlaylistEnabled,
     int? Function()? lastPlayedSongIndex,
     int? Function()? lastPlayedPositionMs,
+    bool? nfcSkipsToNext,
   }) {
     return Folder(
       id: id ?? this.id,
@@ -76,6 +81,7 @@ class Folder extends HiveObject {
       isLoopPlaylistEnabled: isLoopPlaylistEnabled ?? this.isLoopPlaylistEnabled,
       lastPlayedSongIndex: lastPlayedSongIndex != null ? lastPlayedSongIndex() : this.lastPlayedSongIndex,
       lastPlayedPositionMs: lastPlayedPositionMs != null ? lastPlayedPositionMs() : this.lastPlayedPositionMs,
+      nfcSkipsToNext: nfcSkipsToNext ?? this.nfcSkipsToNext,
     );
   }
 
@@ -91,6 +97,7 @@ class Folder extends HiveObject {
     'isLoopPlaylistEnabled': isLoopPlaylistEnabled,
     'lastPlayedSongIndex': lastPlayedSongIndex,
     'lastPlayedPositionMs': lastPlayedPositionMs,
+    'nfcSkipsToNext': nfcSkipsToNext,
   };
 
   // Create a folder from a JSON map
@@ -105,6 +112,7 @@ class Folder extends HiveObject {
     isLoopPlaylistEnabled: json['isLoopPlaylistEnabled'] ?? false,
     lastPlayedSongIndex: json['lastPlayedSongIndex'],
     lastPlayedPositionMs: json['lastPlayedPositionMs'],
+    nfcSkipsToNext: json['nfcSkipsToNext'] ?? false,
   );
 }
 
@@ -464,6 +472,16 @@ class FolderProvider with ChangeNotifier {
     final folderIndex = _folders.indexWhere((f) => f.id == folderId);
     if (folderIndex != -1) {
       final updated = _folders[folderIndex].copyWith(isLoopPlaylistEnabled: value);
+      _folders[folderIndex] = updated;
+      _saveFolderToStorage(updated);
+      notifyListeners();
+    }
+  }
+
+  void updateFolderNfcSkipsToNext(String folderId, bool value) {
+    final folderIndex = _folders.indexWhere((f) => f.id == folderId);
+    if (folderIndex != -1) {
+      final updated = _folders[folderIndex].copyWith(nfcSkipsToNext: value);
       _folders[folderIndex] = updated;
       _saveFolderToStorage(updated);
       notifyListeners();

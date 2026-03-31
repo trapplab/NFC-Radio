@@ -635,6 +635,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get loopPlaylist => 'Boucler la liste';
 
   @override
+  String get nfcSkipsToNext => 'Lire le titre suivant au nouveau scan';
+
+  @override
   String get folderHasNoSongs => 'Le dossier n\'a pas de chansons à lire';
 
   @override
@@ -656,6 +659,8 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get folderNfcConnected => 'Tag NFC connecté au dossier';
+
+  @override
   String get sleepTimer => 'Minuterie de sommeil';
 
   @override

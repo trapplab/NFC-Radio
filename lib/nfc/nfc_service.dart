@@ -152,10 +152,13 @@ class NFCService with ChangeNotifier {
       return;
     }
 
-    // Check if currently playing this folder's playlist → toggle pause/resume
+    // Check if currently playing this folder's playlist
     if (_musicPlayer!.isPlaylistMode &&
         _musicPlayer!.currentPlaylistFolderId == folder.id) {
-      if (_musicPlayer!.isPlaying) {
+      if (folder.nfcSkipsToNext) {
+        debugPrint('⏭️ NFC rescan: skipping to next track');
+        await _musicPlayer!.playNext();
+      } else if (_musicPlayer!.isPlaying) {
         debugPrint('⏸️ Pausing folder playlist');
         await _musicPlayer!.pauseMusic();
       } else if (_musicPlayer!.isPaused) {

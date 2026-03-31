@@ -1829,7 +1829,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     showModalBottomSheet(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Container(
+        builder: (context, setModalState) => SingleChildScrollView(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
+          child: Container(
           padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1910,6 +1912,20 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 ),
               ),
               ListTile(
+                  leading: const Icon(Icons.skip_next),
+                  title: Text(AppLocalizations.of(context)!.nfcSkipsToNext),
+                  trailing: Switch(
+                    value: folder.nfcSkipsToNext,
+                    onChanged: (value) {
+                      folderProvider.updateFolderNfcSkipsToNext(folder.id, value);
+                      final updatedFolder = folderProvider.folders.firstWhere((f) => f.id == folder.id);
+                      setModalState(() {
+                        folder = updatedFolder;
+                      });
+                    },
+                  ),
+              ),
+              ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
                 title: Text(
                   AppLocalizations.of(context)!.delete,
@@ -1928,6 +1944,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                 child: Text(AppLocalizations.of(context)!.cancel),
               ),
             ],
+          ),
           ),
         ),
       ),
@@ -2230,7 +2247,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   ) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
+      builder: (context) => SingleChildScrollView(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
+        child: Container(
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -2308,6 +2327,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
             ),
           ],
         ),
+        ),
       ),
     );
   }
@@ -2322,7 +2342,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   }) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
+      builder: (context) => SingleChildScrollView(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
+        child: Container(
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -2401,6 +2423,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
               child: Text(AppLocalizations.of(context)!.cancel),
             ),
           ],
+        ),
         ),
       ),
     );
