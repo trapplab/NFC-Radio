@@ -1,0 +1,4 @@
+## Modifié
+- lorsqu'on rescane le tag, une nouvelle playlist aléatoire est générée lorsque le lecteur est fermé
+- ajout d'une option dans le dossier pour jouer le nouveau fichier lors de la nouvelle analyse
+- afficher les fichiers audio en grille

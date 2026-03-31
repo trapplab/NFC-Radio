@@ -1,0 +1,4 @@
+## Cambiado
+- al volver a escanear la etiqueta se genera una nueva lista de reproducción aleatoria cuando el reproductor está cerrado
+- se agregó opción en la carpeta para reproducir el archivo nuevo al volver a escanear
+- vista de cuadrícula archivos de audio
