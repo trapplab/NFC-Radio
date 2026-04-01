@@ -199,5 +199,7 @@
   "sleepTimerFrom": "Von",
   "sleepTimerTo": "Bis",
   "sleepTimerRemaining": "Schlaf: {time}",
-  "sleepTimerCancelled": "Schlaf-Timer abgebrochen"
+  "sleepTimerCancelled": "Schlaf-Timer abgebrochen",
+  "quickConnectTagMode": "Schnellverbindung Tag-Modus",
+  "quickConnectSelectFirst": "Bitte zuerst eine Audiodatei oder einen Ordner auswählen"
 }

@@ -199,5 +199,7 @@
   "sleepTimerFrom": "Desde",
   "sleepTimerTo": "Hasta",
   "sleepTimerRemaining": "Sueño: {time}",
-  "sleepTimerCancelled": "Temporizador de sueño cancelado"
+  "sleepTimerCancelled": "Temporizador de sueño cancelado",
+  "quickConnectTagMode": "Modo Conexión Rápida de Tag",
+  "quickConnectSelectFirst": "Primero selecciona un archivo de audio o carpeta"
 }

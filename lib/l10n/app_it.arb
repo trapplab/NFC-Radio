@@ -199,5 +199,7 @@
   "sleepTimerFrom": "Da",
   "sleepTimerTo": "A",
   "sleepTimerRemaining": "Sonno: {time}",
-  "sleepTimerCancelled": "Timer del sonno annullato"
+  "sleepTimerCancelled": "Timer del sonno annullato",
+  "quickConnectTagMode": "Modalità Connessione Rapida Tag",
+  "quickConnectSelectFirst": "Seleziona prima un file audio o una cartella"
 }

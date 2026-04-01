@@ -199,5 +199,7 @@
   "sleepTimerFrom": "From",
   "sleepTimerTo": "To",
   "sleepTimerRemaining": "Sleep: {time}",
-  "sleepTimerCancelled": "Sleep timer cancelled"
+  "sleepTimerCancelled": "Sleep timer cancelled",
+  "quickConnectTagMode": "Quick Connect Tag Mode",
+  "quickConnectSelectFirst": "Please select an audio file or folder first"
 }

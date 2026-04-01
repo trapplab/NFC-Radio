@@ -1300,6 +1300,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sleep timer cancelled'**
   String get sleepTimerCancelled;
+
+  /// No description provided for @quickConnectTagMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Connect Tag Mode'**
+  String get quickConnectTagMode;
+
+  /// No description provided for @quickConnectSelectFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select an audio file or folder first'**
+  String get quickConnectSelectFirst;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

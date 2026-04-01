@@ -693,4 +693,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get sleepTimerCancelled => 'Temporizador de sueño cancelado';
+
+  @override
+  String get quickConnectTagMode => 'Modo Conexión Rápida de Tag';
+
+  @override
+  String get quickConnectSelectFirst => 'Primero selecciona un archivo de audio o carpeta';
 }

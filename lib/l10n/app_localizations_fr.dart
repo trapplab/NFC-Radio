@@ -693,4 +693,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get sleepTimerCancelled => 'Minuterie de sommeil annulée';
+
+  @override
+  String get quickConnectTagMode => 'Mode Connexion Rapide Tag';
+
+  @override
+  String get quickConnectSelectFirst => 'Veuillez d\'abord sélectionner un fichier audio ou un dossier';
 }
