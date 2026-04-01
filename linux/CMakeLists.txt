@@ -13,9 +13,6 @@ set(APPLICATION_ID "com.trapplab.nfc_radio")
 # versions of CMake.
 cmake_policy(SET CMP0063 NEW)
 
-# Set the installation prefix to a user-writable directory.
-set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local/nfc_radio")
-
 # Load bundled libraries from the lib/ directory relative to the binary.
 set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
 
