@@ -1,0 +1,5 @@
+## Geändert
+- Beim erneuten Scannen des Tags wird eine neue zufällige Wiedergabeliste erstellt, wenn der Spieler geschlossen wird.
+- Option im Ordner hinzugefügt, um neue Datei beim Neuscannen abzuspielen
+- Rasteransicht Audiodateien
+- 4 Zeilen für lange Audiodateinamen

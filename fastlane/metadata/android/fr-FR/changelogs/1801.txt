@@ -1,0 +1,5 @@
+## Modifié
+- Lors de la nouvelle lecture du tag, une nouvelle liste de lecture aléatoire est générée lorsque le lecteur est fermé.
+- ajout d'une option dans le dossier pour lire le nouveau fichier lors de la nouvelle analyse
+- affichage en grille des fichiers audio
+- 4 lignes pour les noms de fichiers audio longs

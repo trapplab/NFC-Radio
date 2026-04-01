@@ -13,6 +13,13 @@
 
 # Changelog
 
+## [0.18.1]
+### Changed
+- when rescan the tag a new random playlist is generated when the player is closed
+- added option in folder to play new file on rescan
+- grid view audio files
+- 4 lines for long audio names
+
 ## [0.18.0]
 ### Changed
 - when rescan the tag a new random playlist is generated when the player is closed

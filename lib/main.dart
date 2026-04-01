@@ -1766,7 +1766,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                                       child: Text(
                                         song.title,
                                         style: const TextStyle(fontSize: 12),
-                                        maxLines: 2,
+                                        maxLines: 4,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
