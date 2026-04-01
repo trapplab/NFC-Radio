@@ -1,0 +1,5 @@
+## Cambiado
+- al reescanear la etiqueta se genera una nueva lista de reproducción aleatoria cuando el reproductor está cerrado
+- añadida opción en la carpeta para reproducir archivo nuevo al reexplorar
+- archivos de audio en vista de cuadrícula
+- 4 líneas para nombres de audio largos
