@@ -2702,26 +2702,45 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
     final bool isFolderPlaylistActive =
         musicPlayer.isPlaylistMode &&
         musicPlayer.currentPlaylistFolderId == subfolder.id;
+    final bool isQCSelected = _quickConnectSelectedFolderId == subfolder.id;
+    final bool isQCFlash = _quickConnectFlashSuccessIds.contains(subfolder.id);
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),
       decoration: BoxDecoration(
-        color: Provider.of<ThemeProvider>(context).footerColor,
+        color: isQCFlash
+            ? Colors.green.withValues(alpha: 0.15)
+            : Provider.of<ThemeProvider>(context).footerColor,
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: isFolderPlaylistActive
+          color: isQCFlash
+              ? Colors.green
+              : isQCSelected
+              ? Theme.of(context).colorScheme.primary
+              : isFolderPlaylistActive
               ? Colors.green
               : Provider.of<ThemeProvider>(
                   context,
                 ).bannerColor.withValues(alpha: 0.2),
-          width: isFolderPlaylistActive ? 2 : 1,
+          width: isQCFlash || isQCSelected || isFolderPlaylistActive ? 2 : 1,
         ),
       ),
       child: Column(
         children: [
           // Subfolder header
           InkWell(
-            onTap: () => folderProvider.toggleFolderExpansion(subfolder.id),
+            onTap: _quickConnectMode
+                ? () {
+                    setState(() {
+                      if (_quickConnectSelectedFolderId == subfolder.id) {
+                        _quickConnectSelectedFolderId = null;
+                      } else {
+                        _quickConnectSelectedFolderId = subfolder.id;
+                        _quickConnectSelectedSongId = null;
+                      }
+                    });
+                  }
+                : () => folderProvider.toggleFolderExpansion(subfolder.id),
             onLongPress: () => _showFolderActionsDialog(
               context,
               subfolder,
@@ -2848,23 +2867,56 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                         childAspectRatio: 2.8,
                         padding: const EdgeInsets.only(top: 8, bottom: spacing),
                         children: folderSongs.map((song) {
+                          final bool isQCSongSelected =
+                              _quickConnectSelectedSongId == song.id;
+                          final bool isQCSongFlash =
+                              _quickConnectFlashSuccessIds.contains(song.id);
                           return GestureDetector(
-                            onLongPress: () {
-                              _showSongActionsDialog(
-                                context,
-                                song,
-                                subfolder.id,
-                                folderProvider,
-                                songProvider,
-                              );
-                            },
+                            onTap: _quickConnectMode
+                                ? () {
+                                    setState(() {
+                                      if (_quickConnectSelectedSongId ==
+                                          song.id) {
+                                        _quickConnectSelectedSongId = null;
+                                      } else {
+                                        _quickConnectSelectedSongId = song.id;
+                                        _quickConnectSelectedFolderId = null;
+                                      }
+                                    });
+                                  }
+                                : null,
+                            onLongPress: _quickConnectMode
+                                ? null
+                                : () {
+                                    _showSongActionsDialog(
+                                      context,
+                                      song,
+                                      subfolder.id,
+                                      folderProvider,
+                                      songProvider,
+                                    );
+                                  },
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Provider.of<ThemeProvider>(
-                                  context,
-                                ).bannerColor.withValues(alpha: 0.1),
+                                color: isQCSongFlash
+                                    ? Colors.green.withValues(alpha: 0.25)
+                                    : isQCSongSelected
+                                    ? Theme.of(context).colorScheme.primary
+                                          .withValues(alpha: 0.15)
+                                    : Provider.of<ThemeProvider>(
+                                        context,
+                                      ).bannerColor.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
-                                border: song.connectedNfcUuid != null
+                                border: isQCSongFlash
+                                    ? Border.all(color: Colors.green, width: 3)
+                                    : isQCSongSelected
+                                    ? Border.all(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                        width: 2,
+                                      )
+                                    : song.connectedNfcUuid != null
                                     ? Border.all(color: Colors.green, width: 2)
                                     : null,
                               ),
