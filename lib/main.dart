@@ -1839,7 +1839,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                     });
                   }
                 : () => folderProvider.toggleFolderExpansion(folder.id),
-            onLongPress: _quickConnectMode ? null : () => _showFolderActionsDialog(context, folder, folderProvider, musicPlayer),
+            onLongPress: () => _showFolderActionsDialog(context, folder, folderProvider, musicPlayer),
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -1869,41 +1869,49 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                       padding: const EdgeInsets.only(right: 4),
                       child: Icon(Icons.nfc, size: 16, color: Provider.of<ThemeProvider>(context).bannerColor.withValues(alpha: 0.6)),
                     ),
-                  Icon(
-                    folder.isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: Provider.of<ThemeProvider>(context).bannerColor,
-                  ),
                   GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      if (isFolderPlaylistActive) {
-                        if (musicPlayer.isPlaying) {
-                          musicPlayer.pauseMusic();
-                        } else {
-                          musicPlayer.resumeMusic();
-                        }
-                      } else if (folderSongs.isNotEmpty) {
-                        musicPlayer.startPlaylist(
-                          songs: folderSongs,
-                          folderId: folder.id,
-                          shuffle: folder.isShuffleEnabled,
-                          loopPlaylist: folder.isLoopPlaylistEnabled,
-                          startIndex: folder.lastPlayedSongIndex,
-                          startPositionMs: folder.lastPlayedPositionMs ?? 0,
-                        );
-                      }
-                    },
+                    onTap: () => folderProvider.toggleFolderExpansion(folder.id),
                     child: Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Icon(
-                        isFolderPlaylistActive && musicPlayer.isPlaying
-                            ? Icons.pause_circle
-                            : Icons.play_circle,
-                        color: isFolderPlaylistActive ? Colors.green : Colors.grey,
-                        size: 20,
+                        folder.isExpanded ? Icons.expand_less : Icons.expand_more,
+                        color: Provider.of<ThemeProvider>(context).bannerColor,
                       ),
                     ),
                   ),
+                  if (!_quickConnectMode)
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        if (isFolderPlaylistActive) {
+                          if (musicPlayer.isPlaying) {
+                            musicPlayer.pauseMusic();
+                          } else {
+                            musicPlayer.resumeMusic();
+                          }
+                        } else if (folderSongs.isNotEmpty) {
+                          musicPlayer.startPlaylist(
+                            songs: folderSongs,
+                            folderId: folder.id,
+                            shuffle: folder.isShuffleEnabled,
+                            loopPlaylist: folder.isLoopPlaylistEnabled,
+                            startIndex: folder.lastPlayedSongIndex,
+                            startPositionMs: folder.lastPlayedPositionMs ?? 0,
+                          );
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Icon(
+                          isFolderPlaylistActive && musicPlayer.isPlaying
+                              ? Icons.pause_circle
+                              : Icons.play_circle,
+                          color: isFolderPlaylistActive ? Colors.green : Colors.grey,
+                          size: 20,
+                        ),
+                      ),
+                    ),
                   ReorderableDragStartListener(
                     index: index,
                     child: IconButton(
