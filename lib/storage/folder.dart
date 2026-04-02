@@ -12,13 +12,13 @@ part 'folder.g.dart';
 class Folder extends HiveObject {
   @HiveField(0)
   String id;
-  
+
   @HiveField(1)
   String name;
-  
+
   @HiveField(2)
   List<String> songIds;
-  
+
   @HiveField(3)
   bool isExpanded;
 
@@ -43,6 +43,9 @@ class Folder extends HiveObject {
   @HiveField(10)
   bool nfcSkipsToNext;
 
+  @HiveField(11)
+  String? parentFolderId;
+
   Folder({
     required this.id,
     required this.name,
@@ -55,6 +58,7 @@ class Folder extends HiveObject {
     this.lastPlayedSongIndex,
     this.lastPlayedPositionMs,
     this.nfcSkipsToNext = false,
+    this.parentFolderId,
   });
 
   Folder copyWith({
@@ -69,6 +73,7 @@ class Folder extends HiveObject {
     int? Function()? lastPlayedSongIndex,
     int? Function()? lastPlayedPositionMs,
     bool? nfcSkipsToNext,
+    String? Function()? parentFolderId,
   }) {
     return Folder(
       id: id ?? this.id,
@@ -76,12 +81,22 @@ class Folder extends HiveObject {
       songIds: songIds ?? this.songIds,
       isExpanded: isExpanded ?? this.isExpanded,
       position: position ?? this.position,
-      connectedNfcUuid: connectedNfcUuid != null ? connectedNfcUuid() : this.connectedNfcUuid,
+      connectedNfcUuid: connectedNfcUuid != null
+          ? connectedNfcUuid()
+          : this.connectedNfcUuid,
       isShuffleEnabled: isShuffleEnabled ?? this.isShuffleEnabled,
-      isLoopPlaylistEnabled: isLoopPlaylistEnabled ?? this.isLoopPlaylistEnabled,
-      lastPlayedSongIndex: lastPlayedSongIndex != null ? lastPlayedSongIndex() : this.lastPlayedSongIndex,
-      lastPlayedPositionMs: lastPlayedPositionMs != null ? lastPlayedPositionMs() : this.lastPlayedPositionMs,
+      isLoopPlaylistEnabled:
+          isLoopPlaylistEnabled ?? this.isLoopPlaylistEnabled,
+      lastPlayedSongIndex: lastPlayedSongIndex != null
+          ? lastPlayedSongIndex()
+          : this.lastPlayedSongIndex,
+      lastPlayedPositionMs: lastPlayedPositionMs != null
+          ? lastPlayedPositionMs()
+          : this.lastPlayedPositionMs,
       nfcSkipsToNext: nfcSkipsToNext ?? this.nfcSkipsToNext,
+      parentFolderId: parentFolderId != null
+          ? parentFolderId()
+          : this.parentFolderId,
     );
   }
 
@@ -98,6 +113,7 @@ class Folder extends HiveObject {
     'lastPlayedSongIndex': lastPlayedSongIndex,
     'lastPlayedPositionMs': lastPlayedPositionMs,
     'nfcSkipsToNext': nfcSkipsToNext,
+    'parentFolderId': parentFolderId,
   };
 
   // Create a folder from a JSON map
@@ -113,6 +129,7 @@ class Folder extends HiveObject {
     lastPlayedSongIndex: json['lastPlayedSongIndex'],
     lastPlayedPositionMs: json['lastPlayedPositionMs'],
     nfcSkipsToNext: json['nfcSkipsToNext'] ?? false,
+    parentFolderId: json['parentFolderId'],
   );
 }
 
@@ -123,6 +140,22 @@ class FolderProvider with ChangeNotifier {
 
   List<Folder> get folders => _folders;
   bool get isInitialized => _isInitialized;
+
+  // ========== HIERARCHY HELPERS ==========
+
+  /// Root-level folders (no parent), sorted by position
+  List<Folder> get rootFolders =>
+      (_folders.where((f) => f.parentFolderId == null).toList()
+        ..sort((a, b) => a.position.compareTo(b.position)));
+
+  /// Child folders of a given parent, sorted by position
+  List<Folder> getChildFolders(String parentId) =>
+      (_folders.where((f) => f.parentFolderId == parentId).toList()
+        ..sort((a, b) => a.position.compareTo(b.position)));
+
+  /// Returns true if the folder has at least one child subfolder
+  bool isGroupFolder(String folderId) =>
+      _folders.any((f) => f.parentFolderId == folderId);
 
   /// Check if premium is unlocked via IAP
   /// GitHub and F-Droid flavors are always unlimited
@@ -139,7 +172,9 @@ class FolderProvider with ChangeNotifier {
     if (AppConfig.isFdroidRelease || AppConfig.isGitHubRelease) return false;
 
     // Google Play: restricted unless premium unlocked
-    return AppConfig.isGooglePlayRelease && !isPremiumUnlocked && _folders.length >= 2;
+    return AppConfig.isGooglePlayRelease &&
+        !isPremiumUnlocked &&
+        _folders.length >= 2;
   }
 
   /// Check if the song limit is reached for a specific folder
@@ -149,7 +184,9 @@ class FolderProvider with ChangeNotifier {
 
     // Google Play: restricted unless premium unlocked
     if (AppConfig.isGooglePlayRelease && !isPremiumUnlocked) {
-      final folderIndex = _folders.indexWhere((folder) => folder.id == folderId);
+      final folderIndex = _folders.indexWhere(
+        (folder) => folder.id == folderId,
+      );
       if (folderIndex != -1) {
         return _folders[folderIndex].songIds.length >= 6;
       }
@@ -248,7 +285,9 @@ class FolderProvider with ChangeNotifier {
         debugPrint('📁 Folders in provider:');
         for (int i = 0; i < _folders.length; i++) {
           final folder = _folders[i];
-          debugPrint('📁   $i: "${folder.name}" (ID: ${folder.id}) - Songs: ${folder.songIds.length} - Expanded: ${folder.isExpanded} - Position: ${folder.position}');
+          debugPrint(
+            '📁   $i: "${folder.name}" (ID: ${folder.id}) - Songs: ${folder.songIds.length} - Expanded: ${folder.isExpanded} - Position: ${folder.position}',
+          );
         }
       } else {
         debugPrint('📁 No folders found in storage');
@@ -256,7 +295,9 @@ class FolderProvider with ChangeNotifier {
 
       _isInitialized = true;
 
-      debugPrint('✅ FolderProvider initialized with ${_folders.length} folders');
+      debugPrint(
+        '✅ FolderProvider initialized with ${_folders.length} folders',
+      );
       debugPrint('📁 ===== FOLDERPROVIDER INITIALIZATION COMPLETED =====');
       notifyListeners();
     } catch (e, stackTrace) {
@@ -287,23 +328,89 @@ class FolderProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> removeFolder(String folderId) async {
+  /// Remove a folder and all its child subfolders from storage.
+  /// Returns the IDs of all removed folders (including children) so the caller
+  /// can clean up songs and NFC mappings.
+  Future<List<String>> removeFolder(String folderId) async {
+    final removedIds = <String>[];
+
+    // Remove children first (subfolders of this folder)
+    final children = getChildFolders(folderId);
+    for (final child in children) {
+      final childIndex = _folders.indexWhere((f) => f.id == child.id);
+      if (childIndex != -1) {
+        _folders.removeAt(childIndex);
+        await _deleteFolderFromStorage(child.id);
+        removedIds.add(child.id);
+      }
+    }
+
+    // Remove the folder itself
     final index = _folders.indexWhere((f) => f.id == folderId);
     if (index != -1) {
       _folders.removeAt(index);
       await _deleteFolderFromStorage(folderId);
-      
-      // Update positions of remaining folders
-      await _updateFolderPositions();
-      
-      notifyListeners();
+      removedIds.add(folderId);
     }
+
+    // Update positions of remaining root folders
+    await _updateFolderPositions();
+
+    notifyListeners();
+    return removedIds;
+  }
+
+  /// Add a subfolder inside a parent (group) folder.
+  void addSubFolder(String parentFolderId, Folder subfolder) {
+    if (isFolderLimitReached()) return;
+
+    // Position = number of existing children
+    final childCount = getChildFolders(parentFolderId).length;
+    final newSubfolder = Folder(
+      id: subfolder.id,
+      name: subfolder.name,
+      songIds: const [],
+      isExpanded: false,
+      position: childCount,
+      parentFolderId: parentFolderId,
+    );
+    _folders.add(newSubfolder);
+    _saveFolderToStorage(newSubfolder);
+    notifyListeners();
+  }
+
+  /// Reorder subfolders within a group
+  Future<void> reorderSubFolders(
+    String parentId,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    if (oldIndex < newIndex) newIndex -= 1;
+
+    // Work on only the children of this parent
+    final children = getChildFolders(parentId);
+    final moved = children.removeAt(oldIndex);
+    children.insert(newIndex, moved);
+
+    // Update positions for those children
+    for (int i = 0; i < children.length; i++) {
+      final idx = _folders.indexWhere((f) => f.id == children[i].id);
+      if (idx != -1) {
+        _folders[idx] = _folders[idx].copyWith(position: i);
+        await _saveFolderToStorage(_folders[idx]);
+      }
+    }
+    notifyListeners();
   }
 
   void updateFolder(Folder updatedFolder) {
-    final folderIndex = _folders.indexWhere((folder) => folder.id == updatedFolder.id);
+    final folderIndex = _folders.indexWhere(
+      (folder) => folder.id == updatedFolder.id,
+    );
     if (folderIndex != -1) {
-      final updated = updatedFolder.copyWith(position: _folders[folderIndex].position);
+      final updated = updatedFolder.copyWith(
+        position: _folders[folderIndex].position,
+      );
       _folders[folderIndex] = updated;
       _saveFolderToStorage(updated);
       notifyListeners();
@@ -331,7 +438,9 @@ class FolderProvider with ChangeNotifier {
     final folderIndex = _folders.indexWhere((folder) => folder.id == folderId);
     if (folderIndex != -1) {
       final updatedFolder = _folders[folderIndex].copyWith(
-        songIds: _folders[folderIndex].songIds.where((id) => id != songId).toList(),
+        songIds: _folders[folderIndex].songIds
+            .where((id) => id != songId)
+            .toList(),
       );
       _folders[folderIndex] = updatedFolder;
       _saveFolderToStorage(updatedFolder);
@@ -367,14 +476,18 @@ class FolderProvider with ChangeNotifier {
     }
   }
 
-  /// Update positions of all folders after reordering or removal
+  /// Update positions of root-level folders after reordering or removal.
+  /// Child folder positions are managed separately within their parent.
   Future<void> _updateFolderPositions() async {
-    for (int i = 0; i < _folders.length; i++) {
-      _folders[i] = _folders[i].copyWith(position: i);
-      await _saveFolderToStorage(_folders[i]);
+    final roots = rootFolders;
+    for (int i = 0; i < roots.length; i++) {
+      final idx = _folders.indexWhere((f) => f.id == roots[i].id);
+      if (idx != -1) {
+        _folders[idx] = _folders[idx].copyWith(position: i);
+        await _saveFolderToStorage(_folders[idx]);
+      }
     }
   }
-
 
   /// Delete a folder from storage (with fallback to in-memory on error)
   Future<void> _deleteFolderFromStorage(String folderId) async {
@@ -399,18 +512,32 @@ class FolderProvider with ChangeNotifier {
     }
   }
 
-  /// Reorder folders and update their positions
+  /// Reorder root-level folders and update their positions.
+  /// Indices refer to positions within the root folders list.
   Future<void> reorderFolders(int oldIndex, int newIndex) async {
-    if (oldIndex < newIndex) {
-      newIndex -= 1;
-    }
-    
-    final folder = _folders.removeAt(oldIndex);
-    _folders.insert(newIndex, folder);
-    
+    if (oldIndex < newIndex) newIndex -= 1;
+
+    final roots = rootFolders;
+    if (oldIndex >= roots.length || newIndex >= roots.length) return;
+
+    // Find global indices for the two root folders
+    final movedId = roots[oldIndex].id;
+    final movedGlobalIdx = _folders.indexWhere((f) => f.id == movedId);
+    if (movedGlobalIdx == -1) return;
+
+    final folder = _folders.removeAt(movedGlobalIdx);
+
+    // Recalculate insertion point in global list based on new root position
+    final targetId = roots[newIndex].id;
+    final targetGlobalIdx = _folders.indexWhere((f) => f.id == targetId);
+    final insertAt = targetGlobalIdx == -1
+        ? _folders.length
+        : (oldIndex < newIndex ? targetGlobalIdx + 1 : targetGlobalIdx);
+    _folders.insert(insertAt, folder);
+
     // Update positions
     await _updateFolderPositions();
-    
+
     notifyListeners();
   }
 
@@ -445,7 +572,11 @@ class FolderProvider with ChangeNotifier {
     }
   }
 
-  void updateFolderPlaybackState(String folderId, {int? lastPlayedSongIndex, int? lastPlayedPositionMs}) {
+  void updateFolderPlaybackState(
+    String folderId, {
+    int? lastPlayedSongIndex,
+    int? lastPlayedPositionMs,
+  }) {
     final folderIndex = _folders.indexWhere((f) => f.id == folderId);
     if (folderIndex != -1) {
       final updated = _folders[folderIndex].copyWith(
@@ -471,7 +602,9 @@ class FolderProvider with ChangeNotifier {
   void updateFolderLoop(String folderId, bool value) {
     final folderIndex = _folders.indexWhere((f) => f.id == folderId);
     if (folderIndex != -1) {
-      final updated = _folders[folderIndex].copyWith(isLoopPlaylistEnabled: value);
+      final updated = _folders[folderIndex].copyWith(
+        isLoopPlaylistEnabled: value,
+      );
       _folders[folderIndex] = updated;
       _saveFolderToStorage(updated);
       notifyListeners();
@@ -522,7 +655,8 @@ class FolderProvider with ChangeNotifier {
         final toFolder = _folders[toFolderIndex];
         final conflictingSongId = toFolder.songIds.firstWhereOrNull((id) {
           final folderSong = songs.firstWhereOrNull((s) => s.id == id);
-          return folderSong != null && folderSong.connectedNfcUuid == song.connectedNfcUuid;
+          return folderSong != null &&
+              folderSong.connectedNfcUuid == song.connectedNfcUuid;
         });
 
         if (conflictingSongId != null) {
@@ -578,11 +712,7 @@ class FolderProvider with ChangeNotifier {
 }
 
 /// Enum for move/copy failure reasons
-enum MoveFailureReason {
-  songLimit,
-  nfcConflict,
-  duplicate,
-}
+enum MoveFailureReason { songLimit, nfcConflict, duplicate }
 
 /// Result class for move/copy operations
 class MoveResult {
@@ -590,9 +720,5 @@ class MoveResult {
   final MoveFailureReason? reason;
   final String? conflictingSongId;
 
-  MoveResult({
-    required this.success,
-    this.reason,
-    this.conflictingSongId,
-  });
+  MoveResult({required this.success, this.reason, this.conflictingSongId});
 }

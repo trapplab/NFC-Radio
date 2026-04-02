@@ -699,4 +699,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get quickConnectSelectFirst => 'Primero selecciona un archivo de audio o carpeta';
+
+  @override
+  String get addSubfolder => 'Añadir subcarpeta';
+
+  @override
+  String get noSubfoldersYet => 'Aún no hay subcarpetas. ¡Añade una!';
+
+  @override
+  String deleteGroupWarning(int subCount, int songCount) {
+    return 'Esto eliminará $subCount subcarpeta(s) y $songCount canción/es.';
+  }
 }

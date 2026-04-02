@@ -201,5 +201,14 @@
   "sleepTimerRemaining": "Sleep: {time}",
   "sleepTimerCancelled": "Sleep timer cancelled",
   "quickConnectTagMode": "Quick Connect Tag Mode",
-  "quickConnectSelectFirst": "Please select an audio file or folder first"
+  "quickConnectSelectFirst": "Please select an audio file or folder first",
+  "addSubfolder": "Add Subfolder",
+  "noSubfoldersYet": "No subfolders yet. Add a subfolder!",
+  "deleteGroupWarning": "This will delete {subCount} subfolder(s) and {songCount} song(s).",
+  "@deleteGroupWarning": {
+    "placeholders": {
+      "subCount": {"type": "int"},
+      "songCount": {"type": "int"}
+    }
+  }
 }

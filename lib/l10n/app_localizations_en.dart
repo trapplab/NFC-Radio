@@ -699,4 +699,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get quickConnectSelectFirst => 'Please select an audio file or folder first';
+
+  @override
+  String get addSubfolder => 'Add Subfolder';
+
+  @override
+  String get noSubfoldersYet => 'No subfolders yet. Add a subfolder!';
+
+  @override
+  String deleteGroupWarning(int subCount, int songCount) {
+    return 'This will delete $subCount subfolder(s) and $songCount song(s).';
+  }
 }

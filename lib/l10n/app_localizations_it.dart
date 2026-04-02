@@ -699,4 +699,15 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get quickConnectSelectFirst => 'Seleziona prima un file audio o una cartella';
+
+  @override
+  String get addSubfolder => 'Aggiungi sottocartella';
+
+  @override
+  String get noSubfoldersYet => 'Nessuna sottocartella ancora. Aggiungine una!';
+
+  @override
+  String deleteGroupWarning(int subCount, int songCount) {
+    return 'Verranno eliminate $subCount sottocartella/e e $songCount canzone/i.';
+  }
 }

@@ -28,13 +28,14 @@ class FolderAdapter extends TypeAdapter<Folder> {
       lastPlayedSongIndex: fields[8] as int?,
       lastPlayedPositionMs: fields[9] as int?,
       nfcSkipsToNext: fields[10] as bool? ?? false,
+      parentFolderId: fields[11] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Folder obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -56,7 +57,9 @@ class FolderAdapter extends TypeAdapter<Folder> {
       ..writeByte(9)
       ..write(obj.lastPlayedPositionMs)
       ..writeByte(10)
-      ..write(obj.nfcSkipsToNext);
+      ..write(obj.nfcSkipsToNext)
+      ..writeByte(11)
+      ..write(obj.parentFolderId);
   }
 
   @override

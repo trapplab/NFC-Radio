@@ -201,5 +201,14 @@
   "sleepTimerRemaining": "Sueño: {time}",
   "sleepTimerCancelled": "Temporizador de sueño cancelado",
   "quickConnectTagMode": "Modo Conexión Rápida de Tag",
-  "quickConnectSelectFirst": "Primero selecciona un archivo de audio o carpeta"
+  "quickConnectSelectFirst": "Primero selecciona un archivo de audio o carpeta",
+  "addSubfolder": "Añadir subcarpeta",
+  "noSubfoldersYet": "Aún no hay subcarpetas. ¡Añade una!",
+  "deleteGroupWarning": "Esto eliminará {subCount} subcarpeta(s) y {songCount} canción/es.",
+  "@deleteGroupWarning": {
+    "placeholders": {
+      "subCount": {"type": "int"},
+      "songCount": {"type": "int"}
+    }
+  }
 }
