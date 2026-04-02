@@ -27,6 +27,7 @@ class NFCService with ChangeNotifier {
   bool get isNfcAvailable => _isNfcAvailable;
   String? get currentNfcUuid => _currentNfcUuid;
   bool get isScanning => _isScanning;
+  bool get isProcessingTag => _isProcessingTag;
   bool get isInEditMode => _isInEditMode;
   Stream<String> get messages => _messageController.stream;
 

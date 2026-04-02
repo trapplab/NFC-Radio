@@ -1,0 +1,5 @@
+## Neu
+- Schnellverbindung Tag-Modus: Lied oder Ordner auswählen, NFC-Tag scannen, direkt verknüpft — wiederholen für Massenverknüpfung
+
+## Behoben
+- Audio spielte weiter, nachdem das letzte Lied in einer Wiedergabeliste beendet war

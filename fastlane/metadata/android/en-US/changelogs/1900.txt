@@ -1,0 +1,5 @@
+## Added
+- Quick Connect Tag Mode: select a song or folder, scan an NFC tag, and it gets linked instantly — repeat for bulk tagging
+
+## Fixed
+- Audio continued playing after the last song in a playlist finished

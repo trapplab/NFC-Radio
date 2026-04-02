@@ -1,0 +1,5 @@
+## Añadido
+- Modo Conexión Rápida de Tag: selecciona una canción o carpeta, escanea un tag NFC y queda vinculado al instante — repite para vincular en masa
+
+## Corregido
+- El audio seguía reproduciéndose tras terminar la última canción de una lista de reproducción

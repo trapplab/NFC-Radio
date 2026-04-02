@@ -199,5 +199,7 @@
   "sleepTimerFrom": "De",
   "sleepTimerTo": "À",
   "sleepTimerRemaining": "Sommeil : {time}",
-  "sleepTimerCancelled": "Minuterie de sommeil annulée"
+  "sleepTimerCancelled": "Minuterie de sommeil annulée",
+  "quickConnectTagMode": "Mode Connexion Rapide Tag",
+  "quickConnectSelectFirst": "Veuillez d'abord sélectionner un fichier audio ou un dossier"
 }

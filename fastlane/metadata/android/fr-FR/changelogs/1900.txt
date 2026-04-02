@@ -1,0 +1,5 @@
+## Ajouté
+- Mode Connexion Rapide Tag : sélectionnez une chanson ou un dossier, scannez un tag NFC et il est lié instantanément — répétez pour un étiquetage en masse
+
+## Corrigé
+- L'audio continuait à jouer après la fin de la dernière chanson d'une playlist

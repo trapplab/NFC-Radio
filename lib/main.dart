@@ -111,6 +111,14 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   bool _isLoadingGithubFolders = false;
   bool _initializationStarted = false;
 
+  // Quick Connect Tag Mode
+  bool _quickConnectMode = false;
+  String? _quickConnectSelectedSongId;
+  String? _quickConnectSelectedFolderId;
+  final Set<String> _quickConnectFlashSuccessIds = {};
+  VoidCallback? _quickConnectNfcListener;
+  NFCService? _nfcServiceRef;
+
   // Global keys for tutorial
   final GlobalKey _addFolderButtonKey = GlobalKey();
   final GlobalKey _addSongButtonKey = GlobalKey();
@@ -424,6 +432,19 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
       }
     });
 
+    // Set up Quick Connect NFC listener (once)
+    if (_quickConnectNfcListener == null) {
+      _nfcServiceRef = nfcService;
+      _quickConnectNfcListener = () {
+        if (!_quickConnectMode) return;
+        if (!nfcService.isProcessingTag) return;
+        final uuid = nfcService.currentNfcUuid;
+        if (uuid == null) return;
+        _handleQuickConnectNfcScan(uuid);
+      };
+      nfcService.addListener(_quickConnectNfcListener!);
+    }
+
     // Initialize providers after first frame to ensure context is available
     if (!_initializationStarted) {
       _initializationStarted = true;
@@ -571,7 +592,131 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _nfcMessageSubscription?.cancel();
+    if (_quickConnectNfcListener != null) {
+      _nfcServiceRef?.removeListener(_quickConnectNfcListener!);
+    }
     super.dispose();
+  }
+
+  Future<void> _handleQuickConnectNfcScan(String uuid) async {
+    if (!mounted) return;
+
+    final songProvider = Provider.of<SongProvider>(context, listen: false);
+    final folderProvider = Provider.of<FolderProvider>(context, listen: false);
+    final mappingProvider = Provider.of<NFCMusicMappingProvider>(context, listen: false);
+    final l10n = AppLocalizations.of(context)!;
+
+    if (_quickConnectSelectedSongId == null && _quickConnectSelectedFolderId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(l10n.quickConnectSelectFirst),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
+
+    // Find conflicts: tag already assigned to another song or folder
+    Song? conflictingSong;
+    Folder? conflictingFolder;
+
+    for (final s in songProvider.songs) {
+      if (s.connectedNfcUuid == uuid && s.id != _quickConnectSelectedSongId) {
+        conflictingSong = s;
+        break;
+      }
+    }
+    for (final f in folderProvider.folders) {
+      if (f.connectedNfcUuid == uuid && f.id != _quickConnectSelectedFolderId) {
+        conflictingFolder = f;
+        break;
+      }
+    }
+
+    bool shouldConnect = true;
+
+    if (conflictingSong != null && mounted) {
+      shouldConnect = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.nfcTagAlreadyConnected),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.nfcAlreadyConnectedTo),
+              const SizedBox(height: 8),
+              Text('"${conflictingSong!.title}"', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(l10n.replaceConnectionQuestion),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(l10n.keepExisting)),
+            TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: Text(l10n.replaceConnection)),
+          ],
+        ),
+      ) ?? false;
+
+      if (shouldConnect) {
+        songProvider.disconnectSongFromNfc(conflictingSong.id);
+        mappingProvider.removeMapping(conflictingSong.id);
+      }
+    }
+
+    if (conflictingFolder != null && shouldConnect && mounted) {
+      shouldConnect = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.nfcTagAlreadyConnected),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.nfcAlreadyConnectedToFolder),
+              const SizedBox(height: 8),
+              Text('"${conflictingFolder!.name}"', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(l10n.replaceConnectionQuestion),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(l10n.keepExisting)),
+            TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: Text(l10n.replaceConnection)),
+          ],
+        ),
+      ) ?? false;
+
+      if (shouldConnect) {
+        folderProvider.disconnectFolderFromNfc(conflictingFolder.id);
+      }
+    }
+
+    if (!shouldConnect || !mounted) return;
+
+    // Connect and flash success
+    if (_quickConnectSelectedSongId != null) {
+      final songId = _quickConnectSelectedSongId!;
+      songProvider.connectSongToNfc(songId, uuid);
+      mappingProvider.removeMapping(songId);
+      mappingProvider.addMapping(NFCMusicMapping(nfcUuid: uuid, songId: songId));
+      setState(() {
+        _quickConnectFlashSuccessIds.add(songId);
+        _quickConnectSelectedSongId = null;
+      });
+      Future.delayed(const Duration(milliseconds: 900), () {
+        if (mounted) setState(() => _quickConnectFlashSuccessIds.remove(songId));
+      });
+    } else if (_quickConnectSelectedFolderId != null) {
+      final folderId = _quickConnectSelectedFolderId!;
+      folderProvider.connectFolderToNfc(folderId, uuid);
+      setState(() {
+        _quickConnectFlashSuccessIds.add(folderId);
+        _quickConnectSelectedFolderId = null;
+      });
+      Future.delayed(const Duration(milliseconds: 900), () {
+        if (mounted) setState(() => _quickConnectFlashSuccessIds.remove(folderId));
+      });
+    }
   }
 
   @override
@@ -941,23 +1086,54 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
   }
 
   Widget _buildAddFolderButton(BuildContext context, FolderProvider folderProvider) {
-    return Container(
-      key: _addFolderButtonKey,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ElevatedButton.icon(
-        onPressed: () {
-          if (folderProvider.isFolderLimitReached()) {
-            folderProvider.showFolderLimitDialog(context);
-          } else {
-            _showAddFolderDialog(context, folderProvider);
-          }
-        },
-        icon: const Icon(Icons.create_new_folder),
-        label: Text(AppLocalizations.of(context)!.addNewFolder),
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size(double.infinity, 50),
+    return Column(
+      children: [
+        Container(
+          key: _addFolderButtonKey,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: ElevatedButton.icon(
+            onPressed: () {
+              if (folderProvider.isFolderLimitReached()) {
+                folderProvider.showFolderLimitDialog(context);
+              } else {
+                _showAddFolderDialog(context, folderProvider);
+              }
+            },
+            icon: const Icon(Icons.create_new_folder),
+            label: Text(AppLocalizations.of(context)!.addNewFolder),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 50),
+            ),
+          ),
         ),
-      ),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: ElevatedButton.icon(
+            onPressed: () {
+              final nfcService = Provider.of<NFCService>(context, listen: false);
+              setState(() {
+                _quickConnectMode = !_quickConnectMode;
+                if (!_quickConnectMode) {
+                  _quickConnectSelectedSongId = null;
+                  _quickConnectSelectedFolderId = null;
+                }
+              });
+              nfcService.setEditMode(_quickConnectMode);
+            },
+            icon: Icon(_quickConnectMode ? Icons.nfc : Icons.nfc_outlined),
+            label: Text(AppLocalizations.of(context)!.quickConnectTagMode),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 50),
+              backgroundColor: _quickConnectMode
+                  ? Theme.of(context).colorScheme.primary
+                  : null,
+              foregroundColor: _quickConnectMode
+                  ? Theme.of(context).colorScheme.onPrimary
+                  : null,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1626,23 +1802,43 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
     final bool isFolderNfcConnected = folder.connectedNfcUuid != null;
     final bool isFolderPlaylistActive = musicPlayer.isPlaylistMode && musicPlayer.currentPlaylistFolderId == folder.id;
 
+    final bool isQCSelectedFolder = _quickConnectSelectedFolderId == folder.id;
+    final bool isQCFlashFolder = _quickConnectFlashSuccessIds.contains(folder.id);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Provider.of<ThemeProvider>(context).footerColor,
+        color: isQCFlashFolder
+            ? Colors.green.withValues(alpha: 0.15)
+            : Provider.of<ThemeProvider>(context).footerColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isFolderPlaylistActive
+          color: isQCFlashFolder
               ? Colors.green
-              : Provider.of<ThemeProvider>(context).bannerColor.withValues(alpha: 0.3),
-          width: isFolderPlaylistActive ? 2 : 1,
+              : isQCSelectedFolder
+                  ? Theme.of(context).colorScheme.primary
+                  : isFolderPlaylistActive
+                      ? Colors.green
+                      : Provider.of<ThemeProvider>(context).bannerColor.withValues(alpha: 0.3),
+          width: isQCFlashFolder || isQCSelectedFolder || isFolderPlaylistActive ? 2 : 1,
         ),
       ),
       child: Column(
         children: [
           // Folder header
           InkWell(
-            onTap: () => folderProvider.toggleFolderExpansion(folder.id),
+            onTap: _quickConnectMode
+                ? () {
+                    setState(() {
+                      if (_quickConnectSelectedFolderId == folder.id) {
+                        _quickConnectSelectedFolderId = null;
+                      } else {
+                        _quickConnectSelectedFolderId = folder.id;
+                        _quickConnectSelectedSongId = null;
+                      }
+                    });
+                  }
+                : () => folderProvider.toggleFolderExpansion(folder.id),
             onLongPress: () => _showFolderActionsDialog(context, folder, folderProvider, musicPlayer),
             child: Container(
               padding: const EdgeInsets.all(16),
@@ -1673,41 +1869,49 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                       padding: const EdgeInsets.only(right: 4),
                       child: Icon(Icons.nfc, size: 16, color: Provider.of<ThemeProvider>(context).bannerColor.withValues(alpha: 0.6)),
                     ),
-                  Icon(
-                    folder.isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: Provider.of<ThemeProvider>(context).bannerColor,
-                  ),
                   GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      if (isFolderPlaylistActive) {
-                        if (musicPlayer.isPlaying) {
-                          musicPlayer.pauseMusic();
-                        } else {
-                          musicPlayer.resumeMusic();
-                        }
-                      } else if (folderSongs.isNotEmpty) {
-                        musicPlayer.startPlaylist(
-                          songs: folderSongs,
-                          folderId: folder.id,
-                          shuffle: folder.isShuffleEnabled,
-                          loopPlaylist: folder.isLoopPlaylistEnabled,
-                          startIndex: folder.lastPlayedSongIndex,
-                          startPositionMs: folder.lastPlayedPositionMs ?? 0,
-                        );
-                      }
-                    },
+                    onTap: () => folderProvider.toggleFolderExpansion(folder.id),
                     child: Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Icon(
-                        isFolderPlaylistActive && musicPlayer.isPlaying
-                            ? Icons.pause_circle
-                            : Icons.play_circle,
-                        color: isFolderPlaylistActive ? Colors.green : Colors.grey,
-                        size: 20,
+                        folder.isExpanded ? Icons.expand_less : Icons.expand_more,
+                        color: Provider.of<ThemeProvider>(context).bannerColor,
                       ),
                     ),
                   ),
+                  if (!_quickConnectMode)
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        if (isFolderPlaylistActive) {
+                          if (musicPlayer.isPlaying) {
+                            musicPlayer.pauseMusic();
+                          } else {
+                            musicPlayer.resumeMusic();
+                          }
+                        } else if (folderSongs.isNotEmpty) {
+                          musicPlayer.startPlaylist(
+                            songs: folderSongs,
+                            folderId: folder.id,
+                            shuffle: folder.isShuffleEnabled,
+                            loopPlaylist: folder.isLoopPlaylistEnabled,
+                            startIndex: folder.lastPlayedSongIndex,
+                            startPositionMs: folder.lastPlayedPositionMs ?? 0,
+                          );
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Icon(
+                          isFolderPlaylistActive && musicPlayer.isPlaying
+                              ? Icons.pause_circle
+                              : Icons.play_circle,
+                          color: isFolderPlaylistActive ? Colors.green : Colors.grey,
+                          size: 20,
+                        ),
+                      ),
+                    ),
                   ReorderableDragStartListener(
                     index: index,
                     child: IconButton(
@@ -1743,57 +1947,86 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage> with WidgetsBin
                         mainAxisSpacing: spacing,
                         childAspectRatio: 2.8,
                         padding: const EdgeInsets.only(top: 8, bottom: spacing),
-                        children: folderSongs.map((song) => GestureDetector(
-                              onLongPress: () {
-                                _showSongActionsDialog(context, song, folder.id, folderProvider, songProvider);
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Provider.of<ThemeProvider>(context).bannerColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: song.connectedNfcUuid != null ? Border.all(color: Colors.green, width: 2) : null,
-                                ),
-                                child: Row(
-                                  children: [
-                                    const SizedBox(width: 8),
-                                    Icon(
-                                      song.connectedNfcUuid != null ? Icons.music_note : Icons.music_off,
-                                      size: 18,
-                                      color: song.connectedNfcUuid != null ? Colors.green : Colors.grey,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        song.title,
-                                        style: const TextStyle(fontSize: 12),
-                                        maxLines: 4,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                      icon: Icon(
-                                        musicPlayer.isSongPlaying(song.filePath) ? Icons.pause : Icons.play_arrow,
-                                        size: 20,
-                                        color: musicPlayer.isSongPlaying(song.filePath)
-                                            ? Colors.red
-                                            : musicPlayer.isSongPaused(song.filePath)
-                                                ? Colors.orange
-                                                : Colors.blue,
-                                      ),
-                                      onPressed: () async {
-                                        if (musicPlayer.isSongPlaying(song.filePath) || musicPlayer.isSongPaused(song.filePath)) {
-                                          await musicPlayer.togglePlayPause();
-                                        } else {
-                                          await musicPlayer.playMusic(song);
-                                        }
+                        children: folderSongs.map((song) {
+                              final bool isQCSelected = _quickConnectSelectedSongId == song.id;
+                              final bool isQCFlash = _quickConnectFlashSuccessIds.contains(song.id);
+                              return GestureDetector(
+                                onTap: _quickConnectMode
+                                    ? () {
+                                        setState(() {
+                                          if (_quickConnectSelectedSongId == song.id) {
+                                            _quickConnectSelectedSongId = null;
+                                          } else {
+                                            _quickConnectSelectedSongId = song.id;
+                                            _quickConnectSelectedFolderId = null;
+                                          }
+                                        });
+                                      }
+                                    : null,
+                                onLongPress: _quickConnectMode
+                                    ? null
+                                    : () {
+                                        _showSongActionsDialog(context, song, folder.id, folderProvider, songProvider);
                                       },
-                                    ),
-                                  ],
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: isQCFlash
+                                        ? Colors.green.withValues(alpha: 0.25)
+                                        : isQCSelected
+                                            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)
+                                            : Provider.of<ThemeProvider>(context).bannerColor.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: isQCFlash
+                                        ? Border.all(color: Colors.green, width: 3)
+                                        : isQCSelected
+                                            ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2)
+                                            : song.connectedNfcUuid != null
+                                                ? Border.all(color: Colors.green, width: 2)
+                                                : null,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const SizedBox(width: 8),
+                                      Icon(
+                                        song.connectedNfcUuid != null ? Icons.music_note : Icons.music_off,
+                                        size: 18,
+                                        color: song.connectedNfcUuid != null ? Colors.green : Colors.grey,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          song.title,
+                                          style: const TextStyle(fontSize: 12),
+                                          maxLines: 4,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      if (!_quickConnectMode)
+                                        IconButton(
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                          icon: Icon(
+                                            musicPlayer.isSongPlaying(song.filePath) ? Icons.pause : Icons.play_arrow,
+                                            size: 20,
+                                            color: musicPlayer.isSongPlaying(song.filePath)
+                                                ? Colors.red
+                                                : musicPlayer.isSongPaused(song.filePath)
+                                                    ? Colors.orange
+                                                    : Colors.blue,
+                                          ),
+                                          onPressed: () async {
+                                            if (musicPlayer.isSongPlaying(song.filePath) || musicPlayer.isSongPaused(song.filePath)) {
+                                              await musicPlayer.togglePlayPause();
+                                            } else {
+                                              await musicPlayer.playMusic(song);
+                                            }
+                                          },
+                                        ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            )).toList(),
+                              );
+                            }).toList(),
                       ),
                     Padding(
                       padding: const EdgeInsets.only(top: 0, bottom: 8),

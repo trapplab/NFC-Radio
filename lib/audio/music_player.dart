@@ -541,7 +541,7 @@ class MusicPlayer with ChangeNotifier {
     final nextIndex = _getNextIndex();
     if (nextIndex == null) {
       debugPrint('⏭️ No next song available - stopping playlist');
-      stopPlaylist();
+      await stopPlaylist();
       return;
     }
 
@@ -575,13 +575,13 @@ class MusicPlayer with ChangeNotifier {
     notifyListeners();
   }
 
-  void _onSongComplete() {
+  Future<void> _onSongComplete() async {
     debugPrint('🎶 Song completed in playlist mode');
 
     final nextIndex = _getNextIndex();
     if (nextIndex == null) {
       debugPrint('🎶 Playlist finished');
-      stopPlaylist();
+      await stopPlaylist();
       return;
     }
 
@@ -590,10 +590,9 @@ class MusicPlayer with ChangeNotifier {
       _shuffleHistory.add(_currentPlaylistIndex);
     }
 
-    playMusic(_playlist[_currentPlaylistIndex]).then((_) {
-      _notifyPlaylistPosition();
-      notifyListeners();
-    });
+    await playMusic(_playlist[_currentPlaylistIndex]);
+    _notifyPlaylistPosition();
+    notifyListeners();
   }
 
   int? _getNextIndex() {
@@ -640,7 +639,7 @@ class MusicPlayer with ChangeNotifier {
     notifyListeners();
   }
 
-  void stopPlaylist() {
+  Future<void> stopPlaylist() async {
     debugPrint('🎶 Stopping playlist mode');
     _isPlaylistMode = false;
     _playlist = [];
@@ -655,6 +654,7 @@ class MusicPlayer with ChangeNotifier {
     }
     _currentPlaylistFolderId = null;
 
+    await _audioPlayer.stop();
     _currentState = PlayerState.stopped;
     _savedPosition = Duration.zero;
     notifyListeners();
