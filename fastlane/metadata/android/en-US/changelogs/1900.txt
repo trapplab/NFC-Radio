@@ -1,0 +1,2 @@
+## Added
+- add a quick connect mode to bulk add nfc tags to songs and folders

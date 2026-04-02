@@ -13,6 +13,10 @@
 
 # Changelog
 
+## [0.19.0]
+### Added
+- add a quick connect mode to bulk add nfc tags to songs and folders
+
 ## [0.18.1]
 ### Changed
 - when rescan the tag a new random playlist is generated when the player is closed

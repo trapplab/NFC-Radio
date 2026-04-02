@@ -1,0 +1,2 @@
+## Añadido
+- agregar un modo de conexión rápida para añadir en masa etiquetas NFC a canciones y carpetas
