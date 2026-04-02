@@ -210,5 +210,9 @@
       "subCount": {"type": "int"},
       "songCount": {"type": "int"}
     }
-  }
+  },
+  "convertToGroup": "Convertir en grupo",
+  "convertToGroupDescription": "Tus canciones se moverán a una nueva subcarpeta. La carpeta se convierte en un grupo al que puedes añadir más subcarpetas.",
+  "subfolderName": "Nombre de subcarpeta",
+  "convert": "Convertir"
 }

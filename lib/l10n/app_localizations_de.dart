@@ -710,4 +710,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String deleteGroupWarning(int subCount, int songCount) {
     return 'Dies löscht $subCount Unterordner und $songCount Songs.';
   }
+
+  @override
+  String get convertToGroup => 'In Gruppe umwandeln';
+
+  @override
+  String get convertToGroupDescription => 'Deine Songs werden in einen neuen Unterordner verschoben. Der Ordner wird zur Gruppe, der du weitere Unterordner hinzufügen kannst.';
+
+  @override
+  String get subfolderName => 'Unterordner-Name';
+
+  @override
+  String get convert => 'Umwandeln';
 }

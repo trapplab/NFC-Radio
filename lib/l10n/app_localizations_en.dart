@@ -710,4 +710,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String deleteGroupWarning(int subCount, int songCount) {
     return 'This will delete $subCount subfolder(s) and $songCount song(s).';
   }
+
+  @override
+  String get convertToGroup => 'Convert to Group';
+
+  @override
+  String get convertToGroupDescription => 'Your songs will be moved into a new subfolder. The folder becomes a group you can add more subfolders to.';
+
+  @override
+  String get subfolderName => 'Subfolder Name';
+
+  @override
+  String get convert => 'Convert';
 }

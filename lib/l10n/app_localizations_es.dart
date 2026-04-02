@@ -710,4 +710,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String deleteGroupWarning(int subCount, int songCount) {
     return 'Esto eliminará $subCount subcarpeta(s) y $songCount canción/es.';
   }
+
+  @override
+  String get convertToGroup => 'Convertir en grupo';
+
+  @override
+  String get convertToGroupDescription => 'Tus canciones se moverán a una nueva subcarpeta. La carpeta se convierte en un grupo al que puedes añadir más subcarpetas.';
+
+  @override
+  String get subfolderName => 'Nombre de subcarpeta';
+
+  @override
+  String get convert => 'Convertir';
 }

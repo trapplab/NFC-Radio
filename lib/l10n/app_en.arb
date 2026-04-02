@@ -210,5 +210,9 @@
       "subCount": {"type": "int"},
       "songCount": {"type": "int"}
     }
-  }
+  },
+  "convertToGroup": "Convert to Group",
+  "convertToGroupDescription": "Your songs will be moved into a new subfolder. The folder becomes a group you can add more subfolders to.",
+  "subfolderName": "Subfolder Name",
+  "convert": "Convert"
 }

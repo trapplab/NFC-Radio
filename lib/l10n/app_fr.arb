@@ -210,5 +210,9 @@
       "subCount": {"type": "int"},
       "songCount": {"type": "int"}
     }
-  }
+  },
+  "convertToGroup": "Convertir en groupe",
+  "convertToGroupDescription": "Vos chansons seront déplacées dans un nouveau sous-dossier. Le dossier devient un groupe auquel vous pouvez ajouter d'autres sous-dossiers.",
+  "subfolderName": "Nom du sous-dossier",
+  "convert": "Convertir"
 }

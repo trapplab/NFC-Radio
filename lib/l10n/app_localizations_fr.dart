@@ -710,4 +710,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String deleteGroupWarning(int subCount, int songCount) {
     return 'Cela supprimera $subCount sous-dossier(s) et $songCount chanson(s).';
   }
+
+  @override
+  String get convertToGroup => 'Convertir en groupe';
+
+  @override
+  String get convertToGroupDescription => 'Vos chansons seront déplacées dans un nouveau sous-dossier. Le dossier devient un groupe auquel vous pouvez ajouter d\'autres sous-dossiers.';
+
+  @override
+  String get subfolderName => 'Nom du sous-dossier';
+
+  @override
+  String get convert => 'Convertir';
 }

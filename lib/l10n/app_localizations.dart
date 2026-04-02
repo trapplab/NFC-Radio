@@ -1330,6 +1330,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This will delete {subCount} subfolder(s) and {songCount} song(s).'**
   String deleteGroupWarning(int subCount, int songCount);
+
+  /// No description provided for @convertToGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert to Group'**
+  String get convertToGroup;
+
+  /// No description provided for @convertToGroupDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your songs will be moved into a new subfolder. The folder becomes a group you can add more subfolders to.'**
+  String get convertToGroupDescription;
+
+  /// No description provided for @subfolderName.
+  ///
+  /// In en, this message translates to:
+  /// **'Subfolder Name'**
+  String get subfolderName;
+
+  /// No description provided for @convert.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert'**
+  String get convert;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

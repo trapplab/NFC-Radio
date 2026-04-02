@@ -3007,6 +3007,75 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
     );
   }
 
+  /// Converts an existing leaf folder (with songs) into a group by wrapping its
+  /// songs inside a new subfolder. The user chooses the subfolder name.
+  void _showConvertToGroupDialog(
+    BuildContext context,
+    Folder folder,
+    FolderProvider folderProvider,
+  ) {
+    // Pre-fill with the folder's own name as a sensible default
+    final nameController = TextEditingController(text: folder.name);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(AppLocalizations.of(dialogContext)!.convertToGroup),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(AppLocalizations.of(dialogContext)!.convertToGroupDescription),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nameController,
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(dialogContext)!.subfolderName,
+              ),
+              autofocus: true,
+              textCapitalization: TextCapitalization.sentences,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(AppLocalizations.of(dialogContext)!.cancel),
+          ),
+          TextButton(
+            onPressed: () {
+              final name = nameController.text.trim();
+              if (name.isEmpty) return;
+
+              // 1. Create the new subfolder with the same song list
+              final newSubfolder = Folder(
+                id: const Uuid().v4(),
+                name: name,
+                songIds: List<String>.from(folder.songIds),
+                isShuffleEnabled: folder.isShuffleEnabled,
+                isLoopPlaylistEnabled: folder.isLoopPlaylistEnabled,
+                nfcSkipsToNext: folder.nfcSkipsToNext,
+                connectedNfcUuid: folder.connectedNfcUuid,
+                parentFolderId: folder.id,
+              );
+              folderProvider.addSubFolder(folder.id, newSubfolder);
+
+              // 2. Remove all songs from the parent folder and clear its NFC
+              //    (songs now live in the subfolder)
+              final clearedFolder = folder.copyWith(
+                songIds: [],
+                connectedNfcUuid: () => null,
+              );
+              folderProvider.updateFolder(clearedFolder);
+
+              Navigator.pop(dialogContext);
+            },
+            child: Text(AppLocalizations.of(dialogContext)!.convert),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showFolderActionsDialog(
     BuildContext context,
     Folder folder,
@@ -3062,6 +3131,26 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                       await Future.delayed(const Duration(milliseconds: 100));
                       if (context.mounted) {
                         _showAddSubFolderDialog(
+                          context,
+                          folder,
+                          folderProvider,
+                        );
+                      }
+                    },
+                  ),
+                // "Convert to Group" – visible for root leaf folders that already
+                // have songs (lets the user wrap existing songs in a subfolder)
+                if (!isGroup &&
+                    folder.parentFolderId == null &&
+                    folder.songIds.isNotEmpty)
+                  ListTile(
+                    leading: const Icon(Icons.folder_copy_outlined),
+                    title: Text(AppLocalizations.of(context)!.convertToGroup),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await Future.delayed(const Duration(milliseconds: 100));
+                      if (context.mounted) {
+                        _showConvertToGroupDialog(
                           context,
                           folder,
                           folderProvider,
