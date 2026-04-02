@@ -1,2 +1,5 @@
+## Aggiunto
+- Modalità Connessione Rapida Tag: seleziona una canzone o cartella, scansiona un tag NFC e viene collegato istantaneamente — ripeti per collegare in massa
 
-
+## Corretto
+- L'audio continuava a riprodursi dopo la fine dell'ultima canzone in una playlist
