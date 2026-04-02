@@ -366,13 +366,21 @@ class FolderProvider with ChangeNotifier {
 
     // Position = number of existing children
     final childCount = getChildFolders(parentFolderId).length;
+    // Preserve all properties from the passed subfolder (especially songIds,
+    // NFC UUID, shuffle/loop settings) — only override position and parent.
     final newSubfolder = Folder(
       id: subfolder.id,
       name: subfolder.name,
-      songIds: const [],
-      isExpanded: false,
+      songIds: List<String>.from(subfolder.songIds),
+      isExpanded: subfolder.isExpanded,
       position: childCount,
       parentFolderId: parentFolderId,
+      connectedNfcUuid: subfolder.connectedNfcUuid,
+      isShuffleEnabled: subfolder.isShuffleEnabled,
+      isLoopPlaylistEnabled: subfolder.isLoopPlaylistEnabled,
+      nfcSkipsToNext: subfolder.nfcSkipsToNext,
+      lastPlayedSongIndex: subfolder.lastPlayedSongIndex,
+      lastPlayedPositionMs: subfolder.lastPlayedPositionMs,
     );
     _folders.add(newSubfolder);
     _saveFolderToStorage(newSubfolder);
