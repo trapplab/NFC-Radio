@@ -59,7 +59,9 @@ class GitHubAudioService {
       debugPrint('📥 Downloading: $url');
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
-        final directory = await getApplicationDocumentsDirectory();
+        final directory = Platform.isLinux
+            ? await getApplicationSupportDirectory()
+            : await getApplicationDocumentsDirectory();
         final audioDir = Directory(p.join(directory.path, 'audio_templates', folderName));
         if (!await audioDir.exists()) {
           await audioDir.create(recursive: true);
