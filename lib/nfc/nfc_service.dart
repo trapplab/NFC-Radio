@@ -42,6 +42,16 @@ class NFCService with ChangeNotifier {
     // Don't call notifyListeners() here to avoid potential circular dependencies
   }
 
+  /// Clears the current NFC UUID and notifies listeners.
+  /// Use this when exiting edit mode to prevent stale UUIDs from triggering
+  /// duplicate conflict dialogs.
+  void clearCurrentNfcUuid() {
+    if (_currentNfcUuid != null) {
+      _currentNfcUuid = null;
+      notifyListeners();
+    }
+  }
+
   // Set providers for music integration
   Future<void> setProviders({
     required NFCMusicMappingProvider mappingProvider,
@@ -272,6 +282,8 @@ class NFCService with ChangeNotifier {
         await Future.delayed(const Duration(milliseconds: 500));
         _isProcessingTag = false;
         debugPrint('✅ Tag processing flag cleared');
+        // Clear the UUID to prevent duplicate UI rebuilds that trigger conflict dialogs
+        _currentNfcUuid = null;
         notifyListeners(); // Notify again after clearing processing flag
       }
     } catch (e, s) {

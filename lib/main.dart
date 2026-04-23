@@ -1534,6 +1534,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
     );
     final String? originalFilePath = song?.filePath;
     String? dialogNfcUuid = song?.connectedNfcUuid;
+    bool isConnecting = false; // Prevent double-click issues
 
     final nfcService = Provider.of<NFCService>(context, listen: false);
     final mappingProvider = Provider.of<NFCMusicMappingProvider>(
@@ -1615,6 +1616,11 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
               return;
             }
 
+            // Skip if already in the middle of connecting (prevents duplicate triggers)
+            if (isConnecting) {
+              return;
+            }
+
             final currentNfcUuid = nfcService.currentNfcUuid;
             if (currentNfcUuid != null && currentNfcUuid != dialogNfcUuid) {
               // Check if this NFC is already linked in the same folder
@@ -1652,6 +1658,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                 );
               } else {
                 // Just trigger rebuild to show the "Use This NFC" button for manual resolution
+                // But don't trigger if we're already processing a connection
                 setState(() {});
               }
             }
@@ -1871,43 +1878,41 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                                   ),
                                   const SizedBox(height: 8),
                                   ElevatedButton(
-                                    onPressed: () async {
-                                      final currentNfcUuid =
-                                          nfcService.currentNfcUuid;
-                                      if (currentNfcUuid == null) return;
-
-                                      Song? existingSong;
-                                      try {
-                                        // Only check for existing connection within the same folder
-                                        if (currentFolderId != null) {
-                                          final currentFolder = folderProvider
-                                              .folders
-                                              .firstWhere(
-                                                (f) => f.id == currentFolderId,
+                                    onPressed: isConnecting
+                                        ? null
+                                        : () async {
+                                            setState(() => isConnecting = true);
+                                            final currentNfcUuid =
+                                                nfcService.currentNfcUuid;
+                                            if (currentNfcUuid == null) {
+                                              setState(
+                                                () => isConnecting = false,
                                               );
-                                          existingSong = songProvider.songs
-                                              .firstWhere(
-                                                (s) =>
-                                                    s.connectedNfcUuid ==
-                                                        currentNfcUuid &&
-                                                    currentFolder.songIds
-                                                        .contains(s.id) &&
-                                                    (song == null ||
-                                                        s.id != song.id),
-                                              );
-                                        }
-                                      } catch (_) {
-                                        existingSong = null;
-                                      }
+                                              return;
+                                            }
 
-                                      bool shouldUseNewNfc = true;
-                                      if (existingSong != null) {
-                                        if (!dialogContext.mounted) return;
-                                        shouldUseNewNfc =
-                                            await showDialog<bool>(
-                                              context: dialogContext,
-                                              builder: (BuildContext context) {
-                                                return AlertDialog(
+                                            // Check if this NFC is already connected to another folder
+                                            // (conflicts with folders are OK to show, songs within same folder handled later)
+                                            Folder? conflictingFolder;
+                                            try {
+                                              conflictingFolder = folderProvider
+                                                  .folders
+                                                  .firstWhere(
+                                                    (f) =>
+                                                        f.connectedNfcUuid ==
+                                                            currentNfcUuid &&
+                                                        f.id != currentFolderId,
+                                                  );
+                                            } catch (_) {
+                                              conflictingFolder = null;
+                                            }
+
+                                            // If conflict with folder, show dialog first
+                                            if (conflictingFolder != null &&
+                                                dialogContext.mounted) {
+                                              final shouldReplace = await showDialog<bool>(
+                                                context: dialogContext,
+                                                builder: (ctx) => AlertDialog(
                                                   title: Text(
                                                     AppLocalizations.of(
                                                       dialogContext,
@@ -1923,11 +1928,11 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                                                       Text(
                                                         AppLocalizations.of(
                                                           dialogContext,
-                                                        )!.nfcAlreadyConnectedTo,
+                                                        )!.nfcAlreadyConnectedToFolder,
                                                       ),
                                                       const SizedBox(height: 8),
                                                       Text(
-                                                        '"${existingSong!.title}"',
+                                                        '"${conflictingFolder!.name}"',
                                                         style: const TextStyle(
                                                           fontWeight:
                                                               FontWeight.bold,
@@ -1945,7 +1950,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                                                     TextButton(
                                                       onPressed: () =>
                                                           Navigator.of(
-                                                            dialogContext,
+                                                            ctx,
                                                           ).pop(false),
                                                       child: Text(
                                                         AppLocalizations.of(
@@ -1956,7 +1961,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                                                     TextButton(
                                                       onPressed: () =>
                                                           Navigator.of(
-                                                            dialogContext,
+                                                            ctx,
                                                           ).pop(true),
                                                       child: Text(
                                                         AppLocalizations.of(
@@ -1965,55 +1970,199 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                                                       ),
                                                     ),
                                                   ],
-                                                );
-                                              },
-                                            ) ??
-                                            false;
-                                      }
-
-                                      if (shouldUseNewNfc) {
-                                        // Only remove mapping from songs in the same folder
-                                        if (currentFolderId != null) {
-                                          final currentFolder = folderProvider
-                                              .folders
-                                              .firstWhere(
-                                                (f) => f.id == currentFolderId,
+                                                ),
                                               );
-                                          final songsWithThisNfcInFolder =
-                                              songProvider.songs
-                                                  .where(
-                                                    (s) =>
-                                                        s.connectedNfcUuid ==
-                                                            currentNfcUuid &&
-                                                        currentFolder.songIds
-                                                            .contains(s.id) &&
-                                                        (song == null ||
-                                                            s.id != song.id),
-                                                  )
-                                                  .toList();
-                                          for (final s
-                                              in songsWithThisNfcInFolder) {
-                                            songProvider.updateSong(
-                                              Song(
-                                                id: s.id,
-                                                title: s.title,
-                                                filePath: s.filePath,
-                                                connectedNfcUuid: null,
-                                                isLoopEnabled: s.isLoopEnabled,
-                                                rememberPosition:
-                                                    s.rememberPosition,
-                                                savedPositionMs:
-                                                    s.savedPositionMs,
-                                              ),
-                                            );
-                                            mappingProvider.removeMapping(s.id);
-                                          }
-                                        }
-                                        setState(() {
-                                          dialogNfcUuid = currentNfcUuid;
-                                        });
-                                      }
-                                    },
+
+                                              if (shouldReplace == false) {
+                                                setState(
+                                                  () => isConnecting = false,
+                                                );
+                                                return;
+                                              }
+
+                                              // Disconnect the conflicting folder
+                                              folderProvider
+                                                  .disconnectFolderFromNfc(
+                                                    conflictingFolder.id,
+                                                  );
+                                            }
+
+                                            // Original conflict check for songs in same folder continues here...
+
+                                            Song? existingSong;
+                                            try {
+                                              // Only check for existing connection within the same folder
+                                              if (currentFolderId != null) {
+                                                final currentFolder =
+                                                    folderProvider.folders
+                                                        .firstWhere(
+                                                          (f) =>
+                                                              f.id ==
+                                                              currentFolderId,
+                                                        );
+                                                existingSong = songProvider
+                                                    .songs
+                                                    .firstWhere(
+                                                      (s) =>
+                                                          s.connectedNfcUuid ==
+                                                              currentNfcUuid &&
+                                                          currentFolder.songIds
+                                                              .contains(s.id) &&
+                                                          (song == null ||
+                                                              s.id != song.id),
+                                                    );
+                                              }
+                                            } catch (_) {
+                                              existingSong = null;
+                                            }
+
+                                            bool shouldUseNewNfc = true;
+                                            if (existingSong != null) {
+                                              if (!dialogContext.mounted) {
+                                                setState(
+                                                  () => isConnecting = false,
+                                                );
+                                                return;
+                                              }
+                                              shouldUseNewNfc =
+                                                  await showDialog<bool>(
+                                                    context: dialogContext,
+                                                    builder: (BuildContext context) {
+                                                      return AlertDialog(
+                                                        title: Text(
+                                                          AppLocalizations.of(
+                                                            dialogContext,
+                                                          )!.nfcTagAlreadyConnected,
+                                                        ),
+                                                        content: Column(
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Text(
+                                                              AppLocalizations.of(
+                                                                dialogContext,
+                                                              )!.nfcAlreadyConnectedTo,
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 8,
+                                                            ),
+                                                            Text(
+                                                              '"${existingSong!.title}"',
+                                                              style: const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 8,
+                                                            ),
+                                                            Text(
+                                                              AppLocalizations.of(
+                                                                dialogContext,
+                                                              )!.replaceConnectionQuestion,
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed: () =>
+                                                                Navigator.of(
+                                                                  dialogContext,
+                                                                ).pop(false),
+                                                            child: Text(
+                                                              AppLocalizations.of(
+                                                                dialogContext,
+                                                              )!.keepExisting,
+                                                            ),
+                                                          ),
+                                                          TextButton(
+                                                            onPressed: () =>
+                                                                Navigator.of(
+                                                                  dialogContext,
+                                                                ).pop(true),
+                                                            child: Text(
+                                                              AppLocalizations.of(
+                                                                dialogContext,
+                                                              )!.replaceConnection,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      );
+                                                    },
+                                                  ) ??
+                                                  false;
+
+                                              // Roll back folder disconnect if user declined song conflict
+                                              if (!shouldUseNewNfc &&
+                                                  conflictingFolder != null) {
+                                                folderProvider.connectFolderToNfc(
+                                                  conflictingFolder.id,
+                                                  currentNfcUuid,
+                                                );
+                                              }
+                                            }
+
+                                            if (shouldUseNewNfc) {
+                                              // Only remove mapping from songs in the same folder
+                                              if (currentFolderId != null) {
+                                                final currentFolder =
+                                                    folderProvider.folders
+                                                        .firstWhere(
+                                                          (f) =>
+                                                              f.id ==
+                                                              currentFolderId,
+                                                        );
+                                                final songsWithThisNfcInFolder =
+                                                    songProvider.songs
+                                                        .where(
+                                                          (s) =>
+                                                              s.connectedNfcUuid ==
+                                                                  currentNfcUuid &&
+                                                              currentFolder
+                                                                  .songIds
+                                                                  .contains(
+                                                                    s.id,
+                                                                  ) &&
+                                                              (song == null ||
+                                                                  s.id !=
+                                                                      song.id),
+                                                        )
+                                                        .toList();
+                                                for (final s
+                                                    in songsWithThisNfcInFolder) {
+                                                  songProvider.updateSong(
+                                                    Song(
+                                                      id: s.id,
+                                                      title: s.title,
+                                                      filePath: s.filePath,
+                                                      connectedNfcUuid: null,
+                                                      isLoopEnabled:
+                                                          s.isLoopEnabled,
+                                                      rememberPosition:
+                                                          s.rememberPosition,
+                                                      savedPositionMs:
+                                                          s.savedPositionMs,
+                                                    ),
+                                                  );
+                                                  mappingProvider.removeMapping(
+                                                    s.id,
+                                                  );
+                                                }
+                                              }
+                                              setState(() {
+                                                dialogNfcUuid = currentNfcUuid;
+                                              });
+                                            }
+                                            if (dialogContext.mounted) {
+                                              setState(
+                                                () => isConnecting = false,
+                                              );
+                                            }
+                                          },
                                     child: Text(
                                       AppLocalizations.of(
                                         dialogContext,
@@ -3351,6 +3500,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
       context: context,
       builder: (dialogContext) {
         String? detectedUuid;
+        bool isConnecting = false; // Prevent double-click issues
         return StatefulBuilder(
           builder: (dialogContext, setState) {
             // Listen for NFC changes
@@ -3409,199 +3559,224 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                               ),
                               const SizedBox(height: 8),
                               ElevatedButton(
-                                onPressed: () async {
-                                  // Check conflicts: song in same folder with this UUID
-                                  Song? conflictingSong;
-                                  try {
-                                    conflictingSong = songProvider.songs
-                                        .firstWhere(
-                                          (s) =>
-                                              s.connectedNfcUuid ==
-                                                  currentUuid &&
-                                              folder.songIds.contains(s.id),
-                                        );
-                                  } catch (_) {
-                                    conflictingSong = null;
-                                  }
+                                onPressed: isConnecting
+                                    ? null
+                                    : () async {
+                                        setState(() => isConnecting = true);
+                                        // Check conflicts: song in same folder with this UUID
+                                        Song? conflictingSong;
+                                        try {
+                                          conflictingSong = songProvider.songs
+                                              .firstWhere(
+                                                (s) =>
+                                                    s.connectedNfcUuid ==
+                                                        currentUuid &&
+                                                    folder.songIds.contains(
+                                                      s.id,
+                                                    ),
+                                              );
+                                        } catch (_) {
+                                          conflictingSong = null;
+                                        }
 
-                                  // Check conflicts: another folder with this UUID
-                                  Folder? conflictingFolder;
-                                  try {
-                                    conflictingFolder = folderProvider.folders
-                                        .firstWhere(
-                                          (f) =>
-                                              f.connectedNfcUuid ==
-                                                  currentUuid &&
-                                              f.id != folder.id,
-                                        );
-                                  } catch (_) {
-                                    conflictingFolder = null;
-                                  }
+                                        // Check conflicts: another folder with this UUID
+                                        Folder? conflictingFolder;
+                                        try {
+                                          conflictingFolder = folderProvider
+                                              .folders
+                                              .firstWhere(
+                                                (f) =>
+                                                    f.connectedNfcUuid ==
+                                                        currentUuid &&
+                                                    f.id != folder.id,
+                                              );
+                                        } catch (_) {
+                                          conflictingFolder = null;
+                                        }
 
-                                  bool shouldConnect = true;
+                                        bool shouldConnect = true;
 
-                                  if (conflictingSong != null &&
-                                      dialogContext.mounted) {
-                                    shouldConnect =
-                                        await showDialog<bool>(
-                                          context: dialogContext,
-                                          builder: (ctx) => AlertDialog(
-                                            title: Text(
-                                              AppLocalizations.of(
-                                                dialogContext,
-                                              )!.nfcTagAlreadyConnected,
-                                            ),
-                                            content: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  AppLocalizations.of(
-                                                    dialogContext,
-                                                  )!.nfcAlreadyConnectedToSongInFolder,
-                                                ),
-                                                const SizedBox(height: 8),
-                                                Text(
-                                                  '"${conflictingSong!.title}"',
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.bold,
+                                        if (conflictingSong != null &&
+                                            dialogContext.mounted) {
+                                          shouldConnect =
+                                              await showDialog<bool>(
+                                                context: dialogContext,
+                                                builder: (ctx) => AlertDialog(
+                                                  title: Text(
+                                                    AppLocalizations.of(
+                                                      dialogContext,
+                                                    )!.nfcTagAlreadyConnected,
                                                   ),
-                                                ),
-                                                const SizedBox(height: 8),
-                                                Text(
-                                                  AppLocalizations.of(
-                                                    dialogContext,
-                                                  )!.replaceConnectionQuestion,
-                                                ),
-                                              ],
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.of(
-                                                  ctx,
-                                                ).pop(false),
-                                                child: Text(
-                                                  AppLocalizations.of(
-                                                    dialogContext,
-                                                  )!.keepExisting,
-                                                ),
-                                              ),
-                                              TextButton(
-                                                onPressed: () =>
-                                                    Navigator.of(ctx).pop(true),
-                                                child: Text(
-                                                  AppLocalizations.of(
-                                                    dialogContext,
-                                                  )!.replaceConnection,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ) ??
-                                        false;
-
-                                    if (shouldConnect) {
-                                      songProvider.disconnectSongFromNfc(
-                                        conflictingSong.id,
-                                      );
-                                      mappingProvider.removeMapping(
-                                        conflictingSong.id,
-                                      );
-                                    }
-                                  }
-
-                                  if (conflictingFolder != null &&
-                                      shouldConnect &&
-                                      dialogContext.mounted) {
-                                    shouldConnect =
-                                        await showDialog<bool>(
-                                          context: dialogContext,
-                                          builder: (ctx) => AlertDialog(
-                                            title: Text(
-                                              AppLocalizations.of(
-                                                dialogContext,
-                                              )!.nfcTagAlreadyConnected,
-                                            ),
-                                            content: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  AppLocalizations.of(
-                                                    dialogContext,
-                                                  )!.nfcAlreadyConnectedToFolder,
-                                                ),
-                                                const SizedBox(height: 8),
-                                                Text(
-                                                  '"${conflictingFolder!.name}"',
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.bold,
+                                                  content: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        AppLocalizations.of(
+                                                          dialogContext,
+                                                        )!.nfcAlreadyConnectedToSongInFolder,
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Text(
+                                                        '"${conflictingSong!.title}"',
+                                                        style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Text(
+                                                        AppLocalizations.of(
+                                                          dialogContext,
+                                                        )!.replaceConnectionQuestion,
+                                                      ),
+                                                    ],
                                                   ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () =>
+                                                          Navigator.of(
+                                                            ctx,
+                                                          ).pop(false),
+                                                      child: Text(
+                                                        AppLocalizations.of(
+                                                          dialogContext,
+                                                        )!.keepExisting,
+                                                      ),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () =>
+                                                          Navigator.of(
+                                                            ctx,
+                                                          ).pop(true),
+                                                      child: Text(
+                                                        AppLocalizations.of(
+                                                          dialogContext,
+                                                        )!.replaceConnection,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                                const SizedBox(height: 8),
-                                                Text(
-                                                  AppLocalizations.of(
-                                                    dialogContext,
-                                                  )!.replaceConnectionQuestion,
-                                                ),
-                                              ],
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.of(
-                                                  ctx,
-                                                ).pop(false),
-                                                child: Text(
-                                                  AppLocalizations.of(
-                                                    dialogContext,
-                                                  )!.keepExisting,
-                                                ),
-                                              ),
-                                              TextButton(
-                                                onPressed: () =>
-                                                    Navigator.of(ctx).pop(true),
-                                                child: Text(
-                                                  AppLocalizations.of(
-                                                    dialogContext,
-                                                  )!.replaceConnection,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ) ??
-                                        false;
+                                              ) ??
+                                              false;
 
-                                    if (shouldConnect) {
-                                      folderProvider.disconnectFolderFromNfc(
-                                        conflictingFolder.id,
-                                      );
-                                    }
-                                  }
+                                          if (shouldConnect) {
+                                            songProvider.disconnectSongFromNfc(
+                                              conflictingSong.id,
+                                            );
+                                            mappingProvider.removeMapping(
+                                              conflictingSong.id,
+                                            );
+                                          }
+                                        }
 
-                                  if (shouldConnect) {
-                                    folderProvider.connectFolderToNfc(
-                                      folder.id,
-                                      currentUuid,
-                                    );
-                                    nfcService.setEditMode(false);
-                                    if (dialogContext.mounted) {
-                                      Navigator.of(dialogContext).pop();
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            AppLocalizations.of(
+                                        if (conflictingFolder != null &&
+                                            shouldConnect &&
+                                            dialogContext.mounted) {
+                                          shouldConnect =
+                                              await showDialog<bool>(
+                                                context: dialogContext,
+                                                builder: (ctx) => AlertDialog(
+                                                  title: Text(
+                                                    AppLocalizations.of(
+                                                      dialogContext,
+                                                    )!.nfcTagAlreadyConnected,
+                                                  ),
+                                                  content: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        AppLocalizations.of(
+                                                          dialogContext,
+                                                        )!.nfcAlreadyConnectedToFolder,
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Text(
+                                                        '"${conflictingFolder!.name}"',
+                                                        style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Text(
+                                                        AppLocalizations.of(
+                                                          dialogContext,
+                                                        )!.replaceConnectionQuestion,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () =>
+                                                          Navigator.of(
+                                                            ctx,
+                                                          ).pop(false),
+                                                      child: Text(
+                                                        AppLocalizations.of(
+                                                          dialogContext,
+                                                        )!.keepExisting,
+                                                      ),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () =>
+                                                          Navigator.of(
+                                                            ctx,
+                                                          ).pop(true),
+                                                      child: Text(
+                                                        AppLocalizations.of(
+                                                          dialogContext,
+                                                        )!.replaceConnection,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ) ??
+                                              false;
+
+                                          if (shouldConnect) {
+                                            folderProvider
+                                                .disconnectFolderFromNfc(
+                                                  conflictingFolder.id,
+                                                );
+                                          }
+                                        }
+
+                                        if (shouldConnect) {
+                                          folderProvider.connectFolderToNfc(
+                                            folder.id,
+                                            currentUuid,
+                                          );
+                                          // Clear UUID to prevent duplicate conflict dialogs
+                                          // from NFC service notifications during edit mode
+                                          nfcService.clearCurrentNfcUuid();
+                                          nfcService.setEditMode(false);
+                                          if (dialogContext.mounted) {
+                                            Navigator.of(dialogContext).pop();
+                                            ScaffoldMessenger.of(
                                               context,
-                                            )!.folderNfcConnected,
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  }
-                                },
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  AppLocalizations.of(
+                                                    context,
+                                                  )!.folderNfcConnected,
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                        if (dialogContext.mounted) {
+                                          setState(() => isConnecting = false);
+                                        }
+                                      },
                                 child: Text(
                                   AppLocalizations.of(
                                     dialogContext,
@@ -3632,6 +3807,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                   actions: [
                     TextButton(
                       onPressed: () {
+                        nfcService.clearCurrentNfcUuid();
                         nfcService.setEditMode(false);
                         Navigator.of(dialogContext).pop();
                       },
