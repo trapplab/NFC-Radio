@@ -1,0 +1,3 @@
+## Ajouté
+- prise en charge des fichiers dans les sous-dossiers
+- ajout de l'option de don via PayPal

@@ -1,0 +1,3 @@
+## Aggiunto
+- supporto per file nelle sottocartelle
+- aggiunta l'opzione di donazione PayPal

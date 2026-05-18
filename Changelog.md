@@ -13,6 +13,11 @@
 
 # Changelog
 
+## [0.20.0]
+### Added
+- support for files in subfolders
+- added paypal donation option 
+
 ## [0.19.0]
 ### Added
 - add a quick connect mode to bulk add nfc tags to songs and folders
