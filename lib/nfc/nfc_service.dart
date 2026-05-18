@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:typed_data';
 import 'dart:async';
 import 'package:nfc_manager/nfc_manager.dart';
@@ -18,7 +19,8 @@ class NFCService with ChangeNotifier {
   DateTime? _lastScannedTimestamp;
   Timer? _debounceTimer;
   final _messageController = StreamController<String>.broadcast();
-  bool _isInEditMode = false; // Flag to pause player triggering during edit operations
+  bool _isInEditMode =
+      false; // Flag to pause player triggering during edit operations
   NFCMusicMappingProvider? _mappingProvider;
   SongProvider? _songProvider;
   FolderProvider? _folderProvider;
@@ -34,10 +36,21 @@ class NFCService with ChangeNotifier {
   // Set edit mode to pause player triggering during edit operations
   void setEditMode(bool enabled) {
     _isInEditMode = enabled;
-    debugPrint('🔧 Edit mode ${enabled ? 'enabled' : 'disabled'} - player triggering ${enabled ? 'paused' : 'active'}');
+    debugPrint(
+      '🔧 Edit mode ${enabled ? 'enabled' : 'disabled'} - player triggering ${enabled ? 'paused' : 'active'}',
+    );
     // Don't call notifyListeners() here to avoid potential circular dependencies
   }
 
+  /// Clears the current NFC UUID and notifies listeners.
+  /// Use this when exiting edit mode to prevent stale UUIDs from triggering
+  /// duplicate conflict dialogs.
+  void clearCurrentNfcUuid() {
+    if (_currentNfcUuid != null) {
+      _currentNfcUuid = null;
+      notifyListeners();
+    }
+  }
 
   // Set providers for music integration
   Future<void> setProviders({
@@ -48,9 +61,15 @@ class NFCService with ChangeNotifier {
   }) async {
     debugPrint('=== SETTING PROVIDERS ===');
     debugPrint('Setting MusicPlayer: ${musicPlayer.runtimeType}');
-    debugPrint('Setting SongProvider: ${songProvider.runtimeType} (${songProvider.songs.length} songs)');
-    debugPrint('Setting FolderProvider: ${folderProvider.runtimeType} (${folderProvider.folders.length} folders)');
-    debugPrint('Setting MappingProvider: ${mappingProvider.runtimeType} (${mappingProvider.mappings.length} mappings)');
+    debugPrint(
+      'Setting SongProvider: ${songProvider.runtimeType} (${songProvider.songs.length} songs)',
+    );
+    debugPrint(
+      'Setting FolderProvider: ${folderProvider.runtimeType} (${folderProvider.folders.length} folders)',
+    );
+    debugPrint(
+      'Setting MappingProvider: ${mappingProvider.runtimeType} (${mappingProvider.mappings.length} mappings)',
+    );
 
     _mappingProvider = mappingProvider;
     _songProvider = songProvider;
@@ -62,7 +81,9 @@ class NFCService with ChangeNotifier {
     debugPrint('_musicPlayer after assignment: ${_musicPlayer != null}');
     debugPrint('_songProvider after assignment: ${_songProvider != null}');
     debugPrint('_folderProvider after assignment: ${_folderProvider != null}');
-    debugPrint('_mappingProvider after assignment: ${_mappingProvider != null}');
+    debugPrint(
+      '_mappingProvider after assignment: ${_mappingProvider != null}',
+    );
     debugPrint('Are all providers initialized: ${_areProvidersInitialized()}');
     debugPrint('=== PROVIDERS SET COMPLETE ===');
 
@@ -73,16 +94,16 @@ class NFCService with ChangeNotifier {
     }
   }
 
-
-
   NFCService() {
     _checkNfcAvailability();
   }
-  
+
   // Auto-start NFC scanning when NFC becomes available
   Future<void> _autoStartNfcScanning() async {
     if (_isNfcAvailable && !_isScanning) {
-      debugPrint('🚀 Auto-starting NFC scanning (NFC available and not scanning)');
+      debugPrint(
+        '🚀 Auto-starting NFC scanning (NFC available and not scanning)',
+      );
       try {
         await startNfcSession();
         debugPrint('✅ NFC scanning started successfully');
@@ -102,7 +123,9 @@ class NFCService with ChangeNotifier {
     debugPrint('Searching for UUID: $uuid');
 
     // Get only open folders
-    final List<Folder> openFolders = _folderProvider!.folders.where((f) => f.isExpanded).toList();
+    final List<Folder> openFolders = _folderProvider!.folders
+        .where((f) => f.isExpanded)
+        .toList();
 
     if (openFolders.isEmpty) {
       debugPrint('No open folders available - no playback will occur');
@@ -114,12 +137,16 @@ class NFCService with ChangeNotifier {
 
     // Search in open folders (highest position first)
     for (final folder in openFolders) {
-      debugPrint('Searching in open folder: ${folder.name} (position ${folder.position}) - ${folder.songIds.length} songs');
+      debugPrint(
+        'Searching in open folder: ${folder.name} (position ${folder.position}) - ${folder.songIds.length} songs',
+      );
       for (String songId in folder.songIds) {
         try {
           final song = _songProvider!.songs.firstWhere((s) => s.id == songId);
           if (song.connectedNfcUuid == uuid) {
-            debugPrint('Found song in open folder (position ${folder.position}): ${song.title}');
+            debugPrint(
+              'Found song in open folder (position ${folder.position}): ${song.title}',
+            );
             return song; // Return immediately - highest priority
           }
         } catch (_) {
@@ -135,13 +162,32 @@ class NFCService with ChangeNotifier {
   // Find folder by NFC UUID (searches all folders regardless of expansion state)
   Folder? _findFolderByNfcUuid(String uuid) {
     if (_folderProvider == null) return null;
-    return _folderProvider!.folders.firstWhereOrNull((f) => f.connectedNfcUuid == uuid);
+    return _folderProvider!.folders.firstWhereOrNull(
+      (f) => f.connectedNfcUuid == uuid,
+    );
   }
 
   // Process folder NFC tag for playlist playback
   Future<void> _processFolderNfcTag(String uuid, Folder folder) async {
     debugPrint('🎶 Folder NFC detected: ${folder.name} (${folder.id})');
 
+    // ── Group folder: pick a random child subfolder and play it ──────────
+    final children = _folderProvider!.getChildFolders(folder.id);
+    if (children.isNotEmpty) {
+      final target = children[Random().nextInt(children.length)];
+      debugPrint(
+        '🎲 Group folder – randomly selected subfolder: ${target.name}',
+      );
+      await _playLeafFolder(target);
+      return;
+    }
+
+    // ── Leaf folder: existing behaviour ──────────────────────────────────
+    await _playLeafFolder(folder);
+  }
+
+  /// Start (or resume/pause/skip) playback for a leaf folder.
+  Future<void> _playLeafFolder(Folder folder) async {
     final songs = folder.songIds
         .map((id) => _songProvider!.songs.firstWhereOrNull((s) => s.id == id))
         .nonNulls
@@ -182,10 +228,14 @@ class NFCService with ChangeNotifier {
 
   // Handle NFC tag discovery with music integration
   void _onNfcDiscovered(NfcTag tag) async {
-    debugPrint('📡 NFC Tag Discovered! isScanning=$_isScanning, isProcessingTag=$_isProcessingTag');
-    
+    debugPrint(
+      '📡 NFC Tag Discovered! isScanning=$_isScanning, isProcessingTag=$_isProcessingTag',
+    );
+
     if (!_isScanning || _isProcessingTag) {
-      debugPrint('⏳ Skipping scan: isScanning=$_isScanning, isProcessingTag=$_isProcessingTag');
+      debugPrint(
+        '⏳ Skipping scan: isScanning=$_isScanning, isProcessingTag=$_isProcessingTag',
+      );
       return;
     }
 
@@ -197,7 +247,7 @@ class NFCService with ChangeNotifier {
       }
 
       final now = DateTime.now();
-      
+
       // Global cooldown to prevent rapid-fire scans of any tag (1000ms)
       if (_lastScannedTimestamp != null &&
           now.difference(_lastScannedTimestamp!).inMilliseconds < 1000) {
@@ -207,21 +257,21 @@ class NFCService with ChangeNotifier {
 
       _currentNfcUuid = uuid;
       debugPrint('📡 NFC UUID detected: $uuid');
-      
+
       _lastScannedUuid = uuid;
       _lastScannedTimestamp = now;
       _isProcessingTag = true;
-      
+
       // Notify listeners immediately so the UI shows the detected UUID
       notifyListeners();
-      
+
       // DO NOT stop the session here. Keeping the session active is CRITICAL
       // to prevent the Android system from showing the "Which app" menu.
       // As long as the session is active, the app maintains foreground priority.
-      
+
       // Clear any existing timer
       _debounceTimer?.cancel();
-      
+
       // Process the tag
       debugPrint('⚡ Executing NFC processing for: $uuid');
       try {
@@ -232,6 +282,8 @@ class NFCService with ChangeNotifier {
         await Future.delayed(const Duration(milliseconds: 500));
         _isProcessingTag = false;
         debugPrint('✅ Tag processing flag cleared');
+        // Clear the UUID to prevent duplicate UI rebuilds that trigger conflict dialogs
+        _currentNfcUuid = null;
         notifyListeners(); // Notify again after clearing processing flag
       }
     } catch (e, s) {
@@ -247,12 +299,16 @@ class NFCService with ChangeNotifier {
     debugPrint('🔄 ===== NFC TAG PROCESSING STARTED =====');
     debugPrint('🔄 Processing NFC tag: $uuid');
     debugPrint('🔄 Timestamp: ${DateTime.now()}');
-    
+
     // Step 0: Check if providers are initialized (early exit if not ready)
     if (!_areProvidersInitialized()) {
-      debugPrint('⚠️ Providers not initialized yet - postponing NFC processing');
-      debugPrint('⚠️ This is normal during app startup, will retry automatically');
-      
+      debugPrint(
+        '⚠️ Providers not initialized yet - postponing NFC processing',
+      );
+      debugPrint(
+        '⚠️ This is normal during app startup, will retry automatically',
+      );
+
       // Schedule a retry after a short delay
       Timer(const Duration(milliseconds: 500), () {
         debugPrint('🔄 Retrying NFC processing for: $uuid');
@@ -260,38 +316,45 @@ class NFCService with ChangeNotifier {
       });
       return;
     }
-    
+
     // Step 1: Validate providers with retry mechanism
     int validationAttempts = 0;
     while (validationAttempts < 3) {
       validationAttempts++;
       debugPrint('🔍 Provider validation attempt $validationAttempts/3...');
-      
+
       if (_validateProviders()) {
-        debugPrint('✅ Provider validation successful on attempt $validationAttempts');
+        debugPrint(
+          '✅ Provider validation successful on attempt $validationAttempts',
+        );
         break;
       } else {
-        debugPrint('❌ Provider validation failed on attempt $validationAttempts');
+        debugPrint(
+          '❌ Provider validation failed on attempt $validationAttempts',
+        );
         if (validationAttempts < 3) {
           debugPrint('⏳ Retrying provider validation in 100ms...');
           await Future.delayed(const Duration(milliseconds: 100));
         }
       }
     }
-    
+
     if (!_validateProviders()) {
-      debugPrint('❌ Provider validation failed after 3 attempts - aborting NFC processing');
+      debugPrint(
+        '❌ Provider validation failed after 3 attempts - aborting NFC processing',
+      );
       debugPrint('❌ This suggests a critical initialization issue');
       debugPrint('❌ Please check app initialization and provider setup');
       return;
     }
-    
+
     // Step 1.5: Check if this UUID matches a folder (works regardless of expansion state)
     final folder = _findFolderByNfcUuid(uuid);
     if (folder != null) {
       if (_isInEditMode) {
-        debugPrint('🔧 Edit mode active - skipping folder playback for tag: $uuid');
-        notifyListeners();
+        debugPrint(
+          '🔧 Edit mode active - skipping folder playback for tag: $uuid',
+        );
         return;
       }
       await _processFolderNfcTag(uuid, folder);
@@ -299,10 +362,16 @@ class NFCService with ChangeNotifier {
     }
 
     // Step 1.6: Check if any folders are open (prevent song playback if no folders open)
-    final List<Folder> openFolders = _folderProvider!.folders.where((f) => f.isExpanded).toList();
+    final List<Folder> openFolders = _folderProvider!.folders
+        .where((f) => f.isExpanded)
+        .toList();
     if (openFolders.isEmpty) {
-      debugPrint('🔒 No open folders - NFC tag detected but music playback blocked');
-      debugPrint('🔒 Tag detected: $uuid - Open a folder to enable music playback');
+      debugPrint(
+        '🔒 No open folders - NFC tag detected but music playback blocked',
+      );
+      debugPrint(
+        '🔒 Tag detected: $uuid - Open a folder to enable music playback',
+      );
       _notifyUser('No open folders - Open a folder to play music');
       notifyListeners();
       return;
@@ -317,15 +386,19 @@ class NFCService with ChangeNotifier {
         final s = _songProvider!.songs[i];
         debugPrint('❌ Song $i: ${s.title} (UUID: ${s.connectedNfcUuid})');
       }
-      
+
       // We keep scanning active to maintain foreground priority and suppress system menu
       return;
     }
 
     // Step 2.5: Check if we're in edit mode (skip music triggering)
     if (_isInEditMode) {
-      debugPrint('🔧 Edit mode active - skipping music triggering for tag: $uuid');
-      debugPrint('🔧 Tag detected but not playing - use this UUID to assign to song');
+      debugPrint(
+        '🔧 Edit mode active - skipping music triggering for tag: $uuid',
+      );
+      debugPrint(
+        '🔧 Tag detected but not playing - use this UUID to assign to song',
+      );
       // Still notify listeners to update UI with the detected UUID
       notifyListeners();
       return;
@@ -338,15 +411,25 @@ class NFCService with ChangeNotifier {
     debugPrint('🔍 Is paused: ${_musicPlayer!.isPaused}');
 
     // Step 3: Determine action based on current state
-    final bool isCurrentlyPlayingThisSong = _musicPlayer!.isSongPlaying(song.filePath);
-    final bool isCurrentlyPausedOnThisSong = _musicPlayer!.isSongPaused(song.filePath);
-    final bool isCurrentlyStoppedOnThisSong = _musicPlayer!.isSongStopped(song.filePath);
-    
+    final bool isCurrentlyPlayingThisSong = _musicPlayer!.isSongPlaying(
+      song.filePath,
+    );
+    final bool isCurrentlyPausedOnThisSong = _musicPlayer!.isSongPaused(
+      song.filePath,
+    );
+    final bool isCurrentlyStoppedOnThisSong = _musicPlayer!.isSongStopped(
+      song.filePath,
+    );
+
     debugPrint('🎵 Analysis:');
     debugPrint('🎵 - Currently playing this song: $isCurrentlyPlayingThisSong');
-    debugPrint('🎵 - Currently paused on this song: $isCurrentlyPausedOnThisSong');
-    debugPrint('🎵 - Currently stopped on this song: $isCurrentlyStoppedOnThisSong');
-    
+    debugPrint(
+      '🎵 - Currently paused on this song: $isCurrentlyPausedOnThisSong',
+    );
+    debugPrint(
+      '🎵 - Currently stopped on this song: $isCurrentlyStoppedOnThisSong',
+    );
+
     // Step 4: Execute action with retry mechanism
     try {
       if (isCurrentlyPlayingThisSong) {
@@ -362,7 +445,7 @@ class NFCService with ChangeNotifier {
     } catch (e, s) {
       debugPrint('❌ CRITICAL ERROR in music execution: $e');
       debugPrint('❌ Stack trace: $s');
-      
+
       // Show error to user through a callback or notification
       _showErrorToUser('Failed to control music playback: $e');
     }
@@ -381,7 +464,10 @@ class NFCService with ChangeNotifier {
 
   // Check if all providers are initialized (quick check without detailed validation)
   bool _areProvidersInitialized() {
-    return _musicPlayer != null && _songProvider != null && _folderProvider != null && _mappingProvider != null;
+    return _musicPlayer != null &&
+        _songProvider != null &&
+        _folderProvider != null &&
+        _mappingProvider != null;
   }
 
   // Validate that all required providers are available
@@ -404,27 +490,35 @@ class NFCService with ChangeNotifier {
       debugPrint('❌ FolderProvider is null');
       return false;
     }
-    debugPrint('✅ FolderProvider: OK (${_folderProvider!.folders.length} folders)');
+    debugPrint(
+      '✅ FolderProvider: OK (${_folderProvider!.folders.length} folders)',
+    );
 
     if (_mappingProvider == null) {
       debugPrint('❌ NFCMusicMappingProvider is null');
       return false;
     }
-    debugPrint('✅ NFCMusicMappingProvider: OK (${_mappingProvider!.mappings.length} mappings)');
+    debugPrint(
+      '✅ NFCMusicMappingProvider: OK (${_mappingProvider!.mappings.length} mappings)',
+    );
 
     debugPrint('✅ All providers validated successfully');
     return true;
   }
 
   // Execute function with retry mechanism
-  Future<void> _executeWithRetry(String operationName, Future<void> Function() operation, int maxRetries) async {
+  Future<void> _executeWithRetry(
+    String operationName,
+    Future<void> Function() operation,
+    int maxRetries,
+  ) async {
     int attempt = 0;
     Exception? lastError;
-    
+
     while (attempt < maxRetries) {
       attempt++;
       debugPrint('🔄 $operationName attempt $attempt/$maxRetries');
-      
+
       try {
         await operation();
         debugPrint('✅ $operationName succeeded on attempt $attempt');
@@ -432,19 +526,22 @@ class NFCService with ChangeNotifier {
       } catch (e) {
         lastError = e as Exception;
         debugPrint('❌ $operationName failed on attempt $attempt: $e');
-        
+
         if (attempt < maxRetries) {
-          final delay = Duration(milliseconds: 200 * attempt); // Exponential backoff
+          final delay = Duration(
+            milliseconds: 200 * attempt,
+          ); // Exponential backoff
           debugPrint('⏳ Retrying in ${delay.inMilliseconds}ms...');
           await Future.delayed(delay);
         }
       }
     }
-    
+
     // All retries failed
     debugPrint('❌ $operationName failed after $maxRetries attempts');
     debugPrint('❌ Last error: $lastError');
-    throw lastError ?? Exception('$operationName failed after $maxRetries attempts');
+    throw lastError ??
+        Exception('$operationName failed after $maxRetries attempts');
   }
 
   // Show error to user
@@ -459,8 +556,6 @@ class NFCService with ChangeNotifier {
     _messageController.add(message);
   }
 
-
-
   // Clear the last scanned UUID (useful for testing)
   void clearLastScannedUuid() {
     _lastScannedUuid = null;
@@ -469,21 +564,26 @@ class NFCService with ChangeNotifier {
 
   // Get detailed debug information about current state
   Map<String, dynamic> getDebugInfo() {
-    final song = _currentNfcUuid != null ? _findSongByUuid(_currentNfcUuid!) : null;
+    final song = _currentNfcUuid != null
+        ? _findSongByUuid(_currentNfcUuid!)
+        : null;
     return {
       'isNfcAvailable': _isNfcAvailable,
       'isScanning': _isScanning,
       'currentNfcUuid': _currentNfcUuid,
       'lastScannedUuid': _lastScannedUuid,
       'totalFolders': _folderProvider?.folders.length ?? 0,
-      'expandedFolders': _folderProvider?.folders.where((f) => f.isExpanded).length ?? 0,
+      'expandedFolders':
+          _folderProvider?.folders.where((f) => f.isExpanded).length ?? 0,
       'musicPlayerState': _musicPlayer?.currentState.toString(),
       'currentMusicPath': _musicPlayer?.currentMusicFilePath,
-      'mappedSong': song != null ? {
-        'title': song.title,
-        'filePath': song.filePath,
-        'connectedNfcUuid': song.connectedNfcUuid,
-      } : null,
+      'mappedSong': song != null
+          ? {
+              'title': song.title,
+              'filePath': song.filePath,
+              'connectedNfcUuid': song.connectedNfcUuid,
+            }
+          : null,
       'totalSongs': _songProvider?.songs.length ?? 0,
       'totalMappings': _mappingProvider?.mappings.length ?? 0,
     };
@@ -495,22 +595,24 @@ class NFCService with ChangeNotifier {
     debugPrint('🧪 Testing UUID: $uuid');
     final debugInfo = getDebugInfo();
     debugPrint('🧪 Current state: $debugInfo');
-    
+
     // Simulate the exact flow as _onNfcDiscovered
     debugPrint('🧪 Simulating NFC detection...');
     _currentNfcUuid = uuid;
     debugPrint('🧪 Current UUID set to: $_currentNfcUuid');
-    
+
     debugPrint('🧪 Calling _processNfcTag directly...');
     _processNfcTag(uuid);
-    
+
     debugPrint('🧪 ===== END TEST =====');
   }
 
   // Force immediate NFC processing for testing
   void forceProcessCurrentUuid() {
     if (_currentNfcUuid != null) {
-      debugPrint('🔄 FORCING immediate processing of current UUID: $_currentNfcUuid');
+      debugPrint(
+        '🔄 FORCING immediate processing of current UUID: $_currentNfcUuid',
+      );
       _processNfcTag(_currentNfcUuid!);
     } else {
       debugPrint('❌ No current UUID to process');
@@ -518,15 +620,17 @@ class NFCService with ChangeNotifier {
   }
 
   Future<void> _checkNfcAvailability() async {
-    _isNfcAvailable = await NfcManager.instance.checkAvailability() == NfcAvailability.enabled;
-    
+    _isNfcAvailable =
+        await NfcManager.instance.checkAvailability() ==
+        NfcAvailability.enabled;
+
     // Request permission on Android 13+ (API 33+)
     if (_isNfcAvailable) {
       await _requestNfcPermission();
       // Auto-start NFC scanning when NFC becomes available
       await _autoStartNfcScanning();
     }
-    
+
     notifyListeners();
   }
 
@@ -550,61 +654,99 @@ class NFCService with ChangeNotifier {
       // ignore: invalid_use_of_protected_member
       final tagData = tag.data;
       debugPrint('Tag data type: ${tagData.runtimeType}');
-      
+
       // 1. Try direct Map access if it's a Map
       if (tagData is Map) {
         // Check common keys for UID
         for (final key in ['id', 'identifier', 'tagId']) {
           final value = tagData[key];
           if (value is Uint8List) {
-            return value.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
+            return value
+                .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                .join(':');
           }
         }
-        
+
         // Check tech-specific keys
-        for (final tech in ['nfca', 'mifare', 'iso7816', 'isodep', 'nfcv', 'nfcf']) {
+        for (final tech in [
+          'nfca',
+          'mifare',
+          'iso7816',
+          'isodep',
+          'nfcv',
+          'nfcf',
+        ]) {
           if (tagData[tech] != null && tagData[tech] is Map) {
             final techData = tagData[tech] as Map;
             for (final key in ['identifier', 'id']) {
               final value = techData[key];
               if (value is Uint8List) {
-                return value.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
+                return value
+                    .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                    .join(':');
               }
             }
           }
         }
       }
-      
+
       // 2. Try dynamic property access (for TagPigeon or other objects)
       final dynamic dTagData = tagData;
-      
+
       // Try to find identifier in common Pigeon properties
       for (final prop in ['identifier', 'id', 'tagId']) {
         try {
           final value = dTagData.toJson()[prop];
-          if (value is Uint8List) return value.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
+          if (value is Uint8List) {
+            return value
+                .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                .join(':');
+          }
         } catch (_) {}
         try {
           final value = dTagData.toMap()[prop];
-          if (value is Uint8List) return value.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
+          if (value is Uint8List) {
+            return value
+                .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                .join(':');
+          }
         } catch (_) {}
         try {
           final value = dTagData.identifier;
-          if (value is Uint8List) return value.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
+          if (value is Uint8List) {
+            return value
+                .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                .join(':');
+          }
         } catch (_) {}
         try {
           final value = dTagData.id;
-          if (value is Uint8List) return value.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
+          if (value is Uint8List) {
+            return value
+                .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                .join(':');
+          }
         } catch (_) {}
       }
 
       // Try tech-specific properties on the object
-      for (final tech in ['nfca', 'mifare', 'iso7816', 'isodep', 'nfcv', 'nfcf']) {
+      for (final tech in [
+        'nfca',
+        'mifare',
+        'iso7816',
+        'isodep',
+        'nfcv',
+        'nfcf',
+      ]) {
         try {
           final techObj = dTagData.toJson()[tech];
           if (techObj != null) {
             final id = techObj['identifier'] ?? techObj['id'];
-            if (id is Uint8List) return id.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
+            if (id is Uint8List) {
+              return id
+                  .map((b) => b.toRadixString(16).padLeft(2, '0'))
+                  .join(':');
+            }
           }
         } catch (_) {}
       }
@@ -613,7 +755,6 @@ class NFCService with ChangeNotifier {
       if (tagData is Map) {
         return _findUidInMap(tagData);
       }
-      
     } catch (e) {
       debugPrint('Error extracting NFC identifier: $e');
     }
@@ -624,7 +765,8 @@ class NFCService with ChangeNotifier {
     for (final entry in map.entries) {
       if (entry.value is Uint8List) {
         final list = entry.value as Uint8List;
-        if (list.length >= 4 && list.length <= 10) { // Typical NFC UID lengths
+        if (list.length >= 4 && list.length <= 10) {
+          // Typical NFC UID lengths
           return list.map((b) => b.toRadixString(16).padLeft(2, '0')).join(':');
         }
       } else if (entry.value is Map) {

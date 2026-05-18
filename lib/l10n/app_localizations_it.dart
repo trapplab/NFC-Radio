@@ -699,4 +699,27 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get quickConnectSelectFirst => 'Seleziona prima un file audio o una cartella';
+
+  @override
+  String get addSubfolder => 'Aggiungi sottocartella';
+
+  @override
+  String get noSubfoldersYet => 'Nessuna sottocartella ancora. Aggiungine una!';
+
+  @override
+  String deleteGroupWarning(int subCount, int songCount) {
+    return 'Verranno eliminate $subCount sottocartella/e e $songCount canzone/i.';
+  }
+
+  @override
+  String get convertToGroup => 'Converti in gruppo';
+
+  @override
+  String get convertToGroupDescription => 'Le tue canzoni saranno spostate in una nuova sottocartella. La cartella diventa un gruppo a cui puoi aggiungere altre sottocartelle.';
+
+  @override
+  String get subfolderName => 'Nome sottocartella';
+
+  @override
+  String get convert => 'Converti';
 }

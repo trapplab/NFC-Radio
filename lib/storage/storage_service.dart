@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import '../l10n/app_localizations.dart';
 import 'song.dart';
 import '../nfc/nfc_music_mapping.dart';
@@ -35,7 +36,12 @@ class StorageService {
       
       // Initialize Hive Flutter
       debugPrint('🔧 Initializing Hive Flutter...');
-      await Hive.initFlutter();
+      if (Platform.isLinux) {
+        final dir = await getApplicationSupportDirectory();
+        Hive.init(dir.path);
+      } else {
+        await Hive.initFlutter();
+      }
       debugPrint('✅ Hive Flutter initialized');
       
       // Register adapters

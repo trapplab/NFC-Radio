@@ -201,5 +201,18 @@
   "sleepTimerRemaining": "Sommeil : {time}",
   "sleepTimerCancelled": "Minuterie de sommeil annulée",
   "quickConnectTagMode": "Mode Connexion Rapide Tag",
-  "quickConnectSelectFirst": "Veuillez d'abord sélectionner un fichier audio ou un dossier"
+  "quickConnectSelectFirst": "Veuillez d'abord sélectionner un fichier audio ou un dossier",
+  "addSubfolder": "Ajouter un sous-dossier",
+  "noSubfoldersYet": "Aucun sous-dossier pour l'instant. Ajoutez-en un !",
+  "deleteGroupWarning": "Cela supprimera {subCount} sous-dossier(s) et {songCount} chanson(s).",
+  "@deleteGroupWarning": {
+    "placeholders": {
+      "subCount": {"type": "int"},
+      "songCount": {"type": "int"}
+    }
+  },
+  "convertToGroup": "Convertir en groupe",
+  "convertToGroupDescription": "Vos chansons seront déplacées dans un nouveau sous-dossier. Le dossier devient un groupe auquel vous pouvez ajouter d'autres sous-dossiers.",
+  "subfolderName": "Nom du sous-dossier",
+  "convert": "Convertir"
 }

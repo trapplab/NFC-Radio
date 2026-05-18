@@ -1,0 +1,3 @@
+## Hinzugefügt
+- Unterstützung für Dateien in Unterordnern
+- PayPal-Spendenoption hinzugefügt
