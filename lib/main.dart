@@ -121,6 +121,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
   final Set<String> _quickConnectFlashSuccessIds = {};
   VoidCallback? _quickConnectNfcListener;
   NFCService? _nfcServiceRef;
+  bool _isHandlingQuickConnect = false;
 
   // Global keys for tutorial
   final GlobalKey _addFolderButtonKey = GlobalKey();
@@ -465,9 +466,13 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
       _quickConnectNfcListener = () {
         if (!_quickConnectMode) return;
         if (!nfcService.isProcessingTag) return;
+        if (_isHandlingQuickConnect) return;
         final uuid = nfcService.currentNfcUuid;
         if (uuid == null) return;
-        _handleQuickConnectNfcScan(uuid);
+        _isHandlingQuickConnect = true;
+        _handleQuickConnectNfcScan(uuid).whenComplete(
+          () => _isHandlingQuickConnect = false,
+        );
       };
       nfcService.addListener(_quickConnectNfcListener!);
     }
@@ -791,8 +796,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
         _quickConnectSelectedSongId = null;
       });
       Future.delayed(const Duration(milliseconds: 900), () {
-        if (mounted)
+        if (mounted) {
           setState(() => _quickConnectFlashSuccessIds.remove(songId));
+        }
       });
     } else if (_quickConnectSelectedFolderId != null) {
       final folderId = _quickConnectSelectedFolderId!;
@@ -802,8 +808,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
         _quickConnectSelectedFolderId = null;
       });
       Future.delayed(const Duration(milliseconds: 900), () {
-        if (mounted)
+        if (mounted) {
           setState(() => _quickConnectFlashSuccessIds.remove(folderId));
+        }
       });
     }
   }
@@ -983,8 +990,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                               context,
                             ).alwaysUse24HourFormat;
                             String formatHour(int hour) {
-                              if (use24h)
+                              if (use24h) {
                                 return '${hour.toString().padLeft(2, '0')}:00';
+                              }
                               final displayHour = hour == 0
                                   ? 12
                                   : (hour > 12 ? hour - 12 : hour);
@@ -4098,8 +4106,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                   // Only show leaf folders (no children) as move/copy targets
                   .where((folder) => !folderProvider.isGroupFolder(folder.id))
                   .map((folder) {
-                    if (folder.id == currentFolderId)
+                    if (folder.id == currentFolderId) {
                       return const SizedBox.shrink();
+                    }
                     return ListTile(
                       leading: const Icon(Icons.folder),
                       title: Text(folder.name),

@@ -355,7 +355,6 @@ class NFCService with ChangeNotifier {
         debugPrint(
           '🔧 Edit mode active - skipping folder playback for tag: $uuid',
         );
-        notifyListeners();
         return;
       }
       await _processFolderNfcTag(uuid, folder);
@@ -698,31 +697,35 @@ class NFCService with ChangeNotifier {
       for (final prop in ['identifier', 'id', 'tagId']) {
         try {
           final value = dTagData.toJson()[prop];
-          if (value is Uint8List)
+          if (value is Uint8List) {
             return value
                 .map((b) => b.toRadixString(16).padLeft(2, '0'))
                 .join(':');
+          }
         } catch (_) {}
         try {
           final value = dTagData.toMap()[prop];
-          if (value is Uint8List)
+          if (value is Uint8List) {
             return value
                 .map((b) => b.toRadixString(16).padLeft(2, '0'))
                 .join(':');
+          }
         } catch (_) {}
         try {
           final value = dTagData.identifier;
-          if (value is Uint8List)
+          if (value is Uint8List) {
             return value
                 .map((b) => b.toRadixString(16).padLeft(2, '0'))
                 .join(':');
+          }
         } catch (_) {}
         try {
           final value = dTagData.id;
-          if (value is Uint8List)
+          if (value is Uint8List) {
             return value
                 .map((b) => b.toRadixString(16).padLeft(2, '0'))
                 .join(':');
+          }
         } catch (_) {}
       }
 
@@ -739,10 +742,11 @@ class NFCService with ChangeNotifier {
           final techObj = dTagData.toJson()[tech];
           if (techObj != null) {
             final id = techObj['identifier'] ?? techObj['id'];
-            if (id is Uint8List)
+            if (id is Uint8List) {
               return id
                   .map((b) => b.toRadixString(16).padLeft(2, '0'))
                   .join(':');
+            }
           }
         } catch (_) {}
       }
