@@ -24,6 +24,11 @@ class SocialIconBar extends StatelessWidget {
           onPressed: () => _launchUrl(SocialLinks.buyMeACoffee),
         ),
         IconButton(
+          icon: const FaIcon(FontAwesomeIcons.paypal),
+          tooltip: 'PayPal Donate',
+          onPressed: () => _launchUrl(SocialLinks.paypal),
+        ),
+        IconButton(
           icon: const FaIcon(FontAwesomeIcons.github),
           tooltip: 'GitHub',
           onPressed: () => _launchUrl(SocialLinks.github),
