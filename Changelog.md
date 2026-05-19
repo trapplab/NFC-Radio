@@ -13,6 +13,11 @@
 
 # Changelog
 
+## [0.20.1]
+### Added
+- support for files in subfolders
+- added paypal donation option 
+
 ## [0.20.0]
 ### Added
 - support for files in subfolders

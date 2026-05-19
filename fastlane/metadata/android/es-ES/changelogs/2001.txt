@@ -1,0 +1,3 @@
+## Añadido
+- soporte para archivos en subcarpetas
+- añadida opción de donación mediante PayPal
