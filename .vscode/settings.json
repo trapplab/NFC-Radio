@@ -1,4 +1,5 @@
 {
+  "dart.flutterSdkPath": "${workspaceFolder}/flutter",
   "dart.analysisExcludedFolders": [
     "flutter",
   ]
