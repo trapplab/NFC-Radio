@@ -470,9 +470,9 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
         final uuid = nfcService.currentNfcUuid;
         if (uuid == null) return;
         _isHandlingQuickConnect = true;
-        _handleQuickConnectNfcScan(uuid).whenComplete(
-          () => _isHandlingQuickConnect = false,
-        );
+        _handleQuickConnectNfcScan(
+          uuid,
+        ).whenComplete(() => _isHandlingQuickConnect = false);
       };
       nfcService.addListener(_quickConnectNfcListener!);
     }
@@ -2107,10 +2107,11 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                                               // Roll back folder disconnect if user declined song conflict
                                               if (!shouldUseNewNfc &&
                                                   conflictingFolder != null) {
-                                                folderProvider.connectFolderToNfc(
-                                                  conflictingFolder.id,
-                                                  currentNfcUuid,
-                                                );
+                                                folderProvider
+                                                    .connectFolderToNfc(
+                                                      conflictingFolder.id,
+                                                      currentNfcUuid,
+                                                    );
                                               }
                                             }
 
@@ -2344,7 +2345,15 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
           );
         },
       ),
-    );
+    ).then((_) {
+      // Runs on every dismissal path (Cancel, Save, tap outside, back button).
+      // Without this, closing the dialog via barrier/back left edit mode stuck
+      // on, which silently blocked all NFC-triggered playback afterwards.
+      dialogState.isOpen = false;
+      nfcService.removeListener(updateNfcUuid);
+      nfcService.clearCurrentNfcUuid();
+      nfcService.setEditMode(false);
+    });
 
     if (nfcService.isNfcAvailable && !nfcService.isScanning) {
       nfcService.startNfcSession();
@@ -3828,7 +3837,12 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
           },
         );
       },
-    );
+    ).then((_) {
+      // Runs on every dismissal path (Cancel, connect, tap outside, back button)
+      // so edit mode can never get stuck on and block NFC playback.
+      nfcService.clearCurrentNfcUuid();
+      nfcService.setEditMode(false);
+    });
   }
 
   void _showEditFolderDialog(
