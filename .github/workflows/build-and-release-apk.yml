@@ -20,6 +20,12 @@ jobs:
       - name: Checkout Flutter
         run: git submodule update --init --recursive
 
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
       - name: Configure Flutter Environment
         run: |
           export PUB_CACHE=$(pwd)/.pub-cache
@@ -118,6 +124,12 @@ jobs:
 
       - name: Checkout Flutter
         run: git submodule update --init --recursive
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
 
       - name: Configure Flutter Environment
         run: |

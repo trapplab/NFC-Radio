@@ -18,7 +18,10 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.trapplab.nfc_radio"
-    compileSdk = flutter.compileSdkVersion
+    // compileSdk = flutter.compileSdkVersion
+    // permission_handler_android requires compileSdk 37; Flutter's default is still 36 (flutter.compileSdkVersion)
+    // Once Flutter's default catches up, flutter.compileSdkVersion takes over again.
+    compileSdk = maxOf(flutter.compileSdkVersion, 37)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
