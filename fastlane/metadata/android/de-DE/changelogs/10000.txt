@@ -1,0 +1,4 @@
+## Geändert
+- erste stabile Version
+- Flutter und Abhängigkeiten aktualisiert
+- Build-Pipelines repariert

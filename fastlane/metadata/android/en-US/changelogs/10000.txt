@@ -1,0 +1,4 @@
+## Changed
+- first stable release
+- upgraded Flutter and dependencies
+- fixed build pipelines

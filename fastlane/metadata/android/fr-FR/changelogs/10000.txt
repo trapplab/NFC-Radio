@@ -1,0 +1,4 @@
+## Modifié
+- première version stable
+- mise à jour de Flutter et des dépendances
+- correction des pipelines de compilation

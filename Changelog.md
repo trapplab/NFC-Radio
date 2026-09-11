@@ -13,6 +13,12 @@
 
 # Changelog
 
+## [1.0.0]
+### Changed
+- first stable release
+- upgraded Flutter and dependencies
+- fixed build pipelines
+
 ## [0.20.1]
 ### Added
 - support for files in subfolders
