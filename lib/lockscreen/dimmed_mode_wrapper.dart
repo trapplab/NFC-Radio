@@ -26,6 +26,11 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
   OverlayEntry? _overlayEntry;
   double? _originalBrightness;
   bool? _lastBrightnessState; // Track to avoid redundant logging
+  // Kept so listeners can be removed in dispose(), where looking up
+  // providers through the (already deactivated) context is not allowed.
+  DimmedModeService? _dimmedModeService;
+  SettingsProvider? _settings;
+  MusicPlayer? _musicPlayer;
   
   @override
   void initState() {
@@ -44,12 +49,15 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
       if (!mounted) return;
       final dimmedModeService = Provider.of<DimmedModeService>(context, listen: false);
       dimmedModeService.addListener(_onDimmedModeChanged);
+      _dimmedModeService = dimmedModeService;
       
       final settings = Provider.of<SettingsProvider>(context, listen: false);
       settings.addListener(_onSettingsChanged);
+      _settings = settings;
 
       final musicPlayer = Provider.of<MusicPlayer>(context, listen: false);
       musicPlayer.addListener(_onMusicPlayerChanged);
+      _musicPlayer = musicPlayer;
       
       if (settings.useSystemOverlay) {
         _requestPermission();
@@ -89,12 +97,9 @@ class _DimmedModeWrapperState extends State<DimmedModeWrapper> with TickerProvid
   @override
   void dispose() {
     _thumbAnimationController.dispose();
-    final dimmedModeService = Provider.of<DimmedModeService>(context, listen: false);
-    dimmedModeService.removeListener(_onDimmedModeChanged);
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
-    settings.removeListener(_onSettingsChanged);
-    final musicPlayer = Provider.of<MusicPlayer>(context, listen: false);
-    musicPlayer.removeListener(_onMusicPlayerChanged);
+    _dimmedModeService?.removeListener(_onDimmedModeChanged);
+    _settings?.removeListener(_onSettingsChanged);
+    _musicPlayer?.removeListener(_onMusicPlayerChanged);
     _removeOverlay();
     super.dispose();
   }
