@@ -30,15 +30,22 @@ class NFCService with ChangeNotifier {
   // ── Pause-on-tag-removal ("Toniebox mode") ────────────────────────────────
   // When enabled, placing a tag always plays/resumes, and the tag is polled
   // while it stays on the reader. Once it is gone, playback is paused.
-  static const Duration _presenceCheckInterval = Duration(milliseconds: 500);
+  static const Duration _presenceCheckInterval = Duration(milliseconds: 250);
   // Number of consecutive failed presence probes before the tag is considered
   // removed. Tolerates a single flaky read through e.g. a plastic case.
+  // Interval x threshold ≈ how quickly a removal pauses (~0.3–0.5 s).
   static const int _presenceFailureThreshold = 2;
-  // After the tag stops answering, wait this long before pausing. Android
-  // sometimes drops a tag that is still on the reader ("Tag is out of date")
-  // and re-detects it about a second later; if that happens within the grace
-  // period, playback simply continues instead of stuttering.
+  // Android sometimes drops a tag that is still on the reader ("Tag is out of
+  // date") and re-detects it about a second later. If a paused tag is
+  // re-detected within [_falseRemovalWindow], that removal was most likely
+  // such a drop-out: from then on (this session) that tag gets a
+  // [_removalGracePeriod] before pausing, so playback continues instead of
+  // stuttering. Tags that never drop out keep the fast response.
   static const Duration _removalGracePeriod = Duration(milliseconds: 1500);
+  static const Duration _falseRemovalWindow = Duration(milliseconds: 2500);
+  final Set<String> _flakyTagUuids = {};
+  String? _lastPausedByRemovalUuid;
+  DateTime? _lastPausedByRemovalAt;
   bool _pauseOnTagRemoval = false;
   Timer? _presenceTimer;
   Timer? _removalGraceTimer;
@@ -339,6 +346,8 @@ class NFCService with ChangeNotifier {
         return;
       }
 
+      if (presenceMode) _detectFalseRemoval(uuid, now);
+
       _currentNfcUuid = uuid;
       debugPrint('📡 NFC UUID detected: $uuid');
 
@@ -626,11 +635,18 @@ class NFCService with ChangeNotifier {
       _presenceFailures++;
       if (_presenceFailures < _presenceFailureThreshold) return;
 
-      // Tag stopped answering. Stop probing and give Android a moment to
-      // re-detect it; a new discovery calls stopTagPresenceMonitoring(),
-      // which cancels this timer, so nothing is paused.
       _presenceTimer?.cancel();
       _presenceTimer = null;
+
+      if (!_flakyTagUuids.contains(uuid)) {
+        stopTagPresenceMonitoring();
+        await _onTagRemoved(uuid, ownsPlayback);
+        return;
+      }
+
+      // Known drop-out tag: give Android a moment to re-detect it; a new
+      // discovery calls stopTagPresenceMonitoring(), which cancels this
+      // timer, so nothing is paused.
       debugPrint(
         '🏷️ Tag $uuid not answering - pausing in '
         '${_removalGracePeriod.inMilliseconds} ms unless it is re-detected',
@@ -656,12 +672,33 @@ class NFCService with ChangeNotifier {
       return;
     }
     debugPrint('⏸️ Tag $uuid removed - pausing playback');
+    _lastPausedByRemovalUuid = uuid;
+    _lastPausedByRemovalAt = DateTime.now();
     try {
       await _executeWithRetry('pause', () => _musicPlayer!.pauseMusic(), 2);
     } catch (e) {
       _showErrorToUser('Failed to pause playback: $e');
     }
     notifyListeners();
+  }
+
+  /// A tag re-detected right after we paused because it "disappeared" was
+  /// most likely never removed (Android drop-out). Use the grace period for
+  /// this tag from now on.
+  void _detectFalseRemoval(String uuid, DateTime now) {
+    final pausedAt = _lastPausedByRemovalAt;
+    if (_lastPausedByRemovalUuid == uuid &&
+        pausedAt != null &&
+        now.difference(pausedAt) < _falseRemovalWindow &&
+        _flakyTagUuids.add(uuid)) {
+      debugPrint(
+        '🏷️ Tag $uuid re-detected ${now.difference(pausedAt).inMilliseconds} '
+        'ms after removal pause - treating it as drop-out prone, '
+        'using ${_removalGracePeriod.inMilliseconds} ms grace from now on',
+      );
+    }
+    _lastPausedByRemovalUuid = null;
+    _lastPausedByRemovalAt = null;
   }
 
   /// Builds a cheap command that only succeeds while the tag is in the field.
