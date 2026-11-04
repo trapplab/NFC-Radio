@@ -1611,8 +1611,14 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
     // Enable edit mode to pause player triggering during editing
     nfcService.setEditMode(true);
 
-    // Store the listener function so we can remove it later
-    late void Function() updateNfcUuid;
+    // The handler is (re)defined in the dialog builder so it always uses the
+    // current setState/dialogContext. Only this stable forwarder is
+    // registered, exactly once: registering the handler itself on every
+    // rebuild leaked listeners that kept calling setEditMode(false) after the
+    // dialog closed, which re-enabled NFC playback during edit/quick-connect.
+    void Function()? updateNfcUuid;
+    void nfcListener() => updateNfcUuid?.call();
+    nfcService.addListener(nfcListener);
 
     showDialog(
       context: context,
@@ -1646,7 +1652,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
           // Define the listener function
           updateNfcUuid = () {
             if (!dialogState.isOpen) {
-              nfcService.removeListener(updateNfcUuid);
+              nfcService.removeListener(nfcListener);
               nfcService.setEditMode(false);
               return;
             }
@@ -1698,8 +1704,6 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
               }
             }
           };
-
-          nfcService.addListener(updateNfcUuid);
 
           return AlertDialog(
             title: Text(
@@ -2243,7 +2247,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
               TextButton(
                 onPressed: () {
                   dialogState.isOpen = false;
-                  nfcService.removeListener(updateNfcUuid);
+                  nfcService.removeListener(nfcListener);
                   nfcService.setEditMode(false);
                   Navigator.pop(dialogContext);
                 },
@@ -2334,7 +2338,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                     }
 
                     dialogState.isOpen = false;
-                    nfcService.removeListener(updateNfcUuid);
+                    nfcService.removeListener(nfcListener);
                     nfcService.setEditMode(false);
                     if (!dialogContext.mounted) return;
                     Navigator.pop(dialogContext);
@@ -2377,7 +2381,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
       // Without this, closing the dialog via barrier/back left edit mode stuck
       // on, which silently blocked all NFC-triggered playback afterwards.
       dialogState.isOpen = false;
-      nfcService.removeListener(updateNfcUuid);
+      nfcService.removeListener(nfcListener);
       nfcService.clearCurrentNfcUuid();
       nfcService.setEditMode(false);
     });

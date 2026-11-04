@@ -34,8 +34,14 @@ class NFCService with ChangeNotifier {
   // Number of consecutive failed presence probes before the tag is considered
   // removed. Tolerates a single flaky read through e.g. a plastic case.
   static const int _presenceFailureThreshold = 2;
+  // After the tag stops answering, wait this long before pausing. Android
+  // sometimes drops a tag that is still on the reader ("Tag is out of date")
+  // and re-detects it about a second later; if that happens within the grace
+  // period, playback simply continues instead of stuttering.
+  static const Duration _removalGracePeriod = Duration(milliseconds: 1500);
   bool _pauseOnTagRemoval = false;
   Timer? _presenceTimer;
+  Timer? _removalGraceTimer;
   bool _presenceProbeInFlight = false;
   int _presenceFailures = 0;
   int _presenceGeneration = 0;
@@ -71,6 +77,8 @@ class NFCService with ChangeNotifier {
     _presenceGeneration++;
     _presenceTimer?.cancel();
     _presenceTimer = null;
+    _removalGraceTimer?.cancel();
+    _removalGraceTimer = null;
     _presenceProbeInFlight = false;
     _presenceFailures = 0;
   }
@@ -618,8 +626,20 @@ class NFCService with ChangeNotifier {
       _presenceFailures++;
       if (_presenceFailures < _presenceFailureThreshold) return;
 
-      stopTagPresenceMonitoring();
-      await _onTagRemoved(uuid, ownsPlayback);
+      // Tag stopped answering. Stop probing and give Android a moment to
+      // re-detect it; a new discovery calls stopTagPresenceMonitoring(),
+      // which cancels this timer, so nothing is paused.
+      _presenceTimer?.cancel();
+      _presenceTimer = null;
+      debugPrint(
+        '🏷️ Tag $uuid not answering - pausing in '
+        '${_removalGracePeriod.inMilliseconds} ms unless it is re-detected',
+      );
+      _removalGraceTimer = Timer(_removalGracePeriod, () async {
+        if (generation != _presenceGeneration) return;
+        stopTagPresenceMonitoring();
+        await _onTagRemoved(uuid, ownsPlayback);
+      });
     });
   }
 
@@ -662,6 +682,13 @@ class NFCService with ChangeNotifier {
       final ultralight = MifareUltralightAndroid.from(tag);
       if (ultralight != null) {
         return () => ultralight.readPages(pageOffset: 0);
+      }
+      final nfcA = NfcAAndroid.from(tag);
+      if (nfcA != null && nfcA.sak == 0x00) {
+        // NFC Forum Type 2 tag (NTAG/Ultralight family, incl. non-NXP chips
+        // Android doesn't expose as MifareUltralight): READ page 0 is a single
+        // short command, much lighter than a full NDEF read.
+        return () => nfcA.transceive(Uint8List.fromList([0x30, 0x00]));
       }
       final nfcV = NfcVAndroid.from(tag);
       if (nfcV != null) {
