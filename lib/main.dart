@@ -594,6 +594,8 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
             // Sync mappings with songs to ensure consistency
             mappingProvider.syncWithSongs(songProvider.songs);
 
+            nfcService.setPauseOnTagRemoval(settingsProvider.pauseOnTagRemoval);
+
             // Set providers for NFCService after initialization
             nfcService.setProviders(
               mappingProvider: mappingProvider,
@@ -823,6 +825,17 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
       final musicPlayer = Provider.of<MusicPlayer>(context, listen: false);
       musicPlayer.saveCurrentPosition();
     }
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.detached) {
+      // The NFC reader is off while the app is in the background (or the
+      // screen is off), so a placed tag can't be watched. Stop watching
+      // instead of pausing; Android rediscovers the tag when we come back.
+      Provider.of<NFCService>(
+        context,
+        listen: false,
+      ).stopTagPresenceMonitoring();
+    }
   }
 
   @override
@@ -924,6 +937,20 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                   value: settings.showAudioControlsOnLockscreen,
                   onChanged: (value) {
                     settings.setShowAudioControlsOnLockscreen(value);
+                  },
+                ),
+                SwitchListTile(
+                  title: Text(AppLocalizations.of(context)!.pauseOnTagRemoval),
+                  subtitle: Text(
+                    AppLocalizations.of(context)!.pauseOnTagRemovalDescription,
+                  ),
+                  value: settings.pauseOnTagRemoval,
+                  onChanged: (value) {
+                    settings.setPauseOnTagRemoval(value);
+                    Provider.of<NFCService>(
+                      context,
+                      listen: false,
+                    ).setPauseOnTagRemoval(value);
                   },
                 ),
                 ExpansionTile(

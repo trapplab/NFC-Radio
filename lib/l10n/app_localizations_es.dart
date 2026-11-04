@@ -722,4 +722,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get convert => 'Convertir';
+
+  @override
+  String get pauseOnTagRemoval => 'Pausar al retirar la etiqueta';
+
+  @override
+  String get pauseOnTagRemovalDescription => 'Colocar una etiqueta reproduce, retirarla pausa. Vuelve a colocarla para continuar.';
 }

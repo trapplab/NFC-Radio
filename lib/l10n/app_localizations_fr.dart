@@ -722,4 +722,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get convert => 'Convertir';
+
+  @override
+  String get pauseOnTagRemoval => 'Mettre en pause au retrait du tag';
+
+  @override
+  String get pauseOnTagRemovalDescription => 'Poser un tag lance la lecture, le retirer la met en pause. Reposez-le pour reprendre.';
 }

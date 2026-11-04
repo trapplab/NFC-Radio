@@ -10,6 +10,7 @@ class SettingsProvider with ChangeNotifier {
   static const String _keyAutoSleepTimerRestrictHours = 'auto_sleep_timer_restrict_hours';
   static const String _keyAutoSleepTimerStartHour = 'auto_sleep_timer_start_hour';
   static const String _keyAutoSleepTimerEndHour = 'auto_sleep_timer_end_hour';
+  static const String _keyPauseOnTagRemoval = 'pause_on_tag_removal';
 
   bool _filterAudioOnly = true;
   bool _useSystemOverlay = false;
@@ -19,6 +20,7 @@ class SettingsProvider with ChangeNotifier {
   bool _autoSleepTimerRestrictHours = false;
   int _autoSleepTimerStartHour = 19;
   int _autoSleepTimerEndHour = 6;
+  bool _pauseOnTagRemoval = false;
   bool _isInitialized = false;
 
   bool get filterAudioOnly => _filterAudioOnly;
@@ -29,6 +31,7 @@ class SettingsProvider with ChangeNotifier {
   bool get autoSleepTimerRestrictHours => _autoSleepTimerRestrictHours;
   int get autoSleepTimerStartHour => _autoSleepTimerStartHour;
   int get autoSleepTimerEndHour => _autoSleepTimerEndHour;
+  bool get pauseOnTagRemoval => _pauseOnTagRemoval;
   bool get isInitialized => _isInitialized;
 
   Future<void> initialize() async {
@@ -42,6 +45,7 @@ class SettingsProvider with ChangeNotifier {
     _autoSleepTimerRestrictHours = StorageService.instance.getSetting(_keyAutoSleepTimerRestrictHours, defaultValue: false);
     _autoSleepTimerStartHour = StorageService.instance.getSetting(_keyAutoSleepTimerStartHour, defaultValue: 19);
     _autoSleepTimerEndHour = StorageService.instance.getSetting(_keyAutoSleepTimerEndHour, defaultValue: 6);
+    _pauseOnTagRemoval = StorageService.instance.getSetting(_keyPauseOnTagRemoval, defaultValue: false);
     _isInitialized = true;
     notifyListeners();
   }
@@ -91,6 +95,12 @@ class SettingsProvider with ChangeNotifier {
   Future<void> setAutoSleepTimerEndHour(int value) async {
     _autoSleepTimerEndHour = value;
     await StorageService.instance.saveSetting(_keyAutoSleepTimerEndHour, value);
+    notifyListeners();
+  }
+
+  Future<void> setPauseOnTagRemoval(bool value) async {
+    _pauseOnTagRemoval = value;
+    await StorageService.instance.saveSetting(_keyPauseOnTagRemoval, value);
     notifyListeners();
   }
 }

@@ -214,5 +214,7 @@
   "convertToGroup": "Convert to Group",
   "convertToGroupDescription": "Your songs will be moved into a new subfolder. The folder becomes a group you can add more subfolders to.",
   "subfolderName": "Subfolder Name",
-  "convert": "Convert"
+  "convert": "Convert",
+  "pauseOnTagRemoval": "Pause when tag is removed",
+  "pauseOnTagRemovalDescription": "Placing a tag plays, removing it pauses. Place it again to resume."
 }
