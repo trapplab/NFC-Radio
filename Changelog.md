@@ -13,6 +13,10 @@
 
 # Changelog
 
+## [1.1.0]
+### Added
+- option to pause playback when the NFC tag is removed
+
 ## [1.0.0]
 ### Changed
 - first stable release

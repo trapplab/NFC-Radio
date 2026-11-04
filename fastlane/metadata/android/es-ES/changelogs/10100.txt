@@ -1,0 +1,2 @@
+## Añadido
+- opción para pausar al retirar la etiqueta NFC
