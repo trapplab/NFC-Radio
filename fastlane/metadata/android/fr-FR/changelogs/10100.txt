@@ -1,0 +1,2 @@
+## Ajouté
+- option pour mettre en pause au retrait du tag NFC

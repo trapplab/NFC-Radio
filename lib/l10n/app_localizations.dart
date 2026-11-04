@@ -1354,6 +1354,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Convert'**
   String get convert;
+
+  /// No description provided for @pauseOnTagRemoval.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause when tag is removed'**
+  String get pauseOnTagRemoval;
+
+  /// No description provided for @pauseOnTagRemovalDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Placing a tag plays, removing it pauses. Place it again to resume.'**
+  String get pauseOnTagRemovalDescription;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

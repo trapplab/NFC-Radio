@@ -214,5 +214,7 @@
   "convertToGroup": "In Gruppe umwandeln",
   "convertToGroupDescription": "Deine Songs werden in einen neuen Unterordner verschoben. Der Ordner wird zur Gruppe, der du weitere Unterordner hinzufügen kannst.",
   "subfolderName": "Unterordner-Name",
-  "convert": "Umwandeln"
+  "convert": "Umwandeln",
+  "pauseOnTagRemoval": "Pausieren, wenn Tag entfernt wird",
+  "pauseOnTagRemovalDescription": "Tag auflegen spielt ab, Tag entfernen pausiert. Erneut auflegen setzt fort."
 }

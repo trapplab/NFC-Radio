@@ -214,5 +214,7 @@
   "convertToGroup": "Convertir en grupo",
   "convertToGroupDescription": "Tus canciones se moverán a una nueva subcarpeta. La carpeta se convierte en un grupo al que puedes añadir más subcarpetas.",
   "subfolderName": "Nombre de subcarpeta",
-  "convert": "Convertir"
+  "convert": "Convertir",
+  "pauseOnTagRemoval": "Pausar al retirar la etiqueta",
+  "pauseOnTagRemovalDescription": "Colocar una etiqueta reproduce, retirarla pausa. Vuelve a colocarla para continuar."
 }

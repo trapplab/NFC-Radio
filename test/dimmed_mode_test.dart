@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nfc_radio/lockscreen/dimmed_mode_service.dart';
 import 'package:nfc_radio/lockscreen/dimmed_overlay.dart';
 import 'package:flutter/material.dart';
+import 'package:nfc_radio/l10n/app_localizations.dart';
 
 void main() {
   group('DimmedModeService Tests', () {
@@ -56,6 +57,9 @@ void main() {
     testWidgets('DimmedOverlay should show content when active', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: DimmedOverlay(
               isActive: true,

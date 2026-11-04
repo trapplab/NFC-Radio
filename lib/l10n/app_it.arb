@@ -214,5 +214,7 @@
   "convertToGroup": "Converti in gruppo",
   "convertToGroupDescription": "Le tue canzoni saranno spostate in una nuova sottocartella. La cartella diventa un gruppo a cui puoi aggiungere altre sottocartelle.",
   "subfolderName": "Nome sottocartella",
-  "convert": "Converti"
+  "convert": "Converti",
+  "pauseOnTagRemoval": "Pausa quando il tag viene rimosso",
+  "pauseOnTagRemovalDescription": "Appoggiare un tag avvia la riproduzione, rimuoverlo la mette in pausa. Riappoggialo per riprendere."
 }

@@ -1,0 +1,2 @@
+## Neu
+- Option: Wiedergabe pausieren, wenn der NFC-Tag entfernt wird

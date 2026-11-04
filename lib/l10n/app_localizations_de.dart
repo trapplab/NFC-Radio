@@ -722,4 +722,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get convert => 'Umwandeln';
+
+  @override
+  String get pauseOnTagRemoval => 'Pausieren, wenn Tag entfernt wird';
+
+  @override
+  String get pauseOnTagRemovalDescription => 'Tag auflegen spielt ab, Tag entfernen pausiert. Erneut auflegen setzt fort.';
 }

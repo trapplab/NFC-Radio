@@ -214,5 +214,7 @@
   "convertToGroup": "Convertir en groupe",
   "convertToGroupDescription": "Vos chansons seront déplacées dans un nouveau sous-dossier. Le dossier devient un groupe auquel vous pouvez ajouter d'autres sous-dossiers.",
   "subfolderName": "Nom du sous-dossier",
-  "convert": "Convertir"
+  "convert": "Convertir",
+  "pauseOnTagRemoval": "Mettre en pause au retrait du tag",
+  "pauseOnTagRemovalDescription": "Poser un tag lance la lecture, le retirer la met en pause. Reposez-le pour reprendre."
 }

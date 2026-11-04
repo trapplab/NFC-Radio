@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:async';
 import 'package:nfc_manager/nfc_manager.dart';
+import 'package:nfc_manager/nfc_manager_android.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:collection/collection.dart';
@@ -26,11 +27,55 @@ class NFCService with ChangeNotifier {
   FolderProvider? _folderProvider;
   MusicPlayer? _musicPlayer;
 
+  // ── Pause-on-tag-removal ("Toniebox mode") ────────────────────────────────
+  // When enabled, placing a tag always plays/resumes, and the tag is polled
+  // while it stays on the reader. Once it is gone, playback is paused.
+  static const Duration _presenceCheckInterval = Duration(milliseconds: 250);
+  // Number of consecutive failed presence probes before the tag is considered
+  // removed. Tolerates a single flaky read through e.g. a plastic case.
+  // Interval x threshold ≈ how quickly a removal pauses (~0.3–0.5 s).
+  static const int _presenceFailureThreshold = 2;
+  bool _pauseOnTagRemoval = false;
+  Timer? _presenceTimer;
+  bool _presenceProbeInFlight = false;
+  int _presenceFailures = 0;
+  int _presenceGeneration = 0;
+
   bool get isNfcAvailable => _isNfcAvailable;
   String? get currentNfcUuid => _currentNfcUuid;
   bool get isScanning => _isScanning;
   bool get isProcessingTag => _isProcessingTag;
   bool get isInEditMode => _isInEditMode;
+  bool get pauseOnTagRemoval => _pauseOnTagRemoval;
+  bool get isMonitoringTagPresence => _presenceTimer != null;
+
+  /// Enables/disables "pause when tag is removed" mode.
+  ///
+  /// Off (default): a tag scan toggles play/pause.
+  /// On: a tag placed on the reader plays/resumes, removing it pauses.
+  void setPauseOnTagRemoval(bool enabled) {
+    if (_pauseOnTagRemoval == enabled) return;
+    _pauseOnTagRemoval = enabled;
+    debugPrint('🏷️ Pause on tag removal ${enabled ? 'enabled' : 'disabled'}');
+    if (!enabled) stopTagPresenceMonitoring();
+  }
+
+  /// Stops watching the currently placed tag without touching playback.
+  /// Called e.g. when the app goes to the background, where the reader is
+  /// disabled by Android and probes would fail even though the tag is present.
+  /// If the tag is still there when the app returns, Android rediscovers it
+  /// and monitoring starts again.
+  void stopTagPresenceMonitoring() {
+    if (_presenceTimer != null) {
+      debugPrint('🏷️ Tag presence monitoring stopped');
+    }
+    _presenceGeneration++;
+    _presenceTimer?.cancel();
+    _presenceTimer = null;
+    _presenceProbeInFlight = false;
+    _presenceFailures = 0;
+  }
+
   Stream<String> get messages => _messageController.stream;
 
   // Set edit mode to pause player triggering during edit operations
@@ -167,27 +212,41 @@ class NFCService with ChangeNotifier {
     );
   }
 
-  // Process folder NFC tag for playlist playback
-  Future<void> _processFolderNfcTag(String uuid, Folder folder) async {
+  // Process folder NFC tag for playlist playback.
+  // Returns a check telling whether the playback is still the one started by
+  // this tag (used by pause-on-tag-removal), or null if nothing was started.
+  Future<bool Function()?> _processFolderNfcTag(
+    String uuid,
+    Folder folder,
+  ) async {
     debugPrint('🎶 Folder NFC detected: ${folder.name} (${folder.id})');
 
     // ── Group folder: pick a random child subfolder and play it ──────────
     final children = _folderProvider!.getChildFolders(folder.id);
     if (children.isNotEmpty) {
+      // In pause-on-removal mode, putting the figure back resumes the
+      // subfolder that was interrupted instead of picking a new random one.
+      if (_pauseOnTagRemoval && _musicPlayer!.isPlaylistMode) {
+        final current = children.firstWhereOrNull(
+          (c) => c.id == _musicPlayer!.currentPlaylistFolderId,
+        );
+        if (current != null) {
+          return _playLeafFolder(current);
+        }
+      }
       final target = children[Random().nextInt(children.length)];
       debugPrint(
         '🎲 Group folder – randomly selected subfolder: ${target.name}',
       );
-      await _playLeafFolder(target);
-      return;
+      return _playLeafFolder(target);
     }
 
     // ── Leaf folder: existing behaviour ──────────────────────────────────
-    await _playLeafFolder(folder);
+    return _playLeafFolder(folder);
   }
 
   /// Start (or resume/pause/skip) playback for a leaf folder.
-  Future<void> _playLeafFolder(Folder folder) async {
+  Future<bool Function()?> _playLeafFolder(Folder folder) async {
     final songs = folder.songIds
         .map((id) => _songProvider!.songs.firstWhereOrNull((s) => s.id == id))
         .nonNulls
@@ -196,12 +255,24 @@ class NFCService with ChangeNotifier {
     if (songs.isEmpty) {
       debugPrint('🎶 Folder "${folder.name}" has no songs');
       _notifyUser('Folder "${folder.name}" has no songs');
-      return;
+      return null;
     }
+
+    bool ownsPlayback() =>
+        _musicPlayer!.isPlaylistMode &&
+        _musicPlayer!.currentPlaylistFolderId == folder.id;
 
     // Check if currently playing this folder's playlist
     if (_musicPlayer!.isPlaylistMode &&
         _musicPlayer!.currentPlaylistFolderId == folder.id) {
+      if (_pauseOnTagRemoval) {
+        // Tag placed (again): never pause or skip, just make sure it plays.
+        if (_musicPlayer!.isPaused) {
+          debugPrint('▶️ Tag placed again – resuming folder playlist');
+          await _musicPlayer!.resumeMusic();
+        }
+        return ownsPlayback;
+      }
       if (folder.nfcSkipsToNext) {
         debugPrint('⏭️ NFC rescan: skipping to next track');
         await _musicPlayer!.playNext();
@@ -212,7 +283,7 @@ class NFCService with ChangeNotifier {
         debugPrint('▶️ Resuming folder playlist');
         await _musicPlayer!.resumeMusic();
       }
-      return;
+      return null;
     }
 
     // Start new playlist
@@ -224,6 +295,7 @@ class NFCService with ChangeNotifier {
       startIndex: folder.lastPlayedSongIndex,
       startPositionMs: folder.lastPlayedPositionMs ?? 0,
     );
+    return ownsPlayback;
   }
 
   // Handle NFC tag discovery with music integration
@@ -247,9 +319,14 @@ class NFCService with ChangeNotifier {
       }
 
       final now = DateTime.now();
+      final presenceMode = _pauseOnTagRemoval;
 
-      // Global cooldown to prevent rapid-fire scans of any tag (1000ms)
-      if (_lastScannedTimestamp != null &&
+      // Global cooldown to prevent rapid-fire scans of any tag (1000ms).
+      // Not needed in pause-on-removal mode: placing a tag is idempotent
+      // (always play/resume), and dropping a re-placed tag would leave the
+      // story paused while the figure sits on the reader.
+      if (!presenceMode &&
+          _lastScannedTimestamp != null &&
           now.difference(_lastScannedTimestamp!).inMilliseconds < 1000) {
         debugPrint('⏳ Global cooldown active, ignoring scan');
         return;
@@ -272,14 +349,24 @@ class NFCService with ChangeNotifier {
       // Clear any existing timer
       _debounceTimer?.cancel();
 
+      // A new tag (or the same tag placed again) replaces any tag we were
+      // watching before.
+      stopTagPresenceMonitoring();
+
       // Process the tag
       debugPrint('⚡ Executing NFC processing for: $uuid');
       try {
-        await _processNfcTag(uuid);
+        final ownsPlayback = await _processNfcTag(uuid);
+        if (presenceMode && _pauseOnTagRemoval && ownsPlayback != null) {
+          _startTagPresenceMonitoring(tag, uuid, ownsPlayback);
+        }
       } finally {
         // Add a small delay before allowing next scan to ensure physical removal
-        // and prevent immediate re-triggering
-        await Future.delayed(const Duration(milliseconds: 500));
+        // and prevent immediate re-triggering. Not needed in pause-on-removal
+        // mode, where a quickly re-placed tag must be picked up.
+        if (!presenceMode) {
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
         _isProcessingTag = false;
         debugPrint('✅ Tag processing flag cleared');
         // Clear the UUID to prevent duplicate UI rebuilds that trigger conflict dialogs
@@ -294,8 +381,11 @@ class NFCService with ChangeNotifier {
     }
   }
 
-  // Process NFC tag for music playback with retry mechanism
-  Future<void> _processNfcTag(String uuid) async {
+  // Process NFC tag for music playback with retry mechanism.
+  // Returns a check telling whether the current playback is still the one
+  // this tag started/resumed (used by pause-on-tag-removal), or null if the
+  // tag did not start or resume anything.
+  Future<bool Function()?> _processNfcTag(String uuid) async {
     debugPrint('🔄 ===== NFC TAG PROCESSING STARTED =====');
     debugPrint('🔄 Processing NFC tag: $uuid');
     debugPrint('🔄 Timestamp: ${DateTime.now()}');
@@ -314,7 +404,7 @@ class NFCService with ChangeNotifier {
         debugPrint('🔄 Retrying NFC processing for: $uuid');
         _processNfcTag(uuid);
       });
-      return;
+      return null;
     }
 
     // Step 1: Validate providers with retry mechanism
@@ -345,7 +435,7 @@ class NFCService with ChangeNotifier {
       );
       debugPrint('❌ This suggests a critical initialization issue');
       debugPrint('❌ Please check app initialization and provider setup');
-      return;
+      return null;
     }
 
     // Step 1.5: Check if this UUID matches a folder (works regardless of expansion state)
@@ -355,10 +445,9 @@ class NFCService with ChangeNotifier {
         debugPrint(
           '🔧 Edit mode active - skipping folder playback for tag: $uuid',
         );
-        return;
+        return null;
       }
-      await _processFolderNfcTag(uuid, folder);
-      return;
+      return _processFolderNfcTag(uuid, folder);
     }
 
     // Step 1.6: Check if any folders are open (prevent song playback if no folders open)
@@ -374,7 +463,7 @@ class NFCService with ChangeNotifier {
       );
       _notifyUser('No open folders - Open a folder to play music');
       notifyListeners();
-      return;
+      return null;
     }
 
     // Step 2: Find the song
@@ -388,7 +477,7 @@ class NFCService with ChangeNotifier {
       }
 
       // We keep scanning active to maintain foreground priority and suppress system menu
-      return;
+      return null;
     }
 
     // Step 2.5: Check if we're in edit mode (skip music triggering)
@@ -401,7 +490,7 @@ class NFCService with ChangeNotifier {
       );
       // Still notify listeners to update UI with the detected UUID
       notifyListeners();
-      return;
+      return null;
     }
 
     debugPrint('✅ Found song: ${song.title} at ${song.filePath}');
@@ -430,9 +519,32 @@ class NFCService with ChangeNotifier {
       '🎵 - Currently stopped on this song: $isCurrentlyStoppedOnThisSong',
     );
 
+    bool ownsPlayback() => _musicPlayer!.currentMusicFilePath == song.filePath;
+    bool Function()? result;
+
     // Step 4: Execute action with retry mechanism
     try {
-      if (isCurrentlyPlayingThisSong) {
+      if (_pauseOnTagRemoval) {
+        // Pause-on-removal mode: placing the tag always plays/resumes.
+        if (isCurrentlyPlayingThisSong) {
+          debugPrint('▶️ Action: KEEP PLAYING (tag placed again)');
+        } else if (isCurrentlyPausedOnThisSong) {
+          debugPrint('▶️ Action: RESUME paused song');
+          await _executeWithRetry(
+            'resume',
+            () => _musicPlayer!.resumeMusic(),
+            2,
+          );
+        } else {
+          debugPrint('🎵 Action: START NEW SONG');
+          await _executeWithRetry(
+            'play',
+            () => _musicPlayer!.playMusic(song),
+            3,
+          );
+        }
+        result = ownsPlayback;
+      } else if (isCurrentlyPlayingThisSong) {
         debugPrint('⏸️ Action: PAUSE current song');
         await _executeWithRetry('pause', () => _musicPlayer!.pauseMusic(), 2);
       } else if (isCurrentlyPausedOnThisSong) {
@@ -460,6 +572,126 @@ class NFCService with ChangeNotifier {
 
     debugPrint('✅ ===== NFC TAG PROCESSING COMPLETED =====');
     notifyListeners();
+    return result;
+  }
+
+  // ── Tag presence monitoring ────────────────────────────────────────────────
+
+  /// Starts polling [tag] while it stays on the reader. When it is gone,
+  /// playback is paused if it is still the playback this tag started.
+  void _startTagPresenceMonitoring(
+    NfcTag tag,
+    String uuid,
+    bool Function() ownsPlayback,
+  ) {
+    final probe = _createPresenceProbe(tag);
+    if (probe == null) {
+      debugPrint(
+        '⚠️ Tag $uuid does not support presence checks - '
+        'pause on removal unavailable for this tag',
+      );
+      return;
+    }
+
+    stopTagPresenceMonitoring();
+    final generation = _presenceGeneration;
+    debugPrint('🏷️ Monitoring presence of tag $uuid');
+
+    _presenceTimer = Timer.periodic(_presenceCheckInterval, (_) async {
+      if (_presenceProbeInFlight || generation != _presenceGeneration) return;
+      _presenceProbeInFlight = true;
+      bool present;
+      try {
+        await probe();
+        present = true;
+      } catch (e) {
+        debugPrint('🏷️ Presence probe failed for $uuid: $e');
+        present = false;
+      }
+      // Monitoring may have been stopped/replaced while the probe was running
+      if (generation != _presenceGeneration) return;
+      _presenceProbeInFlight = false;
+
+      if (present) {
+        _presenceFailures = 0;
+        return;
+      }
+      _presenceFailures++;
+      if (_presenceFailures < _presenceFailureThreshold) return;
+
+      stopTagPresenceMonitoring();
+      await _onTagRemoved(uuid, ownsPlayback);
+    });
+  }
+
+  Future<void> _onTagRemoved(String uuid, bool Function() ownsPlayback) async {
+    // When the app is not in the foreground, Android disables the reader and
+    // probes fail although the tag may still be there – don't pause then.
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    if (lifecycle != null && lifecycle != AppLifecycleState.resumed) {
+      debugPrint('🏷️ Tag $uuid lost while app not in foreground - ignoring');
+      return;
+    }
+    if (_musicPlayer == null || !_musicPlayer!.isPlaying || !ownsPlayback()) {
+      debugPrint('🏷️ Tag $uuid removed - nothing of it playing, no action');
+      return;
+    }
+    debugPrint('⏸️ Tag $uuid removed - pausing playback');
+    try {
+      await _executeWithRetry('pause', () => _musicPlayer!.pauseMusic(), 2);
+    } catch (e) {
+      _showErrorToUser('Failed to pause playback: $e');
+    }
+    notifyListeners();
+  }
+
+  /// Builds a cheap command that only succeeds while the tag is in the field.
+  /// Any answer from the tag (even an error status) counts as "present";
+  /// a lost tag makes the platform call throw. Returns null if the tag type
+  /// has no suitable command (e.g. unformatted MIFARE Classic, or iOS, where
+  /// reader sessions are not kept open in the background anyway).
+  Future<void> Function()? _createPresenceProbe(NfcTag tag) {
+    try {
+      final isoDep = IsoDepAndroid.from(tag);
+      if (isoDep != null) {
+        // SELECT (by DF name, empty) – every ISO 7816 card answers with a
+        // status word.
+        return () => isoDep.transceive(
+          Uint8List.fromList([0x00, 0xA4, 0x04, 0x00, 0x00]),
+        );
+      }
+      final ultralight = MifareUltralightAndroid.from(tag);
+      if (ultralight != null) {
+        return () => ultralight.readPages(pageOffset: 0);
+      }
+      final nfcA = NfcAAndroid.from(tag);
+      if (nfcA != null && nfcA.sak == 0x00) {
+        // NFC Forum Type 2 tag (NTAG/Ultralight family, incl. non-NXP chips
+        // Android doesn't expose as MifareUltralight): READ page 0 is a single
+        // short command, much lighter than a full NDEF read.
+        return () => nfcA.transceive(Uint8List.fromList([0x30, 0x00]));
+      }
+      final nfcV = NfcVAndroid.from(tag);
+      if (nfcV != null) {
+        // ISO 15693 INVENTORY (flags: high data rate, inventory, 1 slot;
+        // mask length 0) – mandatory command, supported by all NfcV tags.
+        return () => nfcV.transceive(Uint8List.fromList([0x26, 0x01, 0x00]));
+      }
+      final ndef = NdefAndroid.from(tag);
+      if (ndef != null) {
+        return () => ndef.getNdefMessage();
+      }
+      final nfcF = NfcFAndroid.from(tag);
+      if (nfcF != null) {
+        // FeliCa POLLING for any system code.
+        return () => nfcF.transceive(
+          Uint8List.fromList([0x06, 0x00, 0xFF, 0xFF, 0x00, 0x00]),
+        );
+      }
+    } catch (e) {
+      debugPrint('⚠️ Could not create presence probe: $e');
+    }
+    return null;
   }
 
   // Check if all providers are initialized (quick check without detailed validation)
@@ -807,6 +1039,7 @@ class NFCService with ChangeNotifier {
   }
 
   Future<void> stopNfcSession() async {
+    stopTagPresenceMonitoring();
     _isScanning = false;
     _debounceTimer?.cancel();
     _debounceTimer = null;
@@ -817,6 +1050,7 @@ class NFCService with ChangeNotifier {
 
   @override
   void dispose() {
+    stopTagPresenceMonitoring();
     _debounceTimer?.cancel();
     _messageController.close();
     super.dispose();

@@ -3,7 +3,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:hive/hive.dart';
+import 'package:hive_ce/hive_ce.dart';
 import '../config/flavor_config.dart';
 
 /// Service for managing in-app purchases (IAP) for the Google Play flavor.

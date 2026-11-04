@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+10000
+version: 1.1.0+10100
 
 environment:
   sdk: ^3.10.4
@@ -33,7 +33,7 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^2.0.0
   flutter_localizations:
     sdk: flutter
   nfc_manager: ^4.1.1
@@ -41,15 +41,14 @@ dependencies:
   provider: ^6.0.5
   wakelock_plus: ^1.1.2
   uuid: ^4.5.2
-  file_picker: ^12.3.0
   path: ^1.9.0
   permission_handler: ^13.0.2
-  hive: ^2.2.3
-  hive_flutter: ^1.1.0
+  hive_ce: ^2.22.0
+  hive_ce_flutter: ^2.5.0
   version: ^3.0.0
   url_launcher: ^6.3.1
   tutorial_coach_mark: ^1.2.0
-  kiosk_mode: ^0.9.0
+  kiosk_mode: ^0.10.0
   screen_brightness: ^2.1.11
   path_provider: ^2.1.2
   collection: ^1.18.0
@@ -73,8 +72,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
-  hive_generator: ^2.0.1
-  build_runner: ^2.4.9
+  hive_ce_generator: ^1.12.1
+  build_runner: ^2.17.1
 
 
 # generate icons with: flutter pub run && dart run flutter_launcher_icons

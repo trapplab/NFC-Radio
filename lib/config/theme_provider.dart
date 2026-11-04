@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
+import 'package:hive_ce/hive_ce.dart';
 
 class ThemeProvider with ChangeNotifier {
   Color _currentColor = Colors.white; // Default color
