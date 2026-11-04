@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
+import 'package:hive_ce/hive_ce.dart';
 import 'package:collection/collection.dart';
 import '../l10n/app_localizations.dart';
 import 'storage_service.dart';
@@ -10,13 +10,15 @@ part 'folder.g.dart';
 
 @HiveType(typeId: 2)
 class Folder extends HiveObject {
-  @HiveField(0)
+  // defaultValues keep reading folders saved by older app versions
+  // the same way the previous (hand-tuned) adapter did.
+  @HiveField(0, defaultValue: '')
   String id;
 
-  @HiveField(1)
+  @HiveField(1, defaultValue: 'New Folder')
   String name;
 
-  @HiveField(2)
+  @HiveField(2, defaultValue: <String>[])
   List<String> songIds;
 
   @HiveField(3)

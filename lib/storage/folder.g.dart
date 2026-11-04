@@ -8,7 +8,7 @@ part of 'folder.dart';
 
 class FolderAdapter extends TypeAdapter<Folder> {
   @override
-  final int typeId = 2;
+  final typeId = 2;
 
   @override
   Folder read(BinaryReader reader) {
@@ -17,17 +17,17 @@ class FolderAdapter extends TypeAdapter<Folder> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Folder(
-      id: (fields[0] ?? '') as String,
-      name: (fields[1] ?? 'New Folder') as String,
-      songIds: (fields[2] as List?)?.cast<String>() ?? [],
-      isExpanded: fields[3] as bool? ?? false,
-      position: fields[4] as int? ?? 0,
+      id: fields[0] == null ? '' : fields[0] as String,
+      name: fields[1] == null ? 'New Folder' : fields[1] as String,
+      songIds: fields[2] == null ? [] : (fields[2] as List).cast<String>(),
+      isExpanded: fields[3] == null ? false : fields[3] as bool,
+      position: fields[4] == null ? 0 : (fields[4] as num).toInt(),
       connectedNfcUuid: fields[5] as String?,
-      isShuffleEnabled: fields[6] as bool? ?? false,
-      isLoopPlaylistEnabled: fields[7] as bool? ?? false,
-      lastPlayedSongIndex: fields[8] as int?,
-      lastPlayedPositionMs: fields[9] as int?,
-      nfcSkipsToNext: fields[10] as bool? ?? false,
+      isShuffleEnabled: fields[6] == null ? false : fields[6] as bool,
+      isLoopPlaylistEnabled: fields[7] == null ? false : fields[7] as bool,
+      lastPlayedSongIndex: (fields[8] as num?)?.toInt(),
+      lastPlayedPositionMs: (fields[9] as num?)?.toInt(),
+      nfcSkipsToNext: fields[10] == null ? false : fields[10] as bool,
       parentFolderId: fields[11] as String?,
     );
   }

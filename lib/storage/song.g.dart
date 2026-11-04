@@ -8,7 +8,7 @@ part of 'song.dart';
 
 class SongAdapter extends TypeAdapter<Song> {
   @override
-  final int typeId = 0;
+  final typeId = 0;
 
   @override
   Song read(BinaryReader reader) {
@@ -21,9 +21,9 @@ class SongAdapter extends TypeAdapter<Song> {
       title: fields[1] as String,
       filePath: fields[2] as String,
       connectedNfcUuid: fields[3] as String?,
-      isLoopEnabled: fields[4] as bool,
-      rememberPosition: fields[5] as bool,
-      savedPositionMs: fields[6] as int?,
+      isLoopEnabled: fields[4] == null ? false : fields[4] as bool,
+      rememberPosition: fields[5] == null ? false : fields[5] as bool,
+      savedPositionMs: (fields[6] as num?)?.toInt(),
     );
   }
 
