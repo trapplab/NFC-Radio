@@ -164,6 +164,14 @@ jobs:
           export PUB_CACHE=$(pwd)/.pub-cache
           ./flutter/bin/flutter build appbundle --flavor play --release
 
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      - name: Install fastlane
+        run: gem install fastlane --no-document
+
       - name: Deploy to Open Testing
         working-directory: android
         run: fastlane open_test
