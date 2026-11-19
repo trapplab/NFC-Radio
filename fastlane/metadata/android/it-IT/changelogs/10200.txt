@@ -1,0 +1,7 @@
+## Modificato
+- interfaccia ridisegnata: schede cartelle, brani, player e impostazioni
+- Connessione rapida spostata nella barra superiore con suggerimenti passo passo
+
+## Corretto
+- riproduzione NFC in modalità modifica e connessione rapida
+- pausa più rapida alla rimozione del tag NFC

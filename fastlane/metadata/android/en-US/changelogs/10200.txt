@@ -1,0 +1,7 @@
+## Changed
+- redesigned user interface: new folder cards, song tiles, player and settings
+- Quick Connect moved to the top bar with step-by-step hints
+
+## Fixed
+- NFC playback during edit and Quick Connect mode
+- faster pause when the NFC tag is removed

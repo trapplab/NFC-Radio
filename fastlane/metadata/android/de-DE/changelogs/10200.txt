@@ -1,0 +1,7 @@
+## Geändert
+- neu gestaltete Oberfläche: Ordnerkarten, Titelkacheln, Player und Einstellungen
+- Schnellverbindung in die obere Leiste verschoben, mit Schritt-für-Schritt-Hinweisen
+
+## Behoben
+- NFC-Wiedergabe im Bearbeiten- und Schnellverbindungsmodus
+- schnelleres Pausieren beim Entfernen des NFC-Tags

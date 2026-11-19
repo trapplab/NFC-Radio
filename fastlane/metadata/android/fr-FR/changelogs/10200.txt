@@ -1,0 +1,7 @@
+## Modifié
+- interface repensée : cartes de dossiers, morceaux, lecteur et paramètres
+- Connexion rapide déplacée dans la barre supérieure avec des instructions
+
+## Corrigé
+- lecture NFC en mode édition et connexion rapide
+- pause plus rapide au retrait du tag NFC

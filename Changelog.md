@@ -13,6 +13,16 @@
 
 # Changelog
 
+## [1.2.0]
+### Changed
+- redesigned user interface: new folder cards, song tiles, player and settings
+- Quick Connect moved to the top bar with step-by-step hints
+- storage migrated to hive_ce, dependencies upgraded
+
+### Fixed
+- NFC playback during edit and Quick Connect mode
+- faster pause when the NFC tag is removed
+
 ## [1.1.0]
 ### Added
 - option to pause playback when the NFC tag is removed

@@ -1,0 +1,7 @@
+## Cambiado
+- interfaz rediseñada: tarjetas de carpetas, pistas, reproductor y ajustes
+- Conexión rápida movida a la barra superior con indicaciones paso a paso
+
+## Corregido
+- reproducción NFC en modo edición y conexión rápida
+- pausa más rápida al retirar la etiqueta NFC
