@@ -149,8 +149,6 @@
   "songLimitReached": "Vous avez atteint la limite de 6 chansons par dossier. Pour en ajouter plus, veuillez passer à la version premium.",
   "themeColor": "Couleur du thème",
   "lastDetected": "Dernier détecté : {uuid}",
-  "nowPlaying": "Lecture en cours : {title}",
-  "positionWithTotal": "Position : {current} / {total}",
   "assignedNfc": "NFC assigné : {id}...",
   "edit": "Modifier",
   "connected": "Connecté",
@@ -207,8 +205,12 @@
   "deleteGroupWarning": "Cela supprimera {subCount} sous-dossier(s) et {songCount} chanson(s).",
   "@deleteGroupWarning": {
     "placeholders": {
-      "subCount": {"type": "int"},
-      "songCount": {"type": "int"}
+      "subCount": {
+        "type": "int"
+      },
+      "songCount": {
+        "type": "int"
+      }
     }
   },
   "convertToGroup": "Convertir en groupe",
@@ -216,5 +218,15 @@
   "subfolderName": "Nom du sous-dossier",
   "convert": "Convertir",
   "pauseOnTagRemoval": "Mettre en pause au retrait du tag",
-  "pauseOnTagRemovalDescription": "Poser un tag lance la lecture, le retirer la met en pause. Reposez-le pour reprendre."
+  "pauseOnTagRemovalDescription": "Poser un tag lance la lecture, le retirer la met en pause. Reposez-le pour reprendre.",
+  "play": "Lire",
+  "pause": "Pause",
+  "moreActions": "Plus d'actions",
+  "done": "Terminé",
+  "quickConnectHint": "Touchez un fichier audio ou un dossier, puis approchez un tag NFC de votre téléphone.",
+  "quickConnectHoldTag": "Approchez maintenant un tag NFC de votre téléphone pour connecter « {name} ».",
+  "audioFileCount": "{count, plural, =0{Aucun fichier audio} =1{1 fichier audio} other{{count} fichiers audio}}",
+  "subfolderCount": "{count, plural, =1{1 sous-dossier} other{{count} sous-dossiers}}",
+  "emptyStateTitle": "Créons votre radio",
+  "aboutSection": "À propos"
 }

@@ -8,6 +8,8 @@ class ThemeProvider with ChangeNotifier {
 
   Color get currentColor => _currentColor;
 
+  bool get isDark => _currentColor.toARGB32() == 0xFF000000;
+
   Color get bannerColor {
     final colorARGB = _currentColor.toARGB32();
     switch (colorARGB) {

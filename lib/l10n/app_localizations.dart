@@ -995,18 +995,6 @@ abstract class AppLocalizations {
   /// **'Last detected: {uuid}'**
   String lastDetected(Object uuid);
 
-  /// No description provided for @nowPlaying.
-  ///
-  /// In en, this message translates to:
-  /// **'Now Playing: {title}'**
-  String nowPlaying(Object title);
-
-  /// No description provided for @positionWithTotal.
-  ///
-  /// In en, this message translates to:
-  /// **'Position: {current} / {total}'**
-  String positionWithTotal(Object current, Object total);
-
   /// No description provided for @assignedNfc.
   ///
   /// In en, this message translates to:
@@ -1366,6 +1354,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Placing a tag plays, removing it pauses. Place it again to resume.'**
   String get pauseOnTagRemovalDescription;
+
+  /// No description provided for @play.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get play;
+
+  /// No description provided for @pause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get pause;
+
+  /// No description provided for @moreActions.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get moreActions;
+
+  /// No description provided for @done.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
+  /// No description provided for @quickConnectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap an audio file or folder, then hold an NFC tag to your phone.'**
+  String get quickConnectHint;
+
+  /// No description provided for @quickConnectHoldTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Now hold an NFC tag to your phone to connect \"{name}\".'**
+  String quickConnectHoldTag(String name);
+
+  /// No description provided for @audioFileCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No audio files} =1{1 audio file} other{{count} audio files}}'**
+  String audioFileCount(int count);
+
+  /// No description provided for @subfolderCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 subfolder} other{{count} subfolders}}'**
+  String subfolderCount(int count);
+
+  /// No description provided for @emptyStateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s build your radio'**
+  String get emptyStateTitle;
+
+  /// No description provided for @aboutSection.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get aboutSection;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

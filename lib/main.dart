@@ -29,6 +29,7 @@ import 'config/settings_provider.dart';
 import 'config/theme_provider.dart';
 import 'config/color_chooser.dart';
 import 'config/social_icon_bar.dart';
+import 'config/settings_section_header.dart';
 import 'package:path/path.dart' as p;
 import 'package:url_launcher/url_launcher.dart';
 import 'tutorial/tutorial_service.dart';
@@ -76,16 +77,36 @@ class NFCJukeboxApp extends StatelessWidget {
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
+          final colorScheme = ColorScheme.fromSeed(
+            seedColor: themeProvider.bannerColor,
+            brightness: themeProvider.isDark
+                ? Brightness.dark
+                : Brightness.light,
+          );
           return MaterialApp(
             title: 'NFC Radio',
             theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: themeProvider.currentColor,
-                brightness: themeProvider.currentColor == Colors.black
-                    ? Brightness.dark
-                    : Brightness.light,
-              ),
+              colorScheme: colorScheme,
               useMaterial3: true,
+              appBarTheme: AppBarTheme(
+                backgroundColor: themeProvider.bannerColor,
+                foregroundColor: Colors.white,
+                centerTitle: false,
+              ),
+              cardTheme: CardThemeData(
+                elevation: 0,
+                margin: EdgeInsets.zero,
+                color: colorScheme.surfaceContainerLow,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              snackBarTheme: const SnackBarThemeData(
+                behavior: SnackBarBehavior.floating,
+              ),
+              bottomSheetTheme: const BottomSheetThemeData(
+                showDragHandle: true,
+              ),
             ),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -129,6 +150,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
   final GlobalKey _attachFileButtonKey = GlobalKey();
   final GlobalKey _nfcAreaKey = GlobalKey();
   final GlobalKey _settingsMenuKey = GlobalKey();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -846,34 +868,41 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
     final iapService = Provider.of<IAPService>(context);
 
     return Scaffold(
+      key: _scaffoldKey,
       endDrawer: Drawer(
         child: Consumer<SettingsProvider>(
           builder: (context, settings, child) {
             return ListView(
               padding: EdgeInsets.zero,
               children: [
-                DrawerHeader(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  child: Text(
-                    AppLocalizations.of(context)!.settingsTitle,
-                    style: const TextStyle(color: Colors.white, fontSize: 24),
-                  ),
-                ),
-                const Divider(),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    AppLocalizations.of(context)!.audioPacksTitle,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.settings,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          AppLocalizations.of(context)!.settingsTitle,
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                      ],
                     ),
                   ),
                 ),
+                const Divider(),
+                SettingsSectionHeader(
+                  AppLocalizations.of(context)!.audioPacksTitle,
+                ),
                 if (_isLoadingGithubFolders)
-                  const Center(child: CircularProgressIndicator())
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
                 else if (_githubFolders == null || _githubFolders!.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -909,6 +938,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                     }).toList(),
                   ),
                 SwitchListTile(
+                  secondary: const Icon(Icons.audio_file_outlined),
                   title: Text(AppLocalizations.of(context)!.browseAudioOnly),
                   subtitle: Text(
                     settings.filterAudioOnly
@@ -920,7 +950,11 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                     settings.setFilterAudioOnly(value);
                   },
                 ),
+                SettingsSectionHeader(
+                  AppLocalizations.of(context)!.playbackOptions,
+                ),
                 SwitchListTile(
+                  secondary: const Icon(Icons.screen_lock_portrait_outlined),
                   title: Text(AppLocalizations.of(context)!.useKioskMode),
                   subtitle: Text(
                     AppLocalizations.of(context)!.requiresSystemAlertPermission,
@@ -931,6 +965,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                   },
                 ),
                 SwitchListTile(
+                  secondary: const Icon(Icons.lock_outline),
                   title: Text(
                     AppLocalizations.of(context)!.showAudioControlsOnLockscreen,
                   ),
@@ -940,6 +975,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                   },
                 ),
                 SwitchListTile(
+                  secondary: const Icon(Icons.nfc),
                   title: Text(AppLocalizations.of(context)!.pauseOnTagRemoval),
                   subtitle: Text(
                     AppLocalizations.of(context)!.pauseOnTagRemovalDescription,
@@ -1081,12 +1117,13 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                     ],
                   ],
                 ),
-                const Divider(),
                 const ColorChooser(),
-                const Divider(),
+                SettingsSectionHeader(
+                  AppLocalizations.of(context)!.aboutSection,
+                ),
                 const SocialIconBar(),
-                const Divider(),
                 ListTile(
+                  leading: const Icon(Icons.info_outline),
                   title: Text(AppLocalizations.of(context)!.appVersion),
                   subtitle: Text(
                     _appVersion.isNotEmpty ? 'v$_appVersion' : 'Loading...',
@@ -1104,19 +1141,28 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
         ),
       ),
       appBar: AppBar(
-        backgroundColor: Provider.of<ThemeProvider>(context).bannerColor,
         title: Text(AppLocalizations.of(context)!.appTitle),
         actions: [
           // Upgrade info button (only for GP flavor when not premium)
           if (AppConfig.isGooglePlayRelease && !iapService.isPremium)
             IconButton(
-              icon: Icon(
-                Icons.info_outline,
-                color: Theme.of(context).colorScheme.onPrimary,
-              ),
+              icon: const Icon(Icons.workspace_premium_outlined),
               onPressed: () => _showUpgradeDialog(context),
               tooltip: AppLocalizations.of(context)!.upgradeToPremium,
             ),
+          IconButton(
+            isSelected: _quickConnectMode,
+            icon: const Icon(Icons.nfc_outlined),
+            selectedIcon: Icon(
+              Icons.nfc,
+              color: Provider.of<ThemeProvider>(context).bannerColor,
+            ),
+            style: _quickConnectMode
+                ? IconButton.styleFrom(backgroundColor: Colors.white)
+                : null,
+            onPressed: _toggleQuickConnectMode,
+            tooltip: AppLocalizations.of(context)!.quickConnectTagMode,
+          ),
           // Debug info button (debug only)
           if (kDebugMode)
             IconButton(
@@ -1134,7 +1180,7 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
           Builder(
             builder: (context) => IconButton(
               key: _settingsMenuKey,
-              icon: const Icon(Icons.menu),
+              icon: const Icon(Icons.settings_outlined),
               onPressed: () {
                 TutorialService.instance.markSettingsTutorialShown();
                 Scaffold.of(context).openEndDrawer();
@@ -1144,11 +1190,42 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
           ),
         ],
       ),
+      floatingActionButton:
+          _quickConnectMode ||
+              Provider.of<FolderProvider>(context).rootFolders.isEmpty
+          ? null
+          : FloatingActionButton.extended(
+              key: _addFolderButtonKey,
+              heroTag: 'add_folder_fab',
+              onPressed: () {
+                final folderProvider = Provider.of<FolderProvider>(
+                  context,
+                  listen: false,
+                );
+                if (folderProvider.isFolderLimitReached()) {
+                  folderProvider.showFolderLimitDialog(context);
+                } else {
+                  _showAddFolderDialog(context, folderProvider);
+                }
+              },
+              icon: const Icon(Icons.create_new_folder_outlined),
+              label: Text(AppLocalizations.of(context)!.addNewFolder),
+            ),
+      bottomNavigationBar: nfcService.isInEditMode
+          ? null
+          : const SafeArea(top: false, child: PlayerWidget()),
       body: Column(
         children: [
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            alignment: Alignment.topCenter,
+            child: _quickConnectMode
+                ? _buildQuickConnectBanner(context)
+                : const SizedBox(width: double.infinity),
+          ),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.only(bottom: 150),
+              padding: const EdgeInsets.only(top: 8, bottom: 96),
               child: Column(
                 children: [
                   // NFC Status Section (debug only)
@@ -1250,51 +1327,34 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                   // Vertical ListView for folders
                   Consumer<FolderProvider>(
                     builder: (context, folderProvider, child) {
-                      return Column(
-                        children: [
-                          // Folders list or empty state message
-                          if (folderProvider.rootFolders.isEmpty) ...[
-                            Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Text(
-                                AppLocalizations.of(context)!.noFoldersYet,
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                            ),
-                            // Add button when no folders exist
-                            _buildAddFolderButton(context, folderProvider),
-                          ] else ...[
-                            ReorderableListView.builder(
-                              buildDefaultDragHandles: false,
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: folderProvider.rootFolders.length,
-                              itemBuilder: (context, index) {
-                                final folder =
-                                    folderProvider.rootFolders[index];
-                                return _buildDraggableFolderWidget(
-                                  context,
-                                  folder,
-                                  folderProvider,
-                                  songProvider,
-                                  musicPlayer,
-                                  index,
-                                );
-                              },
-                              onReorder: (oldIndex, newIndex) {
-                                folderProvider.reorderFolders(
-                                  oldIndex,
-                                  newIndex,
-                                );
-                              },
-                            ),
-                            // Add button at the end (not reorderable)
-                            _buildAddFolderButton(context, folderProvider),
-                          ],
-                        ],
+                      if (folderProvider.rootFolders.isEmpty) {
+                        return _buildEmptyState(context, folderProvider);
+                      }
+                      return ReorderableListView.builder(
+                        buildDefaultDragHandles: false,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: folderProvider.rootFolders.length,
+                        proxyDecorator: (child, index, animation) => Material(
+                          elevation: 6,
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(16),
+                          child: child,
+                        ),
+                        itemBuilder: (context, index) {
+                          final folder = folderProvider.rootFolders[index];
+                          return _buildDraggableFolderWidget(
+                            context,
+                            folder,
+                            folderProvider,
+                            songProvider,
+                            musicPlayer,
+                            index,
+                          );
+                        },
+                        onReorder: (oldIndex, newIndex) {
+                          folderProvider.reorderFolders(oldIndex, newIndex);
+                        },
                       );
                     },
                   ),
@@ -1302,25 +1362,128 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
               ),
             ),
           ),
-          // Music Player Section - Fixed at the bottom
-          // Audio player should only be visible when not in "Add New Song" or "Edit Song" mode
-          // Since nfcService.setEditMode is true when in those dialogs, we can use that flag
-          if (!nfcService.isInEditMode) const PlayerWidget(),
         ],
       ),
     );
   }
 
-  Widget _buildAddFolderButton(
-    BuildContext context,
-    FolderProvider folderProvider,
-  ) {
-    return Column(
-      children: [
-        Container(
-          key: _addFolderButtonKey,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: ElevatedButton.icon(
+  void _toggleQuickConnectMode() {
+    final nfcService = Provider.of<NFCService>(context, listen: false);
+    setState(() {
+      _quickConnectMode = !_quickConnectMode;
+      if (!_quickConnectMode) {
+        _quickConnectSelectedSongId = null;
+        _quickConnectSelectedFolderId = null;
+      }
+    });
+    nfcService.setEditMode(_quickConnectMode);
+  }
+
+  Widget _buildQuickConnectBanner(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+
+    String? selectedName;
+    if (_quickConnectSelectedSongId != null) {
+      selectedName = Provider.of<SongProvider>(context, listen: false).songs
+          .firstWhereOrNull((s) => s.id == _quickConnectSelectedSongId)
+          ?.title;
+    } else if (_quickConnectSelectedFolderId != null) {
+      selectedName = Provider.of<FolderProvider>(context, listen: false).folders
+          .firstWhereOrNull((f) => f.id == _quickConnectSelectedFolderId)
+          ?.name;
+    }
+    final bool hasSelection = selectedName != null;
+
+    return Material(
+      color: hasSelection ? scheme.tertiaryContainer : scheme.primaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+        child: Row(
+          children: [
+            Icon(
+              hasSelection ? Icons.contactless : Icons.touch_app_outlined,
+              color: hasSelection
+                  ? scheme.onTertiaryContainer
+                  : scheme.onPrimaryContainer,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l10n.quickConnectTagMode,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: hasSelection
+                          ? scheme.onTertiaryContainer
+                          : scheme.onPrimaryContainer,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    hasSelection
+                        ? l10n.quickConnectHoldTag(selectedName)
+                        : l10n.quickConnectHint,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: hasSelection
+                          ? scheme.onTertiaryContainer
+                          : scheme.onPrimaryContainer,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: _toggleQuickConnectMode,
+              child: Text(l10n.done),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, FolderProvider folderProvider) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final bool hasPacks = _githubFolders != null && _githubFolders!.isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 48, 32, 16),
+      child: Column(
+        children: [
+          Container(
+            width: 112,
+            height: 112,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.library_music_outlined,
+              size: 56,
+              color: theme.colorScheme.onPrimaryContainer,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            l10n.emptyStateTitle,
+            style: theme.textTheme.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.noFoldersYet,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            key: _addFolderButtonKey,
             onPressed: () {
               if (folderProvider.isFolderLimitReached()) {
                 folderProvider.showFolderLimitDialog(context);
@@ -1328,44 +1491,67 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
                 _showAddFolderDialog(context, folderProvider);
               }
             },
-            icon: const Icon(Icons.create_new_folder),
-            label: Text(AppLocalizations.of(context)!.addNewFolder),
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 50),
+            icon: const Icon(Icons.create_new_folder_outlined),
+            label: Text(l10n.addNewFolder),
+            style: FilledButton.styleFrom(minimumSize: const Size(220, 48)),
+          ),
+          if (hasPacks) ...[
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+              icon: const Icon(Icons.cloud_download_outlined),
+              label: Text(l10n.audioStarterPacks),
+              style: OutlinedButton.styleFrom(minimumSize: const Size(220, 48)),
             ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddTile(
+    BuildContext context, {
+    Key? key,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      key: key,
+      color: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: scheme.outlineVariant),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 32,
+                child: Icon(icon, size: 20, color: scheme.primary),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: scheme.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
         ),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: ElevatedButton.icon(
-            onPressed: () {
-              final nfcService = Provider.of<NFCService>(
-                context,
-                listen: false,
-              );
-              setState(() {
-                _quickConnectMode = !_quickConnectMode;
-                if (!_quickConnectMode) {
-                  _quickConnectSelectedSongId = null;
-                  _quickConnectSelectedFolderId = null;
-                }
-              });
-              nfcService.setEditMode(_quickConnectMode);
-            },
-            icon: Icon(_quickConnectMode ? Icons.nfc : Icons.nfc_outlined),
-            label: Text(AppLocalizations.of(context)!.quickConnectTagMode),
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 50),
-              backgroundColor: _quickConnectMode
-                  ? Theme.of(context).colorScheme.primary
-                  : null,
-              foregroundColor: _quickConnectMode
-                  ? Theme.of(context).colorScheme.onPrimary
-                  : null,
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -1379,38 +1565,18 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
         folderProvider.folders.isNotEmpty &&
         folderProvider.folders.first.id == folderId;
 
-    return Container(
+    return _buildAddTile(
+      context,
       key: isFirstFolder ? _addSongButtonKey : null,
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey, width: 1),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () {
-          if (folderProvider.isSongLimitReached(folderId)) {
-            folderProvider.showSongLimitDialog(context);
-          } else {
-            _showSongDialog(context, songProvider, folderId: folderId);
-          }
-        },
-        child: Row(
-          children: [
-            const SizedBox(width: 8),
-            const Icon(Icons.add, size: 18, color: Colors.grey),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                AppLocalizations.of(context)!.addAudioFile,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
+      icon: Icons.add,
+      label: AppLocalizations.of(context)!.addAudioFile,
+      onTap: () {
+        if (folderProvider.isSongLimitReached(folderId)) {
+          folderProvider.showSongLimitDialog(context);
+        } else {
+          _showSongDialog(context, songProvider, folderId: folderId);
+        }
+      },
     );
   }
 
@@ -1421,42 +1587,22 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
   ) {
     final folderProvider = Provider.of<FolderProvider>(context, listen: false);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey, width: 1),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () {
-          if (folderProvider.isSongLimitReached(folderId)) {
-            folderProvider.showSongLimitDialog(context);
-            return;
-          }
-          _pickMultipleAudioFiles(
-            context,
-            songProvider,
-            folderProvider,
-            folderId,
-          );
-        },
-        child: Row(
-          children: [
-            const SizedBox(width: 8),
-            const Icon(Icons.playlist_add, size: 18, color: Colors.grey),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                AppLocalizations.of(context)!.addMultipleAudioFiles,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return _buildAddTile(
+      context,
+      icon: Icons.playlist_add,
+      label: AppLocalizations.of(context)!.addMultipleAudioFiles,
+      onTap: () {
+        if (folderProvider.isSongLimitReached(folderId)) {
+          folderProvider.showSongLimitDialog(context);
+          return;
+        }
+        _pickMultipleAudioFiles(
+          context,
+          songProvider,
+          folderProvider,
+          folderId,
+        );
+      },
     );
   }
 
@@ -2391,416 +2537,464 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
     }
   }
 
+  List<Song> _songsOfFolder(Folder folder, SongProvider songProvider) {
+    final byId = {for (final s in songProvider.songs) s.id: s};
+    return folder.songIds.map((id) => byId[id]).nonNulls.toList();
+  }
+
+  void _toggleQuickConnectSelection({String? songId, String? folderId}) {
+    setState(() {
+      if (songId != null) {
+        _quickConnectSelectedSongId = _quickConnectSelectedSongId == songId
+            ? null
+            : songId;
+        _quickConnectSelectedFolderId = null;
+      } else if (folderId != null) {
+        _quickConnectSelectedFolderId =
+            _quickConnectSelectedFolderId == folderId ? null : folderId;
+        _quickConnectSelectedSongId = null;
+      }
+    });
+  }
+
+  void _playOrToggleFolder({
+    required Folder folder,
+    required List<Folder> children,
+    required List<Song> folderSongs,
+    required bool isActive,
+    required SongProvider songProvider,
+    required MusicPlayer musicPlayer,
+  }) {
+    if (isActive) {
+      if (musicPlayer.isPlaying) {
+        musicPlayer.pauseMusic();
+      } else {
+        musicPlayer.resumeMusic();
+      }
+      return;
+    }
+
+    Folder target = folder;
+    List<Song> songs = folderSongs;
+    if (children.isNotEmpty) {
+      // Group folder: play a random subfolder's playlist
+      final withSongs = children.where((c) => c.songIds.isNotEmpty).toList();
+      if (withSongs.isEmpty) return;
+      target = withSongs[Random().nextInt(withSongs.length)];
+      songs = _songsOfFolder(target, songProvider);
+    }
+    if (songs.isEmpty) return;
+
+    musicPlayer.startPlaylist(
+      songs: songs,
+      folderId: target.id,
+      shuffle: target.isShuffleEnabled,
+      loopPlaylist: target.isLoopPlaylistEnabled,
+      startIndex: target.lastPlayedSongIndex,
+      startPositionMs: target.lastPlayedPositionMs ?? 0,
+    );
+  }
+
   Widget _buildFolderWidget(
     BuildContext context,
     Folder folder,
     FolderProvider folderProvider,
     SongProvider songProvider,
-    MusicPlayer musicPlayer,
-    int index,
-  ) {
-    final List<Folder> children = folderProvider.getChildFolders(folder.id);
-    final bool isGroupFolder = children.isNotEmpty;
+    MusicPlayer musicPlayer, {
+    int? reorderIndex,
+    bool isSubfolder = false,
+  }) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
-    // Get songs in this folder (only used for leaf folders)
-    final folderSongs =
-        songProvider.songs
-            .where((song) => folder.songIds.contains(song.id))
-            .toList()
-          ..sort(
-            (a, b) => folder.songIds
-                .indexOf(a.id)
-                .compareTo(folder.songIds.indexOf(b.id)),
-          );
+    final List<Folder> children = isSubfolder
+        ? const []
+        : folderProvider.getChildFolders(folder.id);
+    final bool isGroupFolder = children.isNotEmpty;
+    final List<Song> folderSongs = isGroupFolder
+        ? const []
+        : _songsOfFolder(folder, songProvider);
 
     final bool isFolderNfcConnected = folder.connectedNfcUuid != null;
     // For group folders: playlist is active if ANY child subfolder is playing
     final String? activeFolderId = musicPlayer.isPlaylistMode
         ? musicPlayer.currentPlaylistFolderId
         : null;
-    final bool isFolderPlaylistActive =
+    final bool isActive =
         activeFolderId == folder.id ||
         (isGroupFolder && children.any((c) => c.id == activeFolderId));
+    final bool canPlay = isGroupFolder
+        ? children.any((c) => c.songIds.isNotEmpty)
+        : folderSongs.isNotEmpty;
 
-    final bool isQCSelectedFolder = _quickConnectSelectedFolderId == folder.id;
-    final bool isQCFlashFolder = _quickConnectFlashSuccessIds.contains(
-      folder.id,
-    );
+    final bool isQCSelected = _quickConnectSelectedFolderId == folder.id;
+    final bool isQCFlash = _quickConnectFlashSuccessIds.contains(folder.id);
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isQCFlashFolder
-            ? Colors.green.withValues(alpha: 0.15)
-            : Provider.of<ThemeProvider>(context).footerColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isQCFlashFolder
-              ? Colors.green
-              : isQCSelectedFolder
-              ? Theme.of(context).colorScheme.primary
-              : isFolderPlaylistActive
-              ? Colors.green
-              : Provider.of<ThemeProvider>(
-                  context,
-                ).bannerColor.withValues(alpha: 0.3),
-          width: isQCFlashFolder || isQCSelectedFolder || isFolderPlaylistActive
-              ? 2
-              : 1,
+    final double radius = isSubfolder ? 12 : 16;
+    final Color borderColor = isQCFlash
+        ? Colors.green
+        : isQCSelected || isActive
+        ? scheme.primary
+        : scheme.outlineVariant.withValues(alpha: 0.6);
+    final double borderWidth = isQCFlash || isQCSelected || isActive ? 2 : 1;
+
+    final String subtitle = isGroupFolder
+        ? l10n.subfolderCount(children.length)
+        : l10n.audioFileCount(folderSongs.length);
+
+    Widget trailingAction;
+    if (_quickConnectMode) {
+      trailingAction = Padding(
+        padding: const EdgeInsets.all(8),
+        child: Icon(
+          isQCSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+          color: isQCSelected ? scheme.primary : scheme.onSurfaceVariant,
         ),
+      );
+    } else {
+      final bool showPause = isActive && musicPlayer.isPlaying;
+      final onPressed = canPlay
+          ? () => _playOrToggleFolder(
+              folder: folder,
+              children: children,
+              folderSongs: folderSongs,
+              isActive: isActive,
+              songProvider: songProvider,
+              musicPlayer: musicPlayer,
+            )
+          : null;
+      final icon = Icon(showPause ? Icons.pause : Icons.play_arrow);
+      final tooltip = showPause ? l10n.pause : l10n.play;
+      trailingAction = isActive
+          ? IconButton.filled(
+              onPressed: onPressed,
+              icon: icon,
+              tooltip: tooltip,
+            )
+          : IconButton.filledTonal(
+              onPressed: onPressed,
+              icon: icon,
+              tooltip: tooltip,
+            );
+    }
+
+    final header = InkWell(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(radius),
+        bottom: folder.isExpanded ? Radius.zero : Radius.circular(radius),
       ),
-      child: Column(
-        children: [
-          // Folder header
-          InkWell(
-            onTap: _quickConnectMode
-                ? () {
-                    setState(() {
-                      if (_quickConnectSelectedFolderId == folder.id) {
-                        _quickConnectSelectedFolderId = null;
-                      } else {
-                        _quickConnectSelectedFolderId = folder.id;
-                        _quickConnectSelectedSongId = null;
-                      }
-                    });
-                  }
-                : () => folderProvider.toggleFolderExpansion(folder.id),
-            onLongPress: () => _showFolderActionsDialog(
-              context,
-              folder,
-              folderProvider,
-              musicPlayer,
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(16),
+      onTap: _quickConnectMode
+          ? () {
+              if (!folder.isExpanded) {
+                folderProvider.toggleFolderExpansion(folder.id);
+              }
+              _toggleQuickConnectSelection(folderId: folder.id);
+            }
+          : () => folderProvider.toggleFolderExpansion(folder.id),
+      onLongPress: () => _showFolderActionsDialog(
+        context,
+        folder,
+        folderProvider,
+        musicPlayer,
+      ),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          isSubfolder ? 10 : 12,
+          isSubfolder ? 8 : 12,
+          4,
+          isSubfolder ? 8 : 12,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: isSubfolder ? 36 : 44,
+              height: isSubfolder ? 36 : 44,
               decoration: BoxDecoration(
-                color: folder.isExpanded
-                    ? Provider.of<ThemeProvider>(
-                        context,
-                      ).bannerColor.withValues(alpha: 0.1)
-                    : Colors.transparent,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(8),
-                ),
+                color: isActive ? scheme.primary : scheme.primaryContainer,
+                borderRadius: BorderRadius.circular(isSubfolder ? 10 : 12),
               ),
-              child: Row(
+              child: Icon(
+                isGroupFolder
+                    ? Icons.topic_outlined
+                    : (folder.isExpanded
+                          ? Icons.folder_open_outlined
+                          : Icons.folder_outlined),
+                size: isSubfolder ? 20 : 24,
+                color: isActive ? scheme.onPrimary : scheme.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    isGroupFolder
-                        ? Icons.topic
-                        : (folder.isExpanded
-                              ? Icons.folder_open
-                              : Icons.folder),
-                    color: Provider.of<ThemeProvider>(context).bannerColor,
-                    size: 30,
+                  Text(
+                    folder.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style:
+                        (isSubfolder
+                                ? theme.textTheme.titleSmall
+                                : theme.textTheme.titleMedium)
+                            ?.copyWith(fontWeight: FontWeight.w600),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      folder.name,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Provider.of<ThemeProvider>(context).bannerColor,
-                      ),
-                    ),
-                  ),
-                  if (isFolderNfcConnected)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: Icon(
-                        Icons.nfc,
-                        size: 16,
-                        color: Provider.of<ThemeProvider>(
-                          context,
-                        ).bannerColor.withValues(alpha: 0.6),
-                      ),
-                    ),
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () =>
-                        folderProvider.toggleFolderExpansion(folder.id),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Icon(
-                        folder.isExpanded
-                            ? Icons.expand_less
-                            : Icons.expand_more,
-                        color: Provider.of<ThemeProvider>(context).bannerColor,
-                      ),
-                    ),
-                  ),
-                  if (!_quickConnectMode)
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        if (isFolderPlaylistActive) {
-                          if (musicPlayer.isPlaying) {
-                            musicPlayer.pauseMusic();
-                          } else {
-                            musicPlayer.resumeMusic();
-                          }
-                        } else if (isGroupFolder) {
-                          // Group folder: play a random subfolder's playlist
-                          final withSongs = children
-                              .where((c) => c.songIds.isNotEmpty)
-                              .toList();
-                          if (withSongs.isNotEmpty) {
-                            final target =
-                                withSongs[Random().nextInt(withSongs.length)];
-                            final songs = target.songIds
-                                .map(
-                                  (id) => songProvider.songs.firstWhereOrNull(
-                                    (s) => s.id == id,
-                                  ),
-                                )
-                                .nonNulls
-                                .toList();
-                            if (songs.isNotEmpty) {
-                              musicPlayer.startPlaylist(
-                                songs: songs,
-                                folderId: target.id,
-                                shuffle: target.isShuffleEnabled,
-                                loopPlaylist: target.isLoopPlaylistEnabled,
-                                startIndex: target.lastPlayedSongIndex,
-                                startPositionMs:
-                                    target.lastPlayedPositionMs ?? 0,
-                              );
-                            }
-                          }
-                        } else if (folderSongs.isNotEmpty) {
-                          musicPlayer.startPlaylist(
-                            songs: folderSongs,
-                            folderId: folder.id,
-                            shuffle: folder.isShuffleEnabled,
-                            loopPlaylist: folder.isLoopPlaylistEnabled,
-                            startIndex: folder.lastPlayedSongIndex,
-                            startPositionMs: folder.lastPlayedPositionMs ?? 0,
-                          );
-                        }
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: Icon(
-                          isFolderPlaylistActive && musicPlayer.isPlaying
-                              ? Icons.pause_circle
-                              : Icons.play_circle,
-                          color: isFolderPlaylistActive
-                              ? Colors.green
-                              : Colors.grey,
-                          size: 20,
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
-                    ),
-                  ReorderableDragStartListener(
-                    index: index,
-                    child: IconButton(
-                      icon: const Icon(Icons.drag_handle, size: 18),
-                      onPressed: () {},
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
+                      if (isFolderNfcConnected) ...[
+                        const SizedBox(width: 8),
+                        Icon(Icons.nfc, size: 14, color: scheme.primary),
+                      ],
+                    ],
                   ),
                 ],
               ),
             ),
-          ),
-
-          // Folder content
-          if (folder.isExpanded) ...[
-            if (isGroupFolder)
-              _buildGroupFolderContent(
+            trailingAction,
+            IconButton(
+              icon: const Icon(Icons.more_vert),
+              tooltip: l10n.moreActions,
+              onPressed: () => _showFolderActionsDialog(
                 context,
                 folder,
-                children,
                 folderProvider,
-                songProvider,
                 musicPlayer,
-              )
-            else
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  const double maxTileExtent = 250;
-                  const double spacing = 8;
-                  final int columns = (constraints.maxWidth / maxTileExtent)
-                      .ceil()
-                      .clamp(1, 100);
-                  final double tileWidth =
-                      (constraints.maxWidth - spacing * (columns - 1)) /
-                      columns;
-                  final double tileHeight = tileWidth / 2.8;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (folderSongs.isNotEmpty)
-                        GridView.extent(
-                          maxCrossAxisExtent: maxTileExtent,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisSpacing: spacing,
-                          mainAxisSpacing: spacing,
-                          childAspectRatio: 2.8,
-                          padding: const EdgeInsets.only(
-                            top: 8,
-                            bottom: spacing,
-                          ),
-                          children: folderSongs.map((song) {
-                            final bool isQCSelected =
-                                _quickConnectSelectedSongId == song.id;
-                            final bool isQCFlash = _quickConnectFlashSuccessIds
-                                .contains(song.id);
-                            return GestureDetector(
-                              onTap: _quickConnectMode
-                                  ? () {
-                                      setState(() {
-                                        if (_quickConnectSelectedSongId ==
-                                            song.id) {
-                                          _quickConnectSelectedSongId = null;
-                                        } else {
-                                          _quickConnectSelectedSongId = song.id;
-                                          _quickConnectSelectedFolderId = null;
-                                        }
-                                      });
-                                    }
-                                  : null,
-                              onLongPress: _quickConnectMode
-                                  ? null
-                                  : () {
-                                      _showSongActionsDialog(
-                                        context,
-                                        song,
-                                        folder.id,
-                                        folderProvider,
-                                        songProvider,
-                                      );
-                                    },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: isQCFlash
-                                      ? Colors.green.withValues(alpha: 0.25)
-                                      : isQCSelected
-                                      ? Theme.of(context).colorScheme.primary
-                                            .withValues(alpha: 0.15)
-                                      : Provider.of<ThemeProvider>(
-                                          context,
-                                        ).bannerColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: isQCFlash
-                                      ? Border.all(
-                                          color: Colors.green,
-                                          width: 3,
-                                        )
-                                      : isQCSelected
-                                      ? Border.all(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                          width: 2,
-                                        )
-                                      : song.connectedNfcUuid != null
-                                      ? Border.all(
-                                          color: Colors.green,
-                                          width: 2,
-                                        )
-                                      : null,
-                                ),
-                                child: Row(
-                                  children: [
-                                    const SizedBox(width: 8),
-                                    Icon(
-                                      song.connectedNfcUuid != null
-                                          ? Icons.music_note
-                                          : Icons.music_off,
-                                      size: 18,
-                                      color: song.connectedNfcUuid != null
-                                          ? Colors.green
-                                          : Colors.grey,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        song.title,
-                                        style: const TextStyle(fontSize: 12),
-                                        maxLines: 4,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    if (!_quickConnectMode)
-                                      IconButton(
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(
-                                          minWidth: 32,
-                                          minHeight: 32,
-                                        ),
-                                        icon: Icon(
-                                          musicPlayer.isSongPlaying(
-                                                song.filePath,
-                                              )
-                                              ? Icons.pause
-                                              : Icons.play_arrow,
-                                          size: 20,
-                                          color:
-                                              musicPlayer.isSongPlaying(
-                                                song.filePath,
-                                              )
-                                              ? Colors.red
-                                              : musicPlayer.isSongPaused(
-                                                  song.filePath,
-                                                )
-                                              ? Colors.orange
-                                              : Colors.blue,
-                                        ),
-                                        onPressed: () async {
-                                          if (musicPlayer.isSongPlaying(
-                                                song.filePath,
-                                              ) ||
-                                              musicPlayer.isSongPaused(
-                                                song.filePath,
-                                              )) {
-                                            await musicPlayer.togglePlayPause();
-                                          } else {
-                                            await musicPlayer.playMusic(song);
-                                          }
-                                        },
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 0, bottom: 8),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: tileWidth,
-                              height: tileHeight,
-                              child: _buildAddSongGridTile(
-                                context,
-                                songProvider,
-                                folder.id,
-                              ),
-                            ),
-                            const SizedBox(width: spacing),
-                            SizedBox(
-                              width: tileWidth,
-                              height: tileHeight,
-                              child: _buildAddMultipleGridTile(
-                                context,
-                                songProvider,
-                                folder.id,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                },
+              ),
+            ),
+            if (reorderIndex != null)
+              ReorderableDragStartListener(
+                index: reorderIndex,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 12,
+                  ),
+                  child: Icon(
+                    Icons.drag_indicator,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
               ),
           ],
+        ),
+      ),
+    );
+
+    Widget content;
+    if (!folder.isExpanded) {
+      content = const SizedBox(width: double.infinity);
+    } else if (isGroupFolder) {
+      content = _buildGroupFolderContent(
+        context,
+        folder,
+        children,
+        folderProvider,
+        songProvider,
+        musicPlayer,
+      );
+    } else {
+      content = Padding(
+        padding: EdgeInsets.fromLTRB(
+          isSubfolder ? 10 : 12,
+          0,
+          isSubfolder ? 10 : 12,
+          isSubfolder ? 10 : 12,
+        ),
+        child: _buildSongGrid(
+          context,
+          folder,
+          folderSongs,
+          folderProvider,
+          songProvider,
+          musicPlayer,
+        ),
+      );
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      decoration: BoxDecoration(
+        color: isQCFlash
+            ? Colors.green.withValues(alpha: 0.15)
+            : isSubfolder
+            ? scheme.surface
+            : scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: borderColor, width: borderWidth),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            header,
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: content,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSongGrid(
+    BuildContext context,
+    Folder folder,
+    List<Song> folderSongs,
+    FolderProvider folderProvider,
+    SongProvider songProvider,
+    MusicPlayer musicPlayer,
+  ) {
+    return GridView.extent(
+      maxCrossAxisExtent: 250,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
+      childAspectRatio: 2.8,
+      padding: EdgeInsets.zero,
+      children: [
+        ...folderSongs.map(
+          (song) => _buildSongTile(
+            context,
+            song,
+            folder.id,
+            folderProvider,
+            songProvider,
+            musicPlayer,
+          ),
+        ),
+        if (!_quickConnectMode) ...[
+          _buildAddSongGridTile(context, songProvider, folder.id),
+          _buildAddMultipleGridTile(context, songProvider, folder.id),
         ],
+      ],
+    );
+  }
+
+  Widget _buildSongTile(
+    BuildContext context,
+    Song song,
+    String folderId,
+    FolderProvider folderProvider,
+    SongProvider songProvider,
+    MusicPlayer musicPlayer,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+    final bool isPlaying = musicPlayer.isSongPlaying(song.filePath);
+    final bool isPaused = musicPlayer.isSongPaused(song.filePath);
+    final bool isCurrent = isPlaying || isPaused;
+    final bool hasNfc = song.connectedNfcUuid != null;
+    final bool isQCSelected = _quickConnectSelectedSongId == song.id;
+    final bool isQCFlash = _quickConnectFlashSuccessIds.contains(song.id);
+
+    final Color background = isQCFlash
+        ? Colors.green.withValues(alpha: 0.25)
+        : isQCSelected
+        ? scheme.primary.withValues(alpha: 0.15)
+        : isCurrent
+        ? scheme.primaryContainer
+        : scheme.surfaceContainerHighest;
+    final BorderSide side = isQCFlash
+        ? const BorderSide(color: Colors.green, width: 2)
+        : isQCSelected
+        ? BorderSide(color: scheme.primary, width: 2)
+        : BorderSide.none;
+
+    final IconData leadingIcon = _quickConnectMode
+        ? (isQCSelected ? Icons.check : Icons.nfc_outlined)
+        : isPlaying
+        ? Icons.pause
+        : Icons.play_arrow;
+    final bool leadingFilled = isCurrent || isQCSelected;
+
+    return Semantics(
+      button: true,
+      label: song.title,
+      hint: _quickConnectMode ? null : (isPlaying ? l10n.pause : l10n.play),
+      child: Material(
+        color: background,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: side,
+        ),
+        child: InkWell(
+          onTap: _quickConnectMode
+              ? () => _toggleQuickConnectSelection(songId: song.id)
+              : () async {
+                  if (isCurrent) {
+                    await musicPlayer.togglePlayPause();
+                  } else {
+                    await musicPlayer.playMusic(song);
+                  }
+                },
+          onLongPress: _quickConnectMode
+              ? null
+              : () => _showSongActionsDialog(
+                  context,
+                  song,
+                  folderId,
+                  folderProvider,
+                  songProvider,
+                ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: leadingFilled ? scheme.primary : scheme.surface,
+                  ),
+                  child: Icon(
+                    leadingIcon,
+                    size: 20,
+                    color: leadingFilled ? scheme.onPrimary : scheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    song.title,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.2,
+                      fontWeight: isCurrent ? FontWeight.w600 : null,
+                      color: isCurrent
+                          ? scheme.onPrimaryContainer
+                          : scheme.onSurface,
+                    ),
+                  ),
+                ),
+                if (hasNfc) ...[
+                  const SizedBox(width: 4),
+                  Icon(Icons.nfc, size: 16, color: scheme.primary),
+                ],
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -2813,15 +3007,16 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
     MusicPlayer musicPlayer,
     int index,
   ) {
-    return Container(
+    return Padding(
       key: Key('folder_${folder.id}'),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: _buildFolderWidget(
         context,
         folder,
         folderProvider,
         songProvider,
         musicPlayer,
-        index,
+        reorderIndex: index,
       ),
     );
   }
@@ -2838,377 +3033,48 @@ class _NFCJukeboxHomePageState extends State<NFCJukeboxHomePage>
     SongProvider songProvider,
     MusicPlayer musicPlayer,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (children.isEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Text(
-              AppLocalizations.of(context)!.noSubfoldersYet,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontStyle: FontStyle.italic,
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ...children.map(
-          (child) => _buildSubFolderWidget(
-            context,
-            child,
-            folderProvider,
-            songProvider,
-            musicPlayer,
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-          child: OutlinedButton.icon(
-            icon: const Icon(Icons.create_new_folder_outlined, size: 16),
-            label: Text(AppLocalizations.of(context)!.addSubfolder),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-            ),
-            onPressed: () =>
-                _showAddSubFolderDialog(context, parentFolder, folderProvider),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSubFolderWidget(
-    BuildContext context,
-    Folder subfolder,
-    FolderProvider folderProvider,
-    SongProvider songProvider,
-    MusicPlayer musicPlayer,
-  ) {
-    final folderSongs =
-        songProvider.songs
-            .where((song) => subfolder.songIds.contains(song.id))
-            .toList()
-          ..sort(
-            (a, b) => subfolder.songIds
-                .indexOf(a.id)
-                .compareTo(subfolder.songIds.indexOf(b.id)),
-          );
-
-    final bool isFolderNfcConnected = subfolder.connectedNfcUuid != null;
-    final bool isFolderPlaylistActive =
-        musicPlayer.isPlaylistMode &&
-        musicPlayer.currentPlaylistFolderId == subfolder.id;
-    final bool isQCSelected = _quickConnectSelectedFolderId == subfolder.id;
-    final bool isQCFlash = _quickConnectFlashSuccessIds.contains(subfolder.id);
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-      decoration: BoxDecoration(
-        color: isQCFlash
-            ? Colors.green.withValues(alpha: 0.15)
-            : Provider.of<ThemeProvider>(context).footerColor,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: isQCFlash
-              ? Colors.green
-              : isQCSelected
-              ? Theme.of(context).colorScheme.primary
-              : isFolderPlaylistActive
-              ? Colors.green
-              : Provider.of<ThemeProvider>(
-                  context,
-                ).bannerColor.withValues(alpha: 0.2),
-          width: isQCFlash || isQCSelected || isFolderPlaylistActive ? 2 : 1,
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Subfolder header
-          InkWell(
-            onTap: _quickConnectMode
-                ? () {
-                    setState(() {
-                      if (_quickConnectSelectedFolderId == subfolder.id) {
-                        _quickConnectSelectedFolderId = null;
-                      } else {
-                        _quickConnectSelectedFolderId = subfolder.id;
-                        _quickConnectSelectedSongId = null;
-                      }
-                    });
-                  }
-                : () => folderProvider.toggleFolderExpansion(subfolder.id),
-            onLongPress: () => _showFolderActionsDialog(
-              context,
-              subfolder,
-              folderProvider,
-              musicPlayer,
-            ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: subfolder.isExpanded
-                    ? Provider.of<ThemeProvider>(
-                        context,
-                      ).bannerColor.withValues(alpha: 0.08)
-                    : Colors.transparent,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(6),
+          if (children.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                AppLocalizations.of(context)!.noSubfoldersYet,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                  fontSize: 13,
                 ),
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    subfolder.isExpanded ? Icons.folder_open : Icons.folder,
-                    color: Provider.of<ThemeProvider>(context).bannerColor,
-                    size: 22,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      subfolder.name,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Provider.of<ThemeProvider>(context).bannerColor,
-                      ),
-                    ),
-                  ),
-                  if (isFolderNfcConnected)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: Icon(
-                        Icons.nfc,
-                        size: 14,
-                        color: Provider.of<ThemeProvider>(
-                          context,
-                        ).bannerColor.withValues(alpha: 0.6),
-                      ),
-                    ),
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () =>
-                        folderProvider.toggleFolderExpansion(subfolder.id),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Icon(
-                        subfolder.isExpanded
-                            ? Icons.expand_less
-                            : Icons.expand_more,
-                        color: Provider.of<ThemeProvider>(context).bannerColor,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  if (!_quickConnectMode)
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        if (isFolderPlaylistActive) {
-                          if (musicPlayer.isPlaying) {
-                            musicPlayer.pauseMusic();
-                          } else {
-                            musicPlayer.resumeMusic();
-                          }
-                        } else if (folderSongs.isNotEmpty) {
-                          musicPlayer.startPlaylist(
-                            songs: folderSongs,
-                            folderId: subfolder.id,
-                            shuffle: subfolder.isShuffleEnabled,
-                            loopPlaylist: subfolder.isLoopPlaylistEnabled,
-                            startIndex: subfolder.lastPlayedSongIndex,
-                            startPositionMs:
-                                subfolder.lastPlayedPositionMs ?? 0,
-                          );
-                        }
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: Icon(
-                          isFolderPlaylistActive && musicPlayer.isPlaying
-                              ? Icons.pause_circle
-                              : Icons.play_circle,
-                          color: isFolderPlaylistActive
-                              ? Colors.green
-                              : Colors.grey,
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                ],
+            ),
+          ...children.map(
+            (child) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _buildFolderWidget(
+                context,
+                child,
+                folderProvider,
+                songProvider,
+                musicPlayer,
+                isSubfolder: true,
               ),
             ),
           ),
-          // Subfolder content (songs)
-          if (subfolder.isExpanded)
-            LayoutBuilder(
-              builder: (context, constraints) {
-                const double maxTileExtent = 250;
-                const double spacing = 8;
-                final int columns = (constraints.maxWidth / maxTileExtent)
-                    .ceil()
-                    .clamp(1, 100);
-                final double tileWidth =
-                    (constraints.maxWidth - spacing * (columns - 1)) / columns;
-                final double tileHeight = tileWidth / 2.8;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (folderSongs.isNotEmpty)
-                      GridView.extent(
-                        maxCrossAxisExtent: maxTileExtent,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisSpacing: spacing,
-                        mainAxisSpacing: spacing,
-                        childAspectRatio: 2.8,
-                        padding: const EdgeInsets.only(top: 8, bottom: spacing),
-                        children: folderSongs.map((song) {
-                          final bool isQCSongSelected =
-                              _quickConnectSelectedSongId == song.id;
-                          final bool isQCSongFlash =
-                              _quickConnectFlashSuccessIds.contains(song.id);
-                          return GestureDetector(
-                            onTap: _quickConnectMode
-                                ? () {
-                                    setState(() {
-                                      if (_quickConnectSelectedSongId ==
-                                          song.id) {
-                                        _quickConnectSelectedSongId = null;
-                                      } else {
-                                        _quickConnectSelectedSongId = song.id;
-                                        _quickConnectSelectedFolderId = null;
-                                      }
-                                    });
-                                  }
-                                : null,
-                            onLongPress: _quickConnectMode
-                                ? null
-                                : () {
-                                    _showSongActionsDialog(
-                                      context,
-                                      song,
-                                      subfolder.id,
-                                      folderProvider,
-                                      songProvider,
-                                    );
-                                  },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: isQCSongFlash
-                                    ? Colors.green.withValues(alpha: 0.25)
-                                    : isQCSongSelected
-                                    ? Theme.of(context).colorScheme.primary
-                                          .withValues(alpha: 0.15)
-                                    : Provider.of<ThemeProvider>(
-                                        context,
-                                      ).bannerColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: isQCSongFlash
-                                    ? Border.all(color: Colors.green, width: 3)
-                                    : isQCSongSelected
-                                    ? Border.all(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
-                                        width: 2,
-                                      )
-                                    : song.connectedNfcUuid != null
-                                    ? Border.all(color: Colors.green, width: 2)
-                                    : null,
-                              ),
-                              child: Row(
-                                children: [
-                                  const SizedBox(width: 8),
-                                  Icon(
-                                    song.connectedNfcUuid != null
-                                        ? Icons.music_note
-                                        : Icons.music_off,
-                                    size: 18,
-                                    color: song.connectedNfcUuid != null
-                                        ? Colors.green
-                                        : Colors.grey,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      song.title,
-                                      style: const TextStyle(fontSize: 12),
-                                      maxLines: 4,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  if (!_quickConnectMode)
-                                    IconButton(
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(
-                                        minWidth: 32,
-                                        minHeight: 32,
-                                      ),
-                                      icon: Icon(
-                                        musicPlayer.isSongPlaying(song.filePath)
-                                            ? Icons.pause
-                                            : Icons.play_arrow,
-                                        size: 20,
-                                        color:
-                                            musicPlayer.isSongPlaying(
-                                              song.filePath,
-                                            )
-                                            ? Colors.red
-                                            : musicPlayer.isSongPaused(
-                                                song.filePath,
-                                              )
-                                            ? Colors.orange
-                                            : Colors.blue,
-                                      ),
-                                      onPressed: () async {
-                                        if (musicPlayer.isSongPlaying(
-                                              song.filePath,
-                                            ) ||
-                                            musicPlayer.isSongPaused(
-                                              song.filePath,
-                                            )) {
-                                          await musicPlayer.togglePlayPause();
-                                        } else {
-                                          await musicPlayer.playMusic(song);
-                                        }
-                                      },
-                                    ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 0, bottom: 8),
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: tileWidth,
-                            height: tileHeight,
-                            child: _buildAddSongGridTile(
-                              context,
-                              songProvider,
-                              subfolder.id,
-                            ),
-                          ),
-                          const SizedBox(width: spacing),
-                          SizedBox(
-                            width: tileWidth,
-                            height: tileHeight,
-                            child: _buildAddMultipleGridTile(
-                              context,
-                              songProvider,
-                              subfolder.id,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
+          if (!_quickConnectMode)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                icon: const Icon(Icons.create_new_folder_outlined, size: 18),
+                label: Text(AppLocalizations.of(context)!.addSubfolder),
+                onPressed: () => _showAddSubFolderDialog(
+                  context,
+                  parentFolder,
+                  folderProvider,
+                ),
+              ),
             ),
         ],
       ),

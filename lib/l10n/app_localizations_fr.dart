@@ -522,16 +522,6 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String nowPlaying(Object title) {
-    return 'Lecture en cours : $title';
-  }
-
-  @override
-  String positionWithTotal(Object current, Object total) {
-    return 'Position : $current / $total';
-  }
-
-  @override
   String assignedNfc(Object id) {
     return 'NFC assigné : $id...';
   }
@@ -728,4 +718,53 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get pauseOnTagRemovalDescription => 'Poser un tag lance la lecture, le retirer la met en pause. Reposez-le pour reprendre.';
+
+  @override
+  String get play => 'Lire';
+
+  @override
+  String get pause => 'Pause';
+
+  @override
+  String get moreActions => 'Plus d\'actions';
+
+  @override
+  String get done => 'Terminé';
+
+  @override
+  String get quickConnectHint => 'Touchez un fichier audio ou un dossier, puis approchez un tag NFC de votre téléphone.';
+
+  @override
+  String quickConnectHoldTag(String name) {
+    return 'Approchez maintenant un tag NFC de votre téléphone pour connecter « $name ».';
+  }
+
+  @override
+  String audioFileCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fichiers audio',
+      one: '1 fichier audio',
+      zero: 'Aucun fichier audio',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String subfolderCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sous-dossiers',
+      one: '1 sous-dossier',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get emptyStateTitle => 'Créons votre radio';
+
+  @override
+  String get aboutSection => 'À propos';
 }

@@ -149,8 +149,6 @@
   "songLimitReached": "Hai raggiunto il limite di 6 brani per cartella. Per aggiungerne altri, esegui l'upgrade alla versione premium.",
   "themeColor": "Colore del tema",
   "lastDetected": "Ultimo rilevato: {uuid}",
-  "nowPlaying": "In riproduzione: {title}",
-  "positionWithTotal": "Posizione: {current} / {total}",
   "assignedNfc": "NFC assegnato: {id}...",
   "edit": "Modifica",
   "connected": "Connesso",
@@ -207,8 +205,12 @@
   "deleteGroupWarning": "Verranno eliminate {subCount} sottocartella/e e {songCount} canzone/i.",
   "@deleteGroupWarning": {
     "placeholders": {
-      "subCount": {"type": "int"},
-      "songCount": {"type": "int"}
+      "subCount": {
+        "type": "int"
+      },
+      "songCount": {
+        "type": "int"
+      }
     }
   },
   "convertToGroup": "Converti in gruppo",
@@ -216,5 +218,15 @@
   "subfolderName": "Nome sottocartella",
   "convert": "Converti",
   "pauseOnTagRemoval": "Pausa quando il tag viene rimosso",
-  "pauseOnTagRemovalDescription": "Appoggiare un tag avvia la riproduzione, rimuoverlo la mette in pausa. Riappoggialo per riprendere."
+  "pauseOnTagRemovalDescription": "Appoggiare un tag avvia la riproduzione, rimuoverlo la mette in pausa. Riappoggialo per riprendere.",
+  "play": "Riproduci",
+  "pause": "Pausa",
+  "moreActions": "Altre azioni",
+  "done": "Fatto",
+  "quickConnectHint": "Tocca un file audio o una cartella, poi avvicina un tag NFC al telefono.",
+  "quickConnectHoldTag": "Ora avvicina un tag NFC al telefono per collegare \"{name}\".",
+  "audioFileCount": "{count, plural, =0{Nessun file audio} =1{1 file audio} other{{count} file audio}}",
+  "subfolderCount": "{count, plural, =1{1 sottocartella} other{{count} sottocartelle}}",
+  "emptyStateTitle": "Creiamo la tua radio",
+  "aboutSection": "Informazioni"
 }

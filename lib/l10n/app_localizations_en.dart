@@ -522,16 +522,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String nowPlaying(Object title) {
-    return 'Now Playing: $title';
-  }
-
-  @override
-  String positionWithTotal(Object current, Object total) {
-    return 'Position: $current / $total';
-  }
-
-  @override
   String assignedNfc(Object id) {
     return 'Assigned NFC: $id...';
   }
@@ -728,4 +718,53 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pauseOnTagRemovalDescription => 'Placing a tag plays, removing it pauses. Place it again to resume.';
+
+  @override
+  String get play => 'Play';
+
+  @override
+  String get pause => 'Pause';
+
+  @override
+  String get moreActions => 'More actions';
+
+  @override
+  String get done => 'Done';
+
+  @override
+  String get quickConnectHint => 'Tap an audio file or folder, then hold an NFC tag to your phone.';
+
+  @override
+  String quickConnectHoldTag(String name) {
+    return 'Now hold an NFC tag to your phone to connect \"$name\".';
+  }
+
+  @override
+  String audioFileCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count audio files',
+      one: '1 audio file',
+      zero: 'No audio files',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String subfolderCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count subfolders',
+      one: '1 subfolder',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get emptyStateTitle => 'Let\'s build your radio';
+
+  @override
+  String get aboutSection => 'About';
 }

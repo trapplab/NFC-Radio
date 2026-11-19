@@ -149,8 +149,6 @@
   "songLimitReached": "You have reached the limit of 6 songs per folder. To add more, please upgrade to the premium version.",
   "themeColor": "Theme Color",
   "lastDetected": "Last detected: {uuid}",
-  "nowPlaying": "Now Playing: {title}",
-  "positionWithTotal": "Position: {current} / {total}",
   "assignedNfc": "Assigned NFC: {id}...",
   "edit": "Edit",
   "connected": "Connected",
@@ -207,8 +205,12 @@
   "deleteGroupWarning": "This will delete {subCount} subfolder(s) and {songCount} song(s).",
   "@deleteGroupWarning": {
     "placeholders": {
-      "subCount": {"type": "int"},
-      "songCount": {"type": "int"}
+      "subCount": {
+        "type": "int"
+      },
+      "songCount": {
+        "type": "int"
+      }
     }
   },
   "convertToGroup": "Convert to Group",
@@ -216,5 +218,36 @@
   "subfolderName": "Subfolder Name",
   "convert": "Convert",
   "pauseOnTagRemoval": "Pause when tag is removed",
-  "pauseOnTagRemovalDescription": "Placing a tag plays, removing it pauses. Place it again to resume."
+  "pauseOnTagRemovalDescription": "Placing a tag plays, removing it pauses. Place it again to resume.",
+  "play": "Play",
+  "pause": "Pause",
+  "moreActions": "More actions",
+  "done": "Done",
+  "quickConnectHint": "Tap an audio file or folder, then hold an NFC tag to your phone.",
+  "quickConnectHoldTag": "Now hold an NFC tag to your phone to connect \"{name}\".",
+  "@quickConnectHoldTag": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "audioFileCount": "{count, plural, =0{No audio files} =1{1 audio file} other{{count} audio files}}",
+  "@audioFileCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "subfolderCount": "{count, plural, =1{1 subfolder} other{{count} subfolders}}",
+  "@subfolderCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "emptyStateTitle": "Let's build your radio",
+  "aboutSection": "About"
 }

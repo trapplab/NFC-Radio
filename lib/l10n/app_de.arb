@@ -149,8 +149,6 @@
   "songLimitReached": "Sie haben das Limit von 6 Liedern pro Ordner erreicht. Um mehr hinzuzufügen, aktualisieren Sie bitte auf die Premium-Version.",
   "themeColor": "Themenfarbe",
   "lastDetected": "Zuletzt erkannt: {uuid}",
-  "nowPlaying": "Aktuelle Wiedergabe: {title}",
-  "positionWithTotal": "Position: {current} / {total}",
   "assignedNfc": "Zugewiesener NFC: {id}...",
   "edit": "Bearbeiten",
   "connected": "Verbunden",
@@ -207,8 +205,12 @@
   "deleteGroupWarning": "Dies löscht {subCount} Unterordner und {songCount} Songs.",
   "@deleteGroupWarning": {
     "placeholders": {
-      "subCount": {"type": "int"},
-      "songCount": {"type": "int"}
+      "subCount": {
+        "type": "int"
+      },
+      "songCount": {
+        "type": "int"
+      }
     }
   },
   "convertToGroup": "In Gruppe umwandeln",
@@ -216,5 +218,15 @@
   "subfolderName": "Unterordner-Name",
   "convert": "Umwandeln",
   "pauseOnTagRemoval": "Pausieren, wenn Tag entfernt wird",
-  "pauseOnTagRemovalDescription": "Tag auflegen spielt ab, Tag entfernen pausiert. Erneut auflegen setzt fort."
+  "pauseOnTagRemovalDescription": "Tag auflegen spielt ab, Tag entfernen pausiert. Erneut auflegen setzt fort.",
+  "play": "Abspielen",
+  "pause": "Pause",
+  "moreActions": "Weitere Aktionen",
+  "done": "Fertig",
+  "quickConnectHint": "Tippe auf eine Audiodatei oder einen Ordner und halte dann einen NFC-Tag an dein Handy.",
+  "quickConnectHoldTag": "Halte jetzt einen NFC-Tag an dein Handy, um \"{name}\" zu verbinden.",
+  "audioFileCount": "{count, plural, =0{Keine Audiodateien} =1{1 Audiodatei} other{{count} Audiodateien}}",
+  "subfolderCount": "{count, plural, =1{1 Unterordner} other{{count} Unterordner}}",
+  "emptyStateTitle": "Lass uns dein Radio einrichten",
+  "aboutSection": "Über"
 }
